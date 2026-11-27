@@ -54,6 +54,11 @@ export default function App() {
   );
   const [activeStageId, setActiveStageId] = useState<string>(VISUAL_SHOWCASES[0].id);
   const [modalDemo, setModalDemo] = useState<VisualShowcaseItem | null>(null);
+  const [sysGallery, setSysGallery] = useState<{
+    title: string;
+    shots: { src: string; label: { zh: string; en: string } }[];
+    idx: number;
+  } | null>(null);
   const [copiedWechat, setCopiedWechat] = useState(false);
 
   useEffect(() => {
@@ -86,11 +91,6 @@ export default function App() {
     if (id === 'douyin') return <DouyinIcon className="w-8 h-8 shrink-0" />;
     if (id === 'xhs') return <XiaohongshuIcon className="w-8 h-8 shrink-0" />;
     return <WeChatChannelsIcon className="w-8 h-8 shrink-0" />;
-  };
-
-  const openDemoById = (id: string) => {
-    const found = VISUAL_SHOWCASES.find((v) => v.id === id);
-    if (found) setModalDemo(found);
   };
 
   return (
@@ -492,7 +492,7 @@ export default function App() {
 
                 <div className="divide-y divide-slate-200 dark:divide-white/10">
                   {LIVE_SYSTEMS.map((sys) => (
-                    <div key={sys.id} className="py-6 space-y-3">
+                    <div key={sys.id} className="py-6 space-y-4">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="space-y-1">
                           <span className="text-[11px] font-mono text-amber-600 dark:text-amber-400">
@@ -502,11 +502,17 @@ export default function App() {
                         </div>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => openDemoById(sys.previewDemoId)}
+                            onClick={() =>
+                              setSysGallery({
+                                title: t(sys.title),
+                                shots: sys.screenshots,
+                                idx: 0,
+                              })
+                            }
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-200/80 dark:bg-white/10 hover:bg-cyan-500 hover:text-slate-950 text-xs font-medium transition-colors cursor-pointer"
                           >
                             <Play className="w-3 h-3" />
-                            {lang === 'zh' ? '系统画面预览' : 'Preview'}
+                            {lang === 'zh' ? '放大看实景' : 'View Screens'}
                           </button>
                           <a
                             href={sys.url}
@@ -522,6 +528,40 @@ export default function App() {
                       <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                         {t(sys.desc)}
                       </p>
+                      {/* Inline Real System Screenshots */}
+                      <div
+                        className={`grid gap-3 pt-1 ${
+                          sys.screenshots.length > 1 ? 'grid-cols-3' : 'grid-cols-1 max-w-md'
+                        }`}
+                      >
+                        {sys.screenshots.map((shot, sIdx) => (
+                          <button
+                            key={sIdx}
+                            onClick={() =>
+                              setSysGallery({
+                                title: t(sys.title),
+                                shots: sys.screenshots,
+                                idx: sIdx,
+                              })
+                            }
+                            className="group relative overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 bg-slate-950 aspect-[16/9] cursor-pointer text-left"
+                          >
+                            <img
+                              src={shot.src}
+                              alt={t(shot.label)}
+                              loading="lazy"
+                              className={`w-full h-full ${
+                                sys.id === 'aitqm' ? 'object-contain bg-slate-900' : 'object-cover'
+                              } group-hover:scale-105 transition-transform duration-300`}
+                            />
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2.5 py-1.5">
+                              <span className="text-[10px] text-white/90 line-clamp-1">
+                                {t(shot.label)}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -686,6 +726,53 @@ export default function App() {
               </div>
             </div>
             <iframe src={modalDemo.url} title={t(modalDemo.title)} className="w-full flex-1 bg-white" />
+          </div>
+        </div>
+      )}
+
+      {/* System Screenshot Lightbox Modal */}
+      {sysGallery && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-3 sm:p-6">
+          <div className="w-full max-w-5xl rounded-2xl overflow-hidden border border-white/15 bg-slate-950 flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-slate-900 text-slate-100">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold truncate">{sysGallery.title}</div>
+                <div className="text-xs text-slate-400 truncate">
+                  {t(sysGallery.shots[sysGallery.idx].label)}
+                </div>
+              </div>
+              <button
+                onClick={() => setSysGallery(null)}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="relative bg-black flex items-center justify-center max-h-[76vh] p-3">
+              <img
+                src={sysGallery.shots[sysGallery.idx].src}
+                alt={t(sysGallery.shots[sysGallery.idx].label)}
+                className="max-h-[70vh] w-auto object-contain rounded-lg"
+              />
+            </div>
+            {sysGallery.shots.length > 1 && (
+              <div className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 border-t border-white/10">
+                {sysGallery.shots.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSysGallery({ ...sysGallery, idx: i })}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors ${
+                      i === sysGallery.idx
+                        ? 'bg-cyan-500 text-slate-950'
+                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    {t(s.label)}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

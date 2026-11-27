@@ -279,7 +279,9 @@ export const LIVE_SYSTEMS = [
     badge: { zh: '社会与行业开放贡献', en: 'Open to Industry' },
     title: { zh: '品质道场 AI 落地工具箱 (aitqm.cn)', en: 'AITQM Quality AI Toolbox' },
     url: 'https://www.aitqm.cn',
-    previewDemoId: 'sip-gen',
+    screenshots: [
+      { src: './photos/sys-aitqm.jpg', label: { zh: '品质道场工具集实景（10 项质量工具）', en: 'AITQM Toolbox Live Screen' } },
+    ],
     desc: {
       zh: '不仅服务于自身工厂转型，更面向全行业质量人开放：内置 8D 闭环助手、QCC 成果报告、SPC 过程能力分析、体系文件评审及螺钉/标签/SMT/钣金/冲压等 10 个实用工具，帮助一线质量人把专业方法落地。',
       en: 'Built not just for internal factory transformation, but to empower quality engineers industry-wide: 10 practical AI tools including 8D Closure, QCC, SPC, SOP Review, and SMT/Sheet-Metal defect advisors.',
@@ -291,7 +293,9 @@ export const LIVE_SYSTEMS = [
     badge: { zh: '工厂落地系统 · 脱敏测试版', en: 'Factory System · Sandbox' },
     title: { zh: 'WPS 质量管理系统 V1.6', en: 'WPS Quality System V1.6' },
     url: 'https://www.kdocs.cn/l/cp0oiLGVMuTA',
-    previewDemoId: 'iqc-arch',
+    screenshots: [
+      { src: './photos/sys-wps.jpg', label: { zh: 'A 厂区质量日报看板（WPS 多维表实时闭环）', en: 'WPS Quality Daily Dashboard' } },
+    ],
     desc: {
       zh: '源于工厂实际落地的轻量化质量数据闭环系统（脱敏测试版）。展示如何用低门槛工具跑通“问题录入→责任指派→原因分析→验证闭环”全链路，供同行直接上手体验与借鉴。',
       en: 'Sanitized sandbox of our factory-deployed quality closure system. Demonstrates low-barrier end-to-end issue capture, assignment, root-cause analysis, and verification.',
@@ -303,10 +307,14 @@ export const LIVE_SYSTEMS = [
     badge: { zh: '工厂落地全栈系统', en: 'Factory Full-Stack System' },
     title: { zh: '355 IQC-DCC 质量协同系统', en: '355 IQC-DCC Collaborative System' },
     url: 'https://github.com/goodfeng186/355-IQC-DCC',
-    previewDemoId: 'sab-demo',
+    screenshots: [
+      { src: './photos/sys-355-1.jpg', label: { zh: '体系神经网络全景与作业规范关联', en: 'QMS Neural Panorama & SOP Links' } },
+      { src: './photos/sys-355-2.jpg', label: { zh: '355 NPI 智能体协同中枢', en: '355 NPI Agent Hub' } },
+      { src: './photos/sys-355-3.jpg', label: { zh: 'IQC 智能体全景控制塔', en: 'IQC Agentic Control Tower' } },
+    ],
     desc: {
-      zh: '工厂实际推进的全栈质量协同系统（Node + PostgreSQL + AI 8D），涵盖统一权限、IQC/SIP/文控基线与 SCAR↔8D 闭环。支持在左侧点击“预览系统逻辑”直接查看内部 355 运行闭环画面。',
-      en: 'Factory full-stack quality system (Node + PostgreSQL + AI 8D) covering unified auth, IQC/SIP/DCC baselines, and SCAR↔8D closure. Click preview to inspect its live workflow.',
+      zh: '工厂实际推进的全栈质量协同系统（Node + PostgreSQL + AI 8D），涵盖体系神经网络、355 NPI 智能体协同中枢与 IQC 控制塔。点击下方截图可切换查看真实系统界面。',
+      en: 'Factory full-stack quality system (Node + PostgreSQL + AI 8D) covering QMS neural panorama, 355 NPI Agent hub, and IQC control tower.',
     },
     actionLabel: { zh: '查看 355 系统仓库', en: 'Open 355 Repo' },
   },
