@@ -102,9 +102,11 @@ export default function App() {
             onClick={() => navigate('home')}
             className="flex items-center gap-3 font-semibold tracking-tight cursor-pointer"
           >
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500 text-slate-950 font-mono text-xs font-bold">
-              SX
-            </span>
+            <img
+              src="./photos/saodiseng-logo.jpg"
+              alt="质量扫地僧 LOGO"
+              className="h-9 w-9 rounded-full object-cover ring-1 ring-amber-400/50 shadow-md"
+            />
             <span className="text-sm sm:text-base">{t(PROFILE.name)}</span>
             <span className="hidden sm:inline text-xs font-normal text-slate-400">
               · {t(PROFILE.creatorBrand)}
@@ -193,16 +195,23 @@ export default function App() {
                   {t(PROFILE.headline)} · {t(PROFILE.location)}
                 </p>
 
-                <div className="space-y-3">
-                  <h1 className="text-4xl sm:text-6xl font-bold tracking-tight leading-[1.1]">
-                    {t(PROFILE.name)}
-                    <span className="text-slate-400 font-normal text-2xl sm:text-4xl ml-3">
-                      / {t(PROFILE.creatorBrand)}
-                    </span>
-                  </h1>
-                  <p className="text-xl sm:text-3xl font-medium text-amber-400 leading-snug">
-                    「{t(PROFILE.creatorBrand)}」：“{t(PROFILE.slogan)}”
-                  </p>
+                <div className="flex flex-wrap items-center gap-5">
+                  <img
+                    src="./photos/saodiseng-logo.jpg"
+                    alt="质量扫地僧"
+                    className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover ring-2 ring-amber-400/60 shadow-2xl shrink-0"
+                  />
+                  <div className="space-y-2">
+                    <h1 className="text-4xl sm:text-6xl font-bold tracking-tight leading-[1.1]">
+                      {t(PROFILE.name)}
+                      <span className="text-slate-400 font-normal text-2xl sm:text-4xl ml-3">
+                        / {t(PROFILE.creatorBrand)}
+                      </span>
+                    </h1>
+                    <p className="text-xl sm:text-3xl font-medium text-amber-400 leading-snug">
+                      「{t(PROFILE.creatorBrand)}」：“{t(PROFILE.slogan)}”
+                    </p>
+                  </div>
                 </div>
 
                 <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
@@ -520,19 +529,26 @@ export default function App() {
 
               {/* Right:「质量扫地僧」内容矩阵 (去粉丝数，提供直达入口与链接位) */}
               <div className="lg:col-span-5 space-y-6">
-                <div>
-                  <div className="text-xs font-mono uppercase tracking-[0.2em] text-amber-500 mb-2">
-                    QUALITY BELIEF & KNOWLEDGE SHARING
+                <div className="flex items-center gap-4">
+                  <img
+                    src="./photos/saodiseng-logo.jpg"
+                    alt="质量扫地僧"
+                    className="h-14 w-14 rounded-full object-cover ring-2 ring-amber-400/50 shrink-0"
+                  />
+                  <div>
+                    <div className="text-xs font-mono uppercase tracking-[0.2em] text-amber-500 mb-1">
+                      QUALITY BELIEF & KNOWLEDGE SHARING
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                      「质量扫地僧」
+                    </h2>
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                    「质量扫地僧」
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                    {lang === 'zh'
-                      ? '围绕 8D 实战、质量管理深度思考与质量信仰建立，把专业翻译成大白话，帮助更多制造一线质量人系统化改善。'
-                      : 'Sharing practical 8D, deep quality thinking, and quality mindset to help frontline engineers improve.'}
-                  </p>
                 </div>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                  {lang === 'zh'
+                    ? '围绕 8D 实战、质量管理深度思考与质量信仰建立，把专业翻译成大白话，帮助更多制造一线质量人系统化改善。'
+                    : 'Sharing practical 8D, deep quality thinking, and quality mindset to help frontline engineers improve.'}
+                </p>
 
                 <div className="divide-y divide-slate-200 dark:divide-white/10">
                   {CREATOR_PLATFORMS.map((p) => (
