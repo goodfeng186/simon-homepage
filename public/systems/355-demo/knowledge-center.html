@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>统一知识库 · 测试窗口</title>
+<link rel="stylesheet" href="assets/demo.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"Microsoft YaHei",system-ui,sans-serif;background:#0b1220;color:#e2e8f0;min-height:100vh;}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 20px 60px;}
+header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:22px;}
+h1{font-size:22px;color:#38bdf8;font-weight:700;}
+.sub{font-size:12px;color:#64748b;margin-top:4px;}
+.login-box{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#111a2e;border:1px solid #1e3a5f;padding:10px 14px;border-radius:10px;}
+.login-box input{background:#0f1a2c;border:1px solid #1e3a5f;color:#e2e8f0;padding:7px 10px;border-radius:6px;font-size:13px;width:110px;}
+.login-box input.wide{width:140px;}
+.login-box button{background:#0ea5e9;border:none;color:#04121f;font-weight:700;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;}
+.login-box .status{font-size:12px;color:#10b981;margin-left:4px;}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:18px;}
+.stat{background:#111a2e;border:1px solid #1e3a5f;border-radius:10px;padding:14px 12px;text-align:center;}
+.stat .num{font-size:26px;font-weight:800;color:#38bdf8;}
+.stat .lab{font-size:11px;color:#94a3b8;margin-top:4px;}
+.panel{background:#111a2e;border:1px solid #1e3a5f;border-radius:12px;padding:18px;margin-bottom:18px;}
+.panel h2{font-size:15px;color:#7dd3fc;margin-bottom:12px;}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.toolbar select,.toolbar input,.toolbar button{background:#0f1a2c;border:1px solid #1e3a5f;color:#e2e8f0;padding:7px 10px;border-radius:6px;font-size:13px;}
+.toolbar button{background:#0ea5e9;border:none;color:#04121f;font-weight:700;cursor:pointer;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #1e3a5f;vertical-align:top;}
+th{color:#94a3b8;font-weight:600;background:#0f1a2c;}
+td .tag{display:inline-block;background:#1e3a5f;color:#7dd3fc;border-radius:4px;padding:1px 6px;font-size:11px;margin-right:4px;}
+td .link{color:#38bdf8;text-decoration:underline;cursor:pointer;}
+.form-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.form-row input,.form-row select{background:#0f1a2c;border:1px solid #1e3a5f;color:#e2e8f0;padding:8px 10px;border-radius:6px;font-size:13px;flex:1;min-width:130px;}
+.form-row button{background:#10b981;border:none;color:#04121f;font-weight:700;padding:8px 22px;border-radius:6px;cursor:pointer;font-size:13px;}
+.msg{font-size:12.5px;margin-top:8px;padding:8px 12px;border-radius:6px;display:none;}
+.msg.ok{display:block;background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid #10b981;}
+.msg.err{display:block;background:rgba(248,113,113,.12);color:#fca5a5;border:1px solid #f87171;}
+.tip{font-size:12px;color:#64748b;line-height:1.8;background:#0f1a2c;border-radius:8px;padding:10px 14px;margin-top:14px;}
+.tip b{color:#7dd3fc;}
+.empty{color:#64748b;text-align:center;padding:18px 0;font-size:13px;}
+@media(max-width:800px){.grid{grid-template-columns:repeat(3,1fr);}}
+</style>
+<script src="assets/demo-auth.js"></script>
+<script src="assets/demo-data.js"></script>
+</head>
+<body>
+<div class=\"demo-banner\"><strong>演示数据，不写入服务器</strong></div>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>统一知识库 · 测试窗口</h1>
+      <div class="sub">355 项目 · 后端第 1、2 步效果演示（知识库 / 物料匹配 / SIP 批准自动登记）</div>
+    </div>
+    <div class="login-box">
+      <input id="company" value="DEMO" placeholder="公司编码">
+      <input id="username" value="admin" placeholder="用户名">
+      <input id="password" type="password" value="" placeholder="密码">
+      <button onclick="doLogin()">登录</button>
+      <span class="status" id="loginStatus"></span>
+    </div>
+  </header>
+
+  <div class="grid" id="statGrid"></div>
+
+  <div class="panel">
+    <h2>知识库列表（六类内容统一存放）</h2>
+    <div class="toolbar">
+      <select id="fType">
+        <option value="">全部类型</option>
+        <option value="procedure">体系程序</option>
+        <option value="sip">检验指导书 SIP</option>
+        <option value="case8d">8D 报告</option>
+        <option value="case">不良案例</option>
+        <option value="attribution">归因分析</option>
+        <option value="manual">系统操作说明</option>
+      </select>
+      <input id="fKeyword" placeholder="搜索标题/编号/摘要">
+      <button onclick="loadList()">查询</button>
+      <button onclick="loadStats()">刷新统计</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th style="width:16%">类型</th><th style="width:30%">标题</th><th style="width:12%">编号</th><th style="width:10%">版本</th><th style="width:18%">标签</th><th style="width:14%">跳转</th></tr></thead>
+        <tbody id="kbBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>登记一条知识（测试：操作说明 / 案例等）</h2>
+    <div class="form-row">
+      <select id="nType">
+        <option value="manual">系统操作说明</option>
+        <option value="case">不良案例</option>
+        <option value="case8d">8D 报告</option>
+        <option value="attribution">归因分析</option>
+        <option value="procedure">体系程序</option>
+      </select>
+      <input id="nTitle" placeholder="标题（必填）">
+      <input id="nCode" placeholder="编号，如 WI420106">
+      <input id="nTag" placeholder="标签，逗号分隔，如 案例,左把手">
+    </div>
+    <div class="form-row">
+      <input id="nSummary" placeholder="摘要（可选）" style="flex:2;">
+      <button onclick="createItem()">登记入知识库</button>
+    </div>
+    <div class="msg" id="createMsg"></div>
+  </div>
+
+  <div class="panel">
+    <h2>物料匹配测试（编码 / 件号 / 业务件号 / 图号 任一命中）</h2>
+    <div class="form-row">
+      <input id="mCode" placeholder="编码，如 DKBA8.136.9475">
+      <input id="mDrawing" placeholder="图号，如 21100087">
+      <input id="mPart" placeholder="件号">
+      <input id="mBusiness" placeholder="业务件号，如 21022480-001">
+      <button onclick="resolveMaterial()">匹配</button>
+    </div>
+    <div class="msg" id="resolveMsg"></div>
+  </div>
+
+  <div class="tip">
+    <b>怎么看 SIP 批准自动登记效果：</b>① 打开主界面 → 进入 IQC 控制塔 → 图纸转 SIP 工作台，生成一条 SIP 草稿；② 用 QE/管理员账号点"批准"；③ 回到本页刷新统计与列表——该 SIP 会自动出现在"检验指导书 SIP"分类下（带跳转链接），同时检验项目库自动多一条生效版本。本页为演示数据，不写入服务器。
+  </div>
+</div>
+
+
+<script>
+if (!DemoAuth.requireDemoAuth()) { /* redirected */ }
+var TOKEN = localStorage.getItem('iqc_token') || DemoAuth.DEMO_TOKEN;
+function api(method, path, payload){
+  var p = path;
+  if (method === 'GET') return DemoAPI.get(p).then(function(d){ return d; });
+  return DemoAPI.post(p, payload || {});
+}
+function showMsg(id, ok, text){
+  var el = document.getElementById(id);
+  el.style.color = ok ? '#34d399' : '#f87171';
+  el.textContent = text;
+}
+function doLogin(){
+  var id = document.getElementById('username').value.trim();
+  var pw = document.getElementById('password').value;
+  if(!id || !pw){ showMsg('loginStatus', false, '请输入工号和密码'); return; }
+  DemoAuth.writeSession({ username: id, full_name: '[姓名]', role: 'quality_engineer', company_code: document.getElementById('company').value.trim() || 'DEMO', company_name: '[公司]' });
+  TOKEN = DemoAuth.DEMO_TOKEN;
+  showMsg('loginStatus', true, '已进入演示');
+  loadStats(); loadList();
+}
+function loadStats(){
+  DemoAPI.get('/knowledge/stats').then(function(r){
+    var labels = r.labels, by = r.by_type;
+    var grid = document.getElementById('statGrid');
+    grid.innerHTML = Object.keys(labels).map(function(k){
+      return '<div class="stat"><div class="n">' + (by[k] || 0) + '</div><div class="l">' + labels[k] + '</div></div>';
+    }).join('');
+  }).catch(function(e){ showMsg('createMsg', false, '统计加载失败：' + e.message); });
+}
+function esc(s){ return (s||'').toString().replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function loadList(){
+  var t = document.getElementById('fType').value;
+  var k = document.getElementById('fKeyword').value.trim();
+  var q = '/knowledge?status=ACTIVE' + (t?'&type='+encodeURIComponent(t):'') + (k?'&keyword='+encodeURIComponent(k):'');
+  DemoAPI.get(q).then(function(r){
+    var body = document.getElementById('kbBody');
+    if(!r.items.length){ body.innerHTML = '<tr><td colspan="6" class="empty">暂无知识条目 —— 先在上方"登记"一条</td></tr>'; return; }
+    body.innerHTML = r.items.map(function(it){
+      var tags = esc(it.tags||'');
+      var link = it.url ? '<a href="'+esc(it.url)+'">打开</a>' : '—';
+      return '<tr><td>'+esc(it.type)+'</td><td>'+esc(it.title)+'</td><td>'+esc(it.doc_code||'')+'</td><td>'+esc(it.rev||'')+'</td><td>'+tags+'</td><td>'+link+'</td></tr>';
+    }).join('');
+  }).catch(function(e){ showMsg('createMsg', false, '加载列表失败：' + e.message); });
+}
+function createItem(){
+  var payload = {
+    type: document.getElementById('nType').value,
+    title: document.getElementById('nTitle').value.trim(),
+    doc_code: document.getElementById('nCode').value.trim(),
+    tags: document.getElementById('nTag').value.trim(),
+    summary: document.getElementById('nSummary').value.trim()
+  };
+  if(!payload.title){ showMsg('createMsg', false, '标题不能为空'); return; }
+  DemoAPI.post('/knowledge', payload).then(function(r){
+    showMsg('createMsg', true, '已在本地登记：' + r.title + '（演示数据，不写入服务器）');
+    loadStats(); loadList();
+  }).catch(function(e){ showMsg('createMsg', false, '登记失败：' + e.message); });
+}
+function resolveMaterial(){
+  var payload = {
+    material_code: document.getElementById('mCode').value.trim(),
+    drawing_no: document.getElementById('mDrawing').value.trim(),
+    part_no: document.getElementById('mPart').value.trim(),
+    business_no: document.getElementById('mBusiness').value.trim()
+  };
+  DemoAPI.post('/knowledge/material-resolve', payload).then(function(r){
+    showMsg('resolveMsg', true, r.message || '已完成演示匹配');
+  }).catch(function(e){ showMsg('resolveMsg', false, e.message); });
+}
+if (DemoAuth.isFileProtocol() || TOKEN) { loadStats(); loadList(); }
+</script>
+
+</body>
+</html>

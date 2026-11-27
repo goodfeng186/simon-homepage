@@ -304,19 +304,19 @@ export const LIVE_SYSTEMS = [
   },
   {
     id: 'sys-355',
-    badge: { zh: '工厂落地全栈系统', en: 'Factory Full-Stack System' },
-    title: { zh: '355 IQC-DCC 质量协同系统', en: '355 IQC-DCC Collaborative System' },
-    url: 'https://github.com/goodfeng186/355-IQC-DCC',
+    badge: { zh: '工厂落地系统 · 全网页可交互版', en: 'Factory System · Live Web Demo' },
+    title: { zh: '355 智能体协同系统（全网页演示版）', en: '355 Agentic Quality System (Live Web)' },
+    url: './systems/355-demo/index.html',
     screenshots: [
       { src: './photos/sys-355-1.jpg', label: { zh: '体系神经网络全景与作业规范关联', en: 'QMS Neural Panorama & SOP Links' } },
       { src: './photos/sys-355-2.jpg', label: { zh: '355 NPI 智能体协同中枢', en: '355 NPI Agent Hub' } },
       { src: './photos/sys-355-3.jpg', label: { zh: 'IQC 智能体全景控制塔', en: 'IQC Agentic Control Tower' } },
     ],
     desc: {
-      zh: '工厂实际推进的全栈质量协同系统（Node + PostgreSQL + AI 8D），涵盖体系神经网络、355 NPI 智能体协同中枢与 IQC 控制塔。点击下方截图可切换查看真实系统界面。',
-      en: 'Factory full-stack quality system (Node + PostgreSQL + AI 8D) covering QMS neural panorama, 355 NPI Agent hub, and IQC control tower.',
+      zh: '可直接打开交互的 355 纯静态多页系统（涵盖登录门禁、总览看板、IQC 控制塔、SIP 工作台、检验执行与知识中心）。登录提示：公司编码填 DEMO，工号与密码填 demo（或任意非空字符）即可进入体验。',
+      en: 'Interactive multi-page 355 web system (Login, Dashboard, IQC Control Tower, SIP Workbench, Inspection & Knowledge Center). Demo login: Company DEMO, ID/Password demo.',
     },
-    actionLabel: { zh: '查看 355 系统仓库', en: 'Open 355 Repo' },
+    actionLabel: { zh: '直接打开 355 系统', en: 'Launch 355 System' },
   },
 ];
 

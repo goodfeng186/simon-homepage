@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IQC 智能体 · 品质专家演示台</title>
+<link rel="stylesheet" href="assets/demo.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:#f2f4f7; color:#1f2d3d; padding:20px; }
+  .wrap { max-width:1080px; margin:0 auto; }
+  header { background:linear-gradient(135deg,#1f2d3d,#2f4a6b); color:#fff; border-radius:12px; padding:18px 22px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+  header h1 { font-size:20px; }
+  header .sub { font-size:12px; opacity:.85; margin-top:4px; }
+  .badge { font-size:12px; padding:4px 10px; border-radius:20px; background:#18a058; color:#fff; }
+  .badge.off { background:#d03050; }
+  section { background:#fff; border:1px solid #e3e8ef; border-radius:12px; padding:16px 18px; margin-top:14px; }
+  section h2 { font-size:15px; color:#1f2d3d; border-left:4px solid #3370ff; padding-left:10px; margin-bottom:12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px; }
+  .task-card { border:1px solid #e3e8ef; border-radius:8px; padding:12px; cursor:pointer; background:#fafbfc; transition:.15s; }
+  .task-card:hover { border-color:#3370ff; box-shadow:0 2px 8px rgba(51,112,255,.12); }
+  .task-card.active { border-color:#3370ff; background:#eef3ff; }
+  .task-card .no { font-size:12px; color:#888; }
+  .task-card .mat { font-weight:700; font-size:14px; margin:4px 0; }
+  .task-card .meta { font-size:12px; color:#555; line-height:1.7; }
+  .chip { display:inline-block; font-size:11px; padding:2px 8px; border-radius:10px; margin-right:4px; background:#eef1f6; color:#444; }
+  .chip.high { background:#fde8e8; color:#d03050; }
+  .chip.low { background:#e8f7ee; color:#18a058; }
+  button { border:none; border-radius:6px; padding:8px 14px; font-size:13px; cursor:pointer; font-family:inherit; }
+  .btn-primary { background:#3370ff; color:#fff; }
+  .btn-primary:hover { background:#2758d0; }
+  .btn-ok { background:#18a058; color:#fff; }
+  .btn-ok:hover { background:#137a43; }
+  .btn-danger { background:#fff; color:#d03050; border:1px solid #d03050; }
+  .btn-danger:hover { background:#fde8e8; }
+  .btn-ghost { background:#eef1f6; color:#444; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .advice-box { border:1px solid #e3e8ef; border-radius:8px; padding:12px; margin-top:10px; background:#fafbfc; }
+  .advice-box .head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+  .st { font-size:12px; font-weight:700; padding:2px 10px; border-radius:12px; }
+  .st.DRAFT { background:#fff3d6; color:#b26a00; }
+  .st.APPROVED { background:#e8f7ee; color:#137a43; }
+  .st.REJECTED { background:#fde8e8; color:#c0392b; }
+  .st.SUPERSEDED { background:#eef1f6; color:#888; }
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:13px; margin-top:8px; }
+  .kv .k { color:#888; }
+  .kv .v { color:#1f2d3d; }
+  .table { width:100%; border-collapse:collapse; font-size:13px; margin-top:10px; }
+  .table th { text-align:left; background:#f2f4f7; padding:8px; border:1px solid #e3e8ef; }
+  .table td { padding:8px; border:1px solid #e3e8ef; }
+  textarea, input[type=text] { width:100%; border:1px solid #d4dbe4; border-radius:6px; padding:10px; font-size:13px; font-family:inherit; }
+  textarea { min-height:90px; resize:vertical; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .qa-line { border-bottom:1px dashed #e3e8ef; padding:10px 0; font-size:13px; }
+  .qa-line .q { font-weight:700; color:#1f2d3d; }
+  .qa-line .a { color:#444; margin-top:6px; line-height:1.8; }
+  .cite { display:block; font-size:11px; color:#888; margin-top:4px; }
+  .cite span { color:#3370ff; }
+  .muted { color:#888; font-size:12px; }
+  .spinner { display:inline-block; width:14px; height:14px; border:2px solid #3370ff; border-top-color:transparent; border-radius:50%; animation:spin .8s linear infinite; vertical-align:-2px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .hint { background:#fff7e6; border:1px solid #ffe1a8; border-radius:8px; padding:10px 12px; font-size:12px; color:#7a5a00; margin-top:10px; }
+  .ok-tip { background:#e8f7ee; border:1px solid #b7ebca; border-radius:8px; padding:10px 12px; font-size:12px; color:#137a43; margin-top:10px; }
+  footer { margin-top:18px; font-size:12px; color:#999; text-align:center; line-height:1.8; }
+</style>
+<script src="assets/demo-auth.js"></script>
+<script src="assets/demo-data.js"></script>
+</head>
+<body>
+<div class=\"demo-banner\"><strong>演示数据，不写入服务器</strong></div>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>IQC 智能体 · 品质专家演示台</h1>
+      <div class="sub">AI 只提建议、您来拍板 · 所有动作留痕可查 · 本地演示库（数据为示例）</div>
+    </div>
+    <div id="conn" class="badge">正在连接系统…</div>
+  </header>
+
+  <!-- 1 任务列表 -->
+  <section>
+    <h2>① 待检来料任务</h2>
+    <div id="taskGrid" class="grid"><span class="muted">正在加载…</span></div>
+  </section>
+
+  <!-- 2 AI 建议 -->
+  <section id="adviceSec" style="display:none;">
+    <h2>② AI 品质助理建议 <span id="curTask" class="muted"></span></h2>
+    <div class="row">
+      <button class="btn-primary" id="btnRisk">AI 风险评估</button>
+      <button class="btn-primary" id="btnSampling">AI 抽样方案</button>
+      <button class="btn-primary" id="btnDispatch">AI 派工建议</button>
+      <span class="muted" id="aiBusy"></span>
+    </div>
+    <div id="adviceList"></div>
+    <div class="hint">说明：AI 的建议都先记成“草稿”，您批准后才算数；驳回必须写理由。它没有权限改任何业务数据。</div>
+  </section>
+
+  <!-- 3 SIP 解析 -->
+  <section>
+    <h2>③ AI 读图纸要求（SIP）→ 检验项目草稿</h2>
+    <textarea id="sipText" placeholder="粘贴结构化 SIP 文本，例如：
+| 阻值 | 万用表 | 10KΩ | ±1% | 万用表 |
+| 外观 | 视觉 | 无划伤/无氧化 | - | 目视 |
+| 尺寸 | 卡尺 | 1.6×0.8mm | ±0.1mm | 卡尺 |"></textarea>
+    <div class="row">
+      <input type="text" id="sipMat" placeholder="物料编码，如 M-006" style="flex:1;min-width:140px;">
+      <input type="text" id="sipVer" placeholder="版本，如 v1" style="flex:1;min-width:100px;">
+      <button class="btn-primary" id="btnParse">让 AI 提取检验项目</button>
+    </div>
+    <div id="parseOut"></div>
+  </section>
+
+  <!-- 4 问答 -->
+  <section>
+    <h2>④ 直接问 AI（带出处）</h2>
+    <div class="row">
+      <input type="text" id="qaInput" placeholder="例如：最近有哪些来料不良案例？M-003 有什么历史问题？">
+      <button class="btn-primary" id="btnAsk">提问</button>
+    </div>
+    <div id="qaOut"></div>
+    <div class="hint">试试问：“最近有哪些来料不良案例？” “M-003 的抽样状态怎么样？” “有哪些检验员可以派工？”</div>
+  </section>
+
+  <footer>演示台使用页面内示例数据 · 演示数据，不写入服务器</footer>
+</div>
+
+
+<script>
+if (!DemoAuth.requireDemoAuth()) { /* redirected */ }
+async function api(path, method, body) {
+  method = method || "GET";
+  if (method === "GET") return DemoAPI.get(path);
+  return DemoAPI.post(path, body || {});
+}
+function el(id) { return document.getElementById(id); }
+function connOk() {
+  if (el("connState")) { el("connState").textContent = "演示"; }
+  if (el("srcState")) { el("srcState").textContent = "本地示例数据"; }
+}
+let tasks = [];
+let currentTask = null;
+const STAGE_NAME = { risk: "风险识别", sampling: "抽样策略", dispatch: "智能派工", judgment: "综合判定", parse: "图纸解析" };
+async function loadTasks() {
+  const data = await api("/iqc-agent/tasks?page_size=20");
+  tasks = data.items || [];
+  const g = el("taskGrid");
+  if (!tasks.length) { g.innerHTML = '<span class="muted">暂无演示任务</span>'; return; }
+  g.innerHTML = "";
+  tasks.forEach(t => {
+    const c = document.createElement("div");
+    c.className = "task-card" + (currentTask && currentTask.id === t.id ? " active" : "");
+    c.innerHTML = '<div class="no">' + t.task_no + ' · 批号 ' + t.po_no + '</div>' +
+      '<div>' + t.material_code + ' · ' + t.material_name + '</div>';
+    c.onclick = () => selectTask(t);
+    g.appendChild(c);
+  });
+}
+function selectTask(t) {
+  currentTask = t;
+  loadTasks();
+  el("adviceSec").style.display = "";
+  el("adviceList").innerHTML = "";
+  loadAdvice(t.id);
+}
+async function loadAdvice(taskId) {
+  const data = await api("/ai/iqc/advice?task_id=" + taskId + "&page_size=10");
+  const list = el("adviceList");
+  list.innerHTML = "";
+  (data.items || []).forEach(a => list.appendChild(renderAdvice(a)));
+}
+function renderAdvice(a) {
+  const box = document.createElement("div");
+  box.className = "advice-box";
+  const st = a.status || "DRAFT";
+  box.innerHTML =
+    '<div class="head"><span><b>' + (STAGE_NAME[a.stage] || a.stage) + '</b> · 建议编号 ' + (a.advice_no || a.id) + '</span>' +
+    '<span>' + st + '</span></div>' +
+    '<div class="body">' + kv("摘要", JSON.stringify(a.payload || {}).slice(0, 180)) + '</div>' +
+    (st === "DRAFT" ? '<div class="ops"><button onclick="act(' + a.id + ', \'approve\')">批准</button> <button onclick="askReject(' + a.id + ')">驳回</button></div>' : '');
+  return box;
+}
+function kv(k, v) { return '<div class="k">' + k + '</div><div class="v">' + v + '</div>'; }
+async function orchestrate(stage) {
+  if (!currentTask) { alert("请先选择批次"); return; }
+  const r = await api("/ai/iqc/orchestrate", "POST", { task_id: currentTask.id, stage });
+  el("orchOut").textContent = JSON.stringify(r, null, 2);
+  loadAdvice(currentTask.id);
+}
+async function act(id, kind) {
+  await api("/iqc-agent/advice/" + id + "/" + kind, "POST", { reason: kind === "reject" ? (prompt("请填写驳回理由：") || "未填写") : "演示批准" });
+  if (currentTask) loadAdvice(currentTask.id);
+}
+function askReject(id) { act(id, "reject"); }
+async function parseDemo() {
+  const r = await api("/ai/iqc/parse", "POST", { material_code: "93122427", material_name: "演示解析物料", version: "A", text: "内置示例" });
+  el("parseOut").textContent = JSON.stringify(r, null, 2);
+}
+async function chatDemo() {
+  const q = (el("chatQ") && el("chatQ").value) || "演示问题";
+  const r = await api("/ai/async-chat/requests", "POST", { question: q });
+  const detail = await api("/ai/async-chat/requests/" + r.request_id);
+  el("chatOut").textContent = JSON.stringify(detail, null, 2);
+}
+connOk();
+loadTasks();
+</script>
+
+</body>
+</html>

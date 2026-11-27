@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>操作记录 · 355 智能体协同中枢</title>
+<link rel="stylesheet" href="assets/demo.css">
+<style>
+body{background:#0b1220;color:#e2e8f0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+.card{background:#111a2e;border:1px solid #1e3a5f;border-radius:14px}
+input,select{background:#0d1626;border:1px solid #2a4368;color:#e2e8f0;border-radius:8px;padding:8px 12px;font-size:14px}
+input:focus,select:focus{outline:none;border-color:#38bdf8}
+.btn{border-radius:8px;padding:8px 16px;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-primary{background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-ghost{border:1px solid #2a4368;color:#94a3b8}
+.btn-ghost:hover{color:#e2e8f0;border-color:#38bdf8}
+table{width:100%;font-size:13.5px}
+th{color:#64748b;font-weight:500;text-align:left;padding:10px 12px;border-bottom:1px solid #1e3a5f}
+td{padding:10px 12px;border-bottom:1px solid #182742;vertical-align:top}
+.msg{font-size:13px;padding:8px 12px;border-radius:8px;display:none}
+.msg.err{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.3)}
+.msg.info{background:rgba(56,189,248,.12);color:#38bdf8;border:1px solid rgba(56,189,248,.3)}
+.chg{font-size:12px;color:#94a3b8;word-break:break-all}
+</style>
+<script src="assets/demo-auth.js"></script>
+<script src="assets/demo-data.js"></script>
+</head>
+<body class="min-h-screen p-6">
+<div class=\"demo-banner\"><strong>演示数据，不写入服务器</strong></div>
+<div class="max-w-6xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-cyan-300">操作记录</h1>
+            <p class="text-sm text-slate-500 mt-1">质量证据链 · 谁在何时对什么做了什么，全部留痕可查</p>
+        </div>
+        <div class="flex gap-3">
+            <button class="btn btn-ghost" onclick="location.href='./dashboard.html'">返回主界面</button>
+            <button class="btn btn-ghost" onclick="doLogout()">退出登录</button>
+        </div>
+    </div>
+
+    <div id="msgBox" class="msg mb-4"></div>
+
+    <!-- 筛选 -->
+    <div class="card p-4 mb-4 flex flex-wrap items-end gap-3">
+        <div>
+            <label class="text-xs text-slate-400 mb-1 block">动作类型</label>
+            <select id="fAction">
+                <option value="">全部</option>
+                <option value="auth.login">登录</option>
+                <option value="iqc.task_create">任务创建</option>
+                <option value="iqc.task_transition">任务流转</option>
+                <option value="iqc.dispatch_confirm">派工确认</option>
+                <option value="iqc.advice_approve">AI建议·采纳</option>
+                <option value="iqc.advice_reject">AI建议·否决</option>
+                <option value="inspection.iqc_concession">特采放行</option>
+                <option value="complaint.create">客诉创建</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-xs text-slate-400 mb-1 block">开始日期</label>
+            <input type="date" id="fStart">
+        </div>
+        <div>
+            <label class="text-xs text-slate-400 mb-1 block">结束日期</label>
+            <input type="date" id="fEnd">
+        </div>
+        <button class="btn btn-primary" onclick="search(1)">查询</button>
+        <button class="btn btn-ghost" onclick="clearFilter()">清空</button>
+        <span class="text-xs text-slate-500 ml-auto" id="totalInfo"></span>
+    </div>
+
+    <div class="card p-5">
+        <div class="overflow-x-auto">
+            <table>
+                <thead><tr><th>时间</th><th>操作人</th><th>动作</th><th>对象</th><th>变更内容</th></tr></thead>
+                <tbody id="logRows"><tr><td>2026-11-27 09:00</td><td>[姓名]</td><td>登录系统</td><td>session</td><td>演示登录</td></tr></tbody>
+            </table>
+        </div>
+        <div class="flex items-center justify-between mt-4 text-sm text-slate-500">
+            <button class="btn btn-ghost text-xs" id="prevBtn" onclick="search(cur-1)">上一页</button>
+            <span id="pageInfo">第 1 页</span>
+            <button class="btn btn-ghost text-xs" id="nextBtn" onclick="search(cur+1)">下一页</button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+if (!DemoAuth.requireDemoAuth()) { /* redirected */ }
+var cur = 1, SIZE = 20;
+var ACTION_LABEL = {
+    'auth.login': '登录系统',
+    'iqc.project_create': '项目创建', 'iqc.project_approve': '项目批准', 'iqc.project_new_version': '项目升版',
+    'iqc.case_create': '案例创建', 'iqc.sampling_rule_upsert': '抽样规则更新',
+    'iqc.task_create': '任务创建', 'iqc.task_transition': '任务流转', 'iqc.dispatch_confirm': '派工确认',
+    'iqc.advice_approve': 'AI建议采纳', 'iqc.advice_reject': 'AI建议否决',
+    'inspection.iqc_concession': '特采放行', 'inspection.oqc_fail_released': 'OQC放行',
+    'complaint.create': '客诉创建', 'complaint.update': '客诉更新', 'complaint.close': '客诉关闭',
+    'instrument.export': '仪器导出', 'process_issue.create': '过程问题创建',
+    'document': '文档操作', 'supplier_qual.qualification_create': '供方资质创建'
+};
+function actionLabel(a) { return ACTION_LABEL[a] || a; }
+function showMsg(text, type) {
+    var m = document.getElementById('msgBox');
+    m.textContent = text; m.className = 'msg ' + type; m.style.display = 'block';
+    setTimeout(function(){ m.style.display = 'none'; }, 6000);
+}
+function search(page) {
+    cur = page || 1;
+    var qs = '?page=' + cur + '&size=' + SIZE;
+    var a = document.getElementById('fAction').value;
+    var s = document.getElementById('fStart').value;
+    var e = document.getElementById('fEnd').value;
+    if (a) qs += '&action_type=' + encodeURIComponent(a);
+    if (s) qs += '&start_date=' + s;
+    if (e) qs += '&end_date=' + e;
+    document.getElementById('logRows').innerHTML = '<tr><td colspan="5" class="text-center text-slate-500 py-6">查询中...</td></tr>';
+    DemoAPI.get('/audit-logs' + qs).then(function (d) {
+        var items = d.items || [];
+        document.getElementById('totalInfo').textContent = '共 ' + (d.total || 0) + ' 条记录（演示）';
+        var pages = Math.max(1, Math.ceil((d.total || 0) / SIZE));
+        document.getElementById('pageInfo').textContent = '第 ' + cur + ' / ' + pages + ' 页';
+        document.getElementById('prevBtn').style.visibility = cur > 1 ? 'visible' : 'hidden';
+        document.getElementById('nextBtn').style.visibility = cur < pages ? 'visible' : 'hidden';
+        if (!items.length) { document.getElementById('logRows').innerHTML = '<tr><td colspan="5" class="text-center text-slate-500 py-6">暂无记录</td></tr>'; return; }
+        var html = items.map(function (r) {
+            var chg = '';
+            try {
+                if (r.changes) {
+                    var c = r.changes;
+                    chg = '<div class="chg">' + (c.after ? JSON.stringify(c.after).slice(0, 120) : '') + (c.before ? '<br>前: ' + JSON.stringify(c.before).slice(0, 80) : '') + '</div>';
+                }
+            } catch (err) {}
+            return '<tr>' +
+                '<td class="text-slate-400 whitespace-nowrap">' + new Date(r.occurred_at).toLocaleString('zh-CN') + '</td>' +
+                '<td>' + (r.user_name || '[姓名]') + '</td>' +
+                '<td><span class="text-cyan-300">' + actionLabel(r.action_type) + '</span></td>' +
+                '<td class="text-slate-400">' + (r.entity_type || '-') + ' #' + (r.entity_id != null ? r.entity_id : '-') + '</td>' +
+                '<td>' + (chg || '<span class="text-slate-600">—</span>') + '</td></tr>';
+        }).join('');
+        document.getElementById('logRows').innerHTML = html;
+    }).catch(function (err) {
+        document.getElementById('logRows').innerHTML = '<tr><td colspan="5" class="text-center text-red-400 py-6">无法载入演示记录：' + err.message + '</td></tr>';
+    });
+}
+function clearFilter() {
+    document.getElementById('fAction').value = '';
+    document.getElementById('fStart').value = '';
+    document.getElementById('fEnd').value = '';
+    search(1);
+}
+function doLogout() { DemoAuth.logout(); }
+search(1);
+</script>
+
+</body>
+</html>

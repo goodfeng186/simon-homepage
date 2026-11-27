@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文控中心 · 知识库门户</title>
+<link rel="stylesheet" href="assets/demo.css">
+<style>
+  :root{
+    --bg:#020617; --panel:#0f172a; --panel2:#1e293b; --line:rgba(255,255,255,.07);
+    --blue:#3b82f6; --cyan:#06b6d4; --indigo:#6366f1; --glow:#60a5fa;
+    --ok:#10b981; --warn:#f59e0b; --danger:#ef4444; --purple:#a78bfa;
+    --txt:#e2e8f0; --mut:#94a3b8; --dim:#64748b;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--txt); font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; font-size:14px; min-height:100vh;}
+  .top{display:flex; align-items:center; justify-content:space-between; padding:14px 22px; border-bottom:1px solid var(--line); background:linear-gradient(180deg, rgba(6,182,212,.07), transparent);}
+  .top h1{font-size:18px; font-weight:600;}
+  .top h1 em{color:var(--cyan); font-style:normal;}
+  .top .sub{color:var(--mut); font-size:12px; margin-top:2px;}
+  .top .right{display:flex; align-items:center; gap:12px;}
+  .top .company{color:var(--cyan); font-size:13px;}
+  .btn{padding:8px 16px; border:1px solid var(--line); border-radius:8px; background:var(--panel2); color:var(--txt); cursor:pointer; font-size:13px;}
+  .btn:hover{border-color:var(--blue); color:var(--glow);}
+  .btn.primary{background:linear-gradient(135deg, var(--cyan), var(--blue)); border:none; color:#fff; font-weight:600;}
+  .wrap{padding:18px 22px;}
+  .stats{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; margin-bottom:18px;}
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; position:relative; overflow:hidden; cursor:pointer;}
+  .stat:hover{border-color:var(--cyan);}
+  .stat.sel{border-color:var(--cyan); box-shadow:0 0 14px rgba(6,182,212,.15);}
+  .stat .num{font-size:26px; font-weight:700; color:var(--cyan);}
+  .stat .lab{font-size:12px; color:var(--mut); margin-top:4px;}
+  .stat .bar{position:absolute; left:0; right:0; bottom:0; height:2px; background:linear-gradient(90deg, var(--cyan), var(--indigo));}
+  .bar-row{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;}
+  .bar-row input{flex:1 1 260px; padding:9px 12px; background:var(--panel2); border:1px solid var(--line); border-radius:8px; color:var(--txt);}
+  .bar-row input:focus{outline:none; border-color:var(--cyan);}
+  .table-wrap{background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden;}
+  table{width:100%; border-collapse:collapse; table-layout:fixed;}
+  th{font-size:12px; color:var(--mut); font-weight:600; text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); background:var(--panel2);}
+  td{padding:10px 12px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  tr.row{cursor:pointer;}
+  tr.row:hover td{background:rgba(59,130,246,.05);}
+  .t-badge{display:inline-block; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:600;}
+  .t-procedure{background:rgba(99,102,241,.18); color:var(--indigo);}
+  .t-sip{background:rgba(6,182,212,.15); color:var(--cyan);}
+  .t-case8d{background:rgba(167,139,250,.16); color:var(--purple);}
+  .t-case{background:rgba(239,68,68,.14); color:var(--danger);}
+  .t-attribution{background:rgba(245,158,11,.15); color:var(--warn);}
+  .t-manual{background:rgba(16,185,129,.14); color:var(--ok);}
+  .tag{display:inline-block; background:var(--panel2); border:1px solid var(--line); border-radius:4px; padding:1px 8px; font-size:11px; color:var(--mut); margin:2px 3px 0 0;}
+  .link{color:var(--cyan); text-decoration:none; font-size:12px;}
+  .link:hover{text-decoration:underline;}
+  .empty{padding:36px; text-align:center; color:var(--dim);}
+  /* 抽屉 */
+  .drawer{position:fixed; top:0; right:0; bottom:0; width:460px; max-width:96vw; background:var(--panel); border-left:1px solid var(--line); box-shadow:-10px 0 40px rgba(0,0,0,.5); transform:translateX(100%); transition:transform .25s ease; z-index:50; overflow-y:auto;}
+  .drawer.open{transform:translateX(0);}
+  .drawer .head{display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--panel);}
+  .drawer .head h2{font-size:15px;}
+  .drawer .x{cursor:pointer; color:var(--mut); font-size:20px; padding:0 6px;}
+  .drawer .x:hover{color:var(--danger);}
+  .drawer .body{padding:16px 18px;}
+  .kv{display:flex; gap:8px; font-size:13px; margin-bottom:8px;}
+  .kv .k{color:var(--dim); flex:none; width:70px;}
+  .kv .v{color:var(--txt);}
+  .block{margin-top:14px;}
+  .block h4{font-size:12px; color:var(--cyan); margin-bottom:6px; letter-spacing:1px;}
+  .block .txt{font-size:13px; color:var(--mut); line-height:1.7; white-space:pre-wrap; word-break:break-all; background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px 12px;}
+  /* 登记表单 */
+  .modal{position:fixed; inset:0; background:rgba(2,6,23,.9); display:none; align-items:center; justify-content:center; z-index:60;}
+  .modal .box{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:22px; width:520px; max-width:94vw; max-height:90vh; overflow-y:auto;}
+  .modal h2{font-size:16px; margin-bottom:14px;}
+  .modal .f{margin-bottom:11px;}
+  .modal .f label{display:block; font-size:12px; color:var(--mut); margin-bottom:4px;}
+  .modal .f input,.modal .f select,.modal .f textarea{width:100%; padding:8px 10px; background:var(--panel2); border:1px solid var(--line); border-radius:8px; color:var(--txt); font-size:13px; font-family:inherit;}
+  .modal .f textarea{min-height:70px; resize:vertical;}
+  .modal .row2{display:flex; gap:10px;}
+  .modal .row2 .f{flex:1;}
+  .toast{position:fixed; top:18px; right:18px; z-index:99; padding:12px 18px; border-radius:10px; font-size:13px; background:var(--panel2); border:1px solid var(--line); display:none;}
+  .toast.ok{border-color:rgba(16,185,129,.5); color:var(--ok);}
+  .toast.err{border-color:rgba(239,68,68,.5); color:var(--danger);}
+  .gate{position:fixed; inset:0; background:rgba(2,6,23,.92); display:none; align-items:center; justify-content:center; z-index:100;}
+  .gate .box{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:28px; width:340px;}
+  .gate h2{font-size:17px; margin-bottom:16px;}
+  .gate .f{margin-bottom:12px;}
+  .gate .f label{display:block; font-size:12px; color:var(--mut); margin-bottom:4px;}
+  .gate .f input{width:100%; padding:9px 11px; background:var(--panel2); border:1px solid var(--line); border-radius:8px; color:var(--txt);}
+  .gate .err{color:var(--danger); font-size:12px; margin-bottom:8px; display:none;}
+  .gate .btn{width:100%; margin-top:6px;}
+  .spin{display:inline-block; width:14px; height:14px; border:2px solid var(--line); border-top-color:var(--cyan); border-radius:50%; animation:r 1s linear infinite; vertical-align:-2px; margin-right:6px;}
+  @keyframes r{to{transform:rotate(360deg);}}
+  @media(max-width:760px){ table{font-size:12px;} th,td{padding:8px;} }
+  @media(max-width:640px){ body{font-size:16px;} input, textarea{font-size:16px;} .stats{grid-template-columns:1fr 1fr;} .wrap{padding:12px 14px;} }
+</style>
+<script src="assets/demo-auth.js"></script>
+<script src="assets/demo-data.js"></script>
+</head>
+<body>
+<div class=\"demo-banner\"><strong>演示数据，不写入服务器</strong></div>
+<div class="top">
+  <div>
+    <h1>文控中心 · <em>知识库门户</em></h1>
+    <div class="sub">体系程序 / SIP / 8D / 不良案例 / 归因分析 / 系统操作说明</div>
+  </div>
+  <div class="right">
+    <span class="company" id="companyName">—</span>
+    <button class="btn" id="btnAdd" onclick="__openModal()">+ 登记知识</button>
+    <button class="btn" onclick="__iqcLogout()">退出登录</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+  <div class="bar-row">
+    <input id="kw" placeholder="搜索标题 / 编号 / 摘要…" onkeydown="if(event.key==='Enter')__search()">
+    <button class="btn primary" onclick="__search()">搜索</button>
+    <button class="btn" onclick="__clearFilter()">重置</button>
+    <span style="align-self:center; color:var(--mut); font-size:12px;" id="countInfo"></span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <colgroup><col style="width:14%"><col style="width:24%"><col style="width:11%"><col style="width:8%"><col style="width:10%"><col style="width:16%"><col style="width:17%"></colgroup>
+      <thead><tr><th>编号</th><th>标题</th><th>类型</th><th>版本</th><th>部门</th><th>标签</th><th>最近更新</th></tr></thead>
+      <tbody id="tbody"><tr><td colspan="7"><div class="empty"><span class="spin"></span>加载中…</div></td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 详情抽屉 -->
+<div class="drawer" id="drawer">
+  <div class="head"><h2 id="dTitle">知识详情</h2><span class="x" onclick="__closeDrawer()">×</span></div>
+  <div class="body" id="dBody"></div>
+</div>
+
+<!-- 登记弹窗 -->
+<div class="modal" id="modal">
+  <div class="box">
+    <h2>登记知识条目</h2>
+    <div class="f"><label>类型</label><select id="mType">
+      <option value="procedure">体系程序</option>
+      <option value="sip">检验指导书 SIP</option>
+      <option value="case8d">8D 报告</option>
+      <option value="case">不良案例</option>
+      <option value="attribution">归因分析</option>
+      <option value="manual">系统操作说明</option>
+    </select></div>
+    <div class="row2">
+      <div class="f"><label>编号（文控编号）</label><input id="mCode" placeholder="如 WI420106"></div>
+      <div class="f"><label>版本</label><input id="mRev" placeholder="如 A/0"></div>
+    </div>
+    <div class="f"><label>标题</label><input id="mTitle" placeholder="知识标题"></div>
+    <div class="f"><label>部门</label><input id="mDept" placeholder="如 [部门]"></div>
+    <div class="f"><label>标签（逗号分隔）</label><input id="mTags" placeholder="如 端子座, 来料检验"></div>
+    <div class="f"><label>摘要</label><textarea id="mSummary" placeholder="一句话摘要"></textarea></div>
+    <div class="f"><label>正文 / 内容（可选）</label><textarea id="mBody"></textarea></div>
+    <div class="f"><label>跳转链接（可选）</label><input id="mUrl" placeholder="https://… 或 系统内页面地址"></div>
+    <div style="display:flex; gap:10px; margin-top:6px;">
+      <button class="btn primary" onclick="__saveKnowledge()" style="flex:1;">保存登记</button>
+      <button class="btn" onclick="__closeModal()" style="flex:1;">取消</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="gate" id="loginGate" style="display:none">
+  <div class="box">
+    <h2>文控中心登录</h2>
+    <div class="f"><label>公司代码</label><input id="lgCompany" value="DEMO"></div>
+    <div class="f"><label>账号</label><input id="lgUser" placeholder="工号 / 用户名"></div>
+    <div class="f"><label>密码</label><input id="lgPass" type="password" placeholder="密码"></div>
+    <div class="err" id="loginErr"></div>
+    <button class="btn primary" id="loginBtn" onclick="__iqcLogin()">登录</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var API = '';
+var TOKEN = localStorage.getItem('iqc_token') || (DemoAuth.isFileProtocol() ? DemoAuth.DEMO_TOKEN : '');
+  var TYPE_ZH = { 'procedure':'体系程序','sip':'检验指导书 SIP','case8d':'8D 报告','case':'不良案例','attribution':'归因分析','manual':'系统操作说明' };
+  var TYPE_CLS = { 'procedure':'t-procedure','sip':'t-sip','case8d':'t-case8d','case':'t-case','attribution':'t-attribution','manual':'t-manual' };
+  var filter = { type: null, keyword: '' };
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+  (function showCompany(){
+    try{ var u = JSON.parse(localStorage.getItem('qms_user') || '{}'); if(u.company_name) $('companyName').textContent = u.company_name; }catch(e){}
+  })();
+
+  function toast(msg, ok){
+    var t = $('toast'); t.textContent = msg; t.className = 'toast ' + (ok ? 'ok' : 'err'); t.style.display = 'block';
+    clearTimeout(t._h); t._h = setTimeout(function(){ t.style.display = 'none'; }, 3000);
+  }
+
+  function showLogin(msg){
+    var g = $('loginGate'); g.style.display = 'flex';
+    if(msg){ var e = $('loginErr'); e.textContent = msg; e.style.display = 'block'; }
+  }
+  function doLogin(){ location.href = 'login.html'; }
+  window.__iqcLogin = doLogin;
+  window.__iqcLogout = function(){ DemoAuth.logout(); };
+
+  function apiGet(path){ return DemoAPI.get(path); }
+  function apiPost(path, body){ return DemoAPI.post(path, body); }
+
+  // ---------- 统计 ----------
+  function loadStats(){
+    apiGet('/knowledge/stats').then(function(d){
+      var by = d.by_type || {};
+      var keys = ['procedure','sip','case8d','case','attribution','manual'];
+      var h = '';
+      keys.forEach(function(k){
+        var n = by[k] || 0;
+        h += '<div class="stat' + (filter.type === k ? ' sel' : '') + '" onclick="__setType(\'' + k + '\')">'
+          + '<div class="num">' + n + '</div><div class="lab">' + TYPE_ZH[k] + '</div>'
+          + (filter.type === k ? '<div class="bar"></div>' : '') + '</div>';
+      });
+      $('stats').innerHTML = h;
+    }).catch(function(){ $('stats').innerHTML = '<div class="empty">统计加载失败</div>'; });
+  }
+
+  // ---------- 列表 ----------
+  function loadList(){
+    var q = '?page_size=100';
+    if(filter.type) q += '&type=' + encodeURIComponent(filter.type);
+    if(filter.keyword) q += '&keyword=' + encodeURIComponent(filter.keyword);
+    $('tbody').innerHTML = '<tr><td colspan="7"><div class="empty"><span class="spin"></span>加载中…</div></td></tr>';
+    apiGet('/knowledge' + q).then(function(d){
+      var items = d.items || [];
+      $('countInfo').textContent = '共 ' + d.total + ' 条';
+      if(!items.length){ $('tbody').innerHTML = '<tr><td colspan="7"><div class="empty">暂无知识条目，点击右上角「登记知识」录入</div></td></tr>'; return; }
+      var h = '';
+      items.forEach(function(it){
+        var tags = (it.tags || []).slice(0, 4).map(function(t){ return '<span class="tag">' + esc(t) + '</span>'; }).join('');
+        h += '<tr class="row" onclick="__openDetail(' + it.id + ')">'
+          + '<td>' + esc(it.doc_code || '—') + '</td>'
+          + '<td>' + esc(it.title || '') + '</td>'
+          + '<td><span class="t-badge ' + (TYPE_CLS[it.type] || '') + '">' + (TYPE_ZH[it.type] || it.type) + '</span></td>'
+          + '<td>' + esc(it.rev || '—') + '</td>'
+          + '<td>' + esc(it.department || '—') + '</td>'
+          + '<td>' + (tags || '<span style="color:var(--dim)">—</span>') + '</td>'
+          + '<td>' + esc(String(it.updated_at || '').slice(0, 16).replace('T', ' ')) + '</td>'
+          + '</tr>';
+      });
+      $('tbody').innerHTML = h;
+    }).catch(function(e){ $('tbody').innerHTML = '<tr><td colspan="7"><div class="empty">加载失败：' + esc(e.message) + '</div></td></tr>'; });
+  }
+
+  // ---------- 详情抽屉 ----------
+  window.__openDetail = function(id){
+    apiGet('/knowledge/' + id).then(function(it){
+      $('dTitle').textContent = it.title || ('知识 #' + id);
+      var kv = [
+        ['编号', it.doc_code], ['类型', TYPE_ZH[it.type] || it.type], ['版本', it.rev],
+        ['部门', it.department], ['状态', it.status], ['登记人', it.created_by],
+        ['更新时间', String(it.updated_at || '').slice(0, 16).replace('T', ' ')]
+      ];
+      var h = '';
+      kv.forEach(function(r){ if(r[1]) h += '<div class="kv"><div class="k">' + r[0] + '</div><div class="v">' + esc(r[1]) + '</div></div>'; });
+      if(it.tags && it.tags.length){ h += '<div class="kv"><div class="k">标签</div><div class="v">' + it.tags.map(function(t){ return '<span class="tag">' + esc(t) + '</span>'; }).join(' ') + '</div></div>'; }
+      if(it.summary) h += '<div class="block"><h4>摘要</h4><div class="txt">' + esc(it.summary) + '</div></div>';
+      if(it.body) h += '<div class="block"><h4>内容</h4><div class="txt">' + esc(it.body) + '</div></div>';
+      if(it.raw_file_ref) h += '<div class="block"><h4>文件引用</h4><div class="txt">' + esc(it.raw_file_ref) + '</div></div>';
+      if(it.target_url){
+        h += '<div class="block"><h4>跳转</h4><a class="link" href="' + esc(it.target_url) + '" target="_blank">' + esc(it.target_url) + '</a>'
+          + ' <a class="link" href="' + esc(it.target_url) + '" target="_blank">打开 →</a></div>';
+      }
+      $('dBody').innerHTML = h || '<div class="empty">无更多内容</div>';
+      $('drawer').classList.add('open');
+    }).catch(function(e){ toast('详情加载失败：' + e.message, false); });
+  };
+  window.__closeDrawer = function(){ $('drawer').classList.remove('open'); };
+
+  // ---------- 筛选 ----------
+  window.__setType = function(t){
+    filter.type = (filter.type === t ? null : t);
+    loadStats(); loadList();
+  };
+  window.__search = function(){ filter.keyword = $('kw').value.trim(); loadList(); };
+  window.__clearFilter = function(){ filter.type = null; filter.keyword = ''; $('kw').value = ''; loadStats(); loadList(); };
+
+  // ---------- 登记 ----------
+  window.__openModal = function(){ $('modal').style.display = 'flex'; };
+  window.__closeModal = function(){ $('modal').style.display = 'none'; };
+  window.__saveKnowledge = function(){
+    var body = {
+      type: $('mType').value,
+      doc_code: $('mCode').value.trim(),
+      rev: $('mRev').value.trim(),
+      title: $('mTitle').value.trim(),
+      department: $('mDept').value.trim(),
+      tags: $('mTags').value.split(/[,，]/).map(function(s){ return s.trim(); }).filter(Boolean),
+      summary: $('mSummary').value.trim(),
+      body: $('mBody').value.trim(),
+      target_url: $('mUrl').value.trim()
+    };
+    if(!body.title){ toast('请填写标题', false); return; }
+    apiPost('/knowledge', body).then(function(d){
+      toast('已登记：' + d.title + '（#' + d.id + '）', true);
+      $('modal').style.display = 'none';
+      ['mType','mCode','mRev','mTitle','mDept','mTags','mSummary','mBody','mUrl'].forEach(function(id){ var el = $(id); if(el) el.value = ''; });
+      loadStats(); loadList();
+    }).catch(function(e){ toast('登记失败：' + e.message, false); });
+  };
+
+  function init(){
+    if(!DemoAuth.requireDemoAuth()){ return; }
+    var g = document.getElementById('loginGate'); if (g) g.style.display = 'none';
+    hideLogin();
+    loadStats();
+    loadList();
+  }
+  init();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图纸 → SIP 生成工作台 | IQC 智能体</title>
+<link rel="stylesheet" href="assets/demo.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --bg:#020617; --panel:#0f172a; --panel2:#1e293b; --line:rgba(255,255,255,.07);
+    --blue:#3b82f6; --cyan:#06b6d4; --indigo:#6366f1; --glow:#60a5fa;
+    --ok:#10b981; --warn:#f59e0b; --danger:#ef4444; --purple:#a78bfa;
+    --txt:#e2e8f0; --mut:#94a3b8; --dim:#64748b;
+  }
+  body{
+    font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif;
+    background:var(--bg); color:var(--txt); min-height:100vh; overflow-x:hidden;
+    background-image:radial-gradient(circle at 50% 22%, rgba(30,58,138,.18) 0%, transparent 58%),
+      linear-gradient(to right, rgba(30,41,59,.28) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(30,41,59,.28) 1px, transparent 1px);
+    background-size:100% 100%, 40px 40px, 40px 40px;
+  }
+  ::-webkit-scrollbar{ width:5px; height:5px; }
+  ::-webkit-scrollbar-thumb{ background:rgba(59,130,246,.45); border-radius:3px; }
+  .wrap{ max-width:1920px; margin:0 auto; display:flex; flex-direction:column; min-height:100vh; }
+  .glass{
+    background:linear-gradient(145deg, rgba(15,23,42,.82), rgba(2,6,23,.92));
+    backdrop-filter:blur(14px); border:1px solid var(--line);
+    box-shadow:0 10px 30px -10px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .edge{ position:relative; }
+  .edge::before{ content:''; position:absolute; top:0; left:10%; right:10%; height:1px;
+    background:linear-gradient(90deg, transparent, rgba(59,130,246,.8), transparent); z-index:10; }
+
+  /* ===== 顶部（与控制塔一致） ===== */
+  header{ height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 26px; flex-shrink:0; position:sticky; top:0; z-index:50; }
+  .logo{ display:flex; align-items:center; gap:12px; }
+  .logo-mark{ width:40px; height:40px; border-radius:12px; background:var(--panel2); border:1px solid rgba(59,130,246,.35);
+    display:flex; align-items:center; justify-content:center; box-shadow:0 0 18px rgba(59,130,246,.25); }
+  .logo h1{ font-size:19px; letter-spacing:2px; }
+  .logo h1 small{ font-weight:300; color:var(--mut); font-size:13px; letter-spacing:0; margin-left:6px; }
+  .statusbar{ display:flex; align-items:center; gap:16px; background:rgba(2,6,23,.55); border:1px solid var(--line);
+    border-radius:999px; padding:7px 20px; font-size:12px; }
+  .statusbar .dot{ position:relative; width:8px; height:8px; border-radius:50%; background:var(--ok); }
+  .statusbar .dot::after{ content:''; position:absolute; inset:-4px; border-radius:50%; background:var(--ok); opacity:.35; animation:pulse 2s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:.35;} 50%{opacity:.9;} }
+  .head-right{ display:flex; align-items:center; gap:18px; color:var(--mut); }
+  .role-pill{ display:flex; align-items:center; gap:8px; background:var(--panel2); border:1px solid rgba(59,130,246,.25);
+    border-radius:10px; padding:8px 14px; font-size:13px; color:var(--txt); }
+
+  main{ flex:1; padding:22px 26px; display:flex; flex-direction:column; gap:18px; }
+  .sec-title{ font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .sec-title .tag{ margin-left:auto; font-size:11px; font-weight:400; color:var(--mut); }
+  .pill{ display:inline-block; font-size:10px; padding:2px 9px; border-radius:999px; font-weight:400; }
+  .pill.ok{ background:rgba(16,185,129,.12); color:#34d399; border:1px solid rgba(16,185,129,.3); }
+  .pill.warn{ background:rgba(245,158,11,.12); color:var(--warn); border:1px solid rgba(245,158,11,.3); }
+  .pill.live{ background:rgba(6,182,212,.12); color:var(--cyan); border:1px solid rgba(6,182,212,.4); animation:pulse 2s infinite; }
+  .btn{ font-size:12px; padding:8px 18px; border-radius:9px; cursor:pointer; border:1px solid; transition:.15s; background:transparent; }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn.main{ color:#fff; background:linear-gradient(135deg,var(--blue),var(--cyan)); border:none; }
+  .btn.approve{ color:var(--ok); border-color:rgba(16,185,129,.5); }
+  .btn.approve:hover{ background:rgba(16,185,129,.15); }
+  .btn.ghost{ color:var(--mut); border-color:rgba(148,163,184,.4); }
+  .file-btn{ font-size:12px; padding:8px 16px; border-radius:9px; border:1px dashed rgba(59,130,246,.5); color:var(--blue); background:rgba(59,130,246,.07); cursor:pointer; transition:.15s; }
+  .file-btn:hover{ background:rgba(59,130,246,.15); }
+
+  /* ===== 工作台 ===== */
+  .wb{ border-radius:16px; overflow:hidden; }
+  .upload-bar{ padding:16px 18px; display:flex; gap:14px; align-items:center; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .file-chip{ display:inline-flex; align-items:center; gap:8px; font-size:12px; color:var(--txt);
+    background:rgba(6,182,212,.08); border:1px solid rgba(6,182,212,.35); border-radius:9px; padding:7px 12px; max-width:420px; }
+  .file-chip .fn{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:300px; font-weight:700; }
+  .file-chip .fs{ color:var(--dim); font-size:10.5px; }
+  .status-line{ font-size:12px; display:flex; align-items:center; gap:8px; min-height:22px; }
+  .status-line .sp{ display:inline-block; width:14px; height:14px; border:2px solid var(--panel2); border-top-color:var(--cyan); border-radius:50%; animation:spin .8s linear infinite; vertical-align:-2px; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .status-line .done{ color:var(--ok); font-weight:700; }
+  .steps-hint{ display:flex; align-items:center; gap:4px; font-size:10.5px; color:var(--dim); flex-wrap:wrap; }
+  .steps-hint b{ color:var(--cyan); font-weight:700; }
+  .steps-hint .arr{ color:rgba(6,182,212,.5); }
+  .wb-body{ display:grid; grid-template-columns:320px 1fr; gap:0; }
+  @media (max-width:1100px){ .wb-body{ grid-template-columns:1fr; } }
+  .sip-list-col{ border-right:1px solid var(--line); max-height:640px; overflow-y:auto; }
+  .sip-list-col .lh{ padding:10px 14px; font-size:10.5px; color:var(--dim); border-bottom:1px solid var(--line); }
+  .sip-row{ display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px solid rgba(51,65,85,.3); cursor:pointer; font-size:12px; transition:.15s; }
+  .sip-row:hover{ background:rgba(59,130,246,.07); }
+  .sip-row.sel{ background:rgba(6,182,212,.1); border-left:3px solid var(--cyan); }
+  .sip-row .sn{ font-weight:700; }
+  .sip-row .sd{ font-size:10px; color:var(--dim); margin-top:3px; line-height:1.6; }
+  .sip-detail{ padding:18px 22px; max-height:640px; overflow-y:auto; min-height:340px; }
+  .panel-hd{ display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .panel-hd .pt{ font-size:16px; font-weight:700; }
+  .panel-hd .ps{ font-size:11px; color:var(--mut); }
+  .warn-bar{ background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.35); color:var(--warn); font-size:11px; border-radius:9px; padding:8px 12px; margin-bottom:12px; line-height:1.7; }
+  .sip-hd{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px; margin-bottom:12px; }
+  .sip-hd .cell{ background:rgba(2,6,23,.5); border:1px solid rgba(51,65,85,.5); border-radius:9px; padding:8px 10px; }
+  .sip-hd .k{ font-size:9.5px; color:var(--dim); }
+  .sip-hd .v{ font-size:12px; font-weight:700; margin-top:2px; }
+  .sip-table{ width:100%; border-collapse:collapse; font-size:11.5px; }
+  .sip-table th{ background:rgba(59,130,246,.12); color:var(--cyan); font-weight:700; padding:7px 9px; text-align:left; border:1px solid rgba(51,65,85,.5); }
+  .sip-table td{ border:1px solid rgba(51,65,85,.4); padding:7px 9px; vertical-align:top; line-height:1.6; }
+  .sip-table td.step{ font-weight:700; color:#7dd3fc; white-space:nowrap; }
+  .loading{ text-align:center; padding:36px 0; color:var(--dim); font-size:12px; }
+  .loading .sp{ display:inline-block; width:16px; height:16px; border:2px solid var(--panel2); border-top-color:var(--cyan); border-radius:50%; animation:spin .8s linear infinite; margin-right:8px; vertical-align:-3px; }
+  .empty{ text-align:center; padding:48px 0; color:var(--dim); font-size:12px; line-height:2; }
+
+  /* ===== 编辑模式 ===== */
+  .ed-bar{ background:rgba(6,182,212,.08); border:1px solid rgba(6,182,212,.35); color:var(--cyan); font-size:11px; border-radius:9px; padding:8px 12px; margin-bottom:12px; line-height:1.7; }
+  .ed-hd-input{ width:100%; background:rgba(2,6,23,.7); border:1px solid rgba(59,130,246,.45); color:var(--txt); border-radius:6px; padding:5px 8px; font-size:12px; margin-top:3px; font-family:inherit; }
+  .ed-group{ border:1px solid rgba(59,130,246,.25); border-radius:10px; margin-bottom:10px; overflow:hidden; }
+  .ed-gtitle{ display:flex; align-items:center; gap:10px; background:rgba(59,130,246,.12); padding:8px 12px; font-size:12px; font-weight:700; color:#7dd3fc; }
+  .ed-gtitle .add{ margin-left:auto; }
+  .ed-row{ display:grid; grid-template-columns:120px 1fr 110px 130px 90px 90px 34px; gap:6px; padding:8px 10px; border-top:1px solid rgba(51,65,85,.35); align-items:start; }
+  @media (max-width:1400px){ .ed-row{ grid-template-columns:110px 1fr 100px 120px 84px 84px 34px; } }
+  .ed-inp{ background:rgba(2,6,23,.7); border:1px solid rgba(51,65,85,.6); color:var(--txt); border-radius:6px; padding:6px 8px; font-size:11.5px; font-family:inherit; width:100%; }
+  .ed-area{ background:rgba(2,6,23,.7); border:1px solid rgba(51,65,85,.6); color:var(--txt); border-radius:6px; padding:6px 8px; font-size:11.5px; font-family:inherit; width:100%; min-height:46px; resize:vertical; line-height:1.6; }
+  .ed-inp:focus,.ed-area:focus,.ed-hd-input:focus{ outline:none; border-color:var(--cyan); box-shadow:0 0 0 2px rgba(6,182,212,.18); }
+  .ed-del{ background:transparent; border:1px solid rgba(239,68,68,.5); color:var(--danger); border-radius:6px; cursor:pointer; font-size:13px; line-height:1; padding:6px 0; }
+  .ed-del:hover{ background:rgba(239,68,68,.15); }
+  .btn.add{ color:var(--cyan); border-color:rgba(6,182,212,.45); padding:5px 12px; font-size:11px; }
+  .btn.add:hover{ background:rgba(6,182,212,.15); }
+  .btn.edit{ color:var(--purple); border-color:rgba(167,139,250,.5); }
+  .btn.edit:hover{ background:rgba(167,139,250,.15); }
+
+  footer{ padding:14px 26px 20px; text-align:center; font-size:12px; color:var(--dim); border-top:1px solid var(--line); flex-shrink:0; }
+  footer .slogan{ color:var(--mut); margin-bottom:4px; letter-spacing:1px; }
+  footer .slogan b{ color:var(--cyan); font-weight:700; }
+</style>
+<script src="assets/demo-auth.js"></script>
+<script src="assets/demo-data.js"></script>
+</head>
+<body>
+<div class=\"demo-banner\"><strong>演示数据，不写入服务器</strong></div>
+<div class="wrap">
+
+  <!-- ======== 顶部（与控制塔一致） ======== -->
+  <header class="glass edge">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#06b6d4" stroke-width="1.6"/><path d="M8 8h8M8 12h8M8 16h5" stroke="#60a5fa" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+      <h1>IQC<small>AI Agent Platform · 智能体全景控制塔</small></h1>
+    </div>
+    <div class="statusbar">
+      <span style="display:flex;align-items:center;gap:7px;"><span class="dot"></span><span style="color:var(--mut);">系统状态</span><span id="connState" style="color:var(--ok);">连接中…</span></span>
+      <span style="color:#334155;">|</span>
+      <span><span style="color:var(--mut);">数据源</span> <span id="srcState" style="color:var(--dim);">检测中…</span></span>
+      <span style="color:#334155;">|</span>
+      <span><span style="color:var(--mut);">演示库</span> <span style="color:var(--cyan);">DEMO</span></span>
+    </div>
+    <div class="head-right">
+      <a href="iqc-control-tower.html?v=3" style="text-decoration:none; color:var(--mut); font-size:12px; border:1px solid rgba(59,130,246,.25); background:var(--panel2); border-radius:10px; padding:8px 14px;">⬅ 返回控制塔</a>
+      <div class="role-pill"><span style="color:var(--cyan);">⬢</span> 全局视角（管理层）</div>
+      <span style="width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--blue),var(--cyan)); display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; box-shadow:0 0 14px rgba(6,182,212,.4);">管</span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ======== 图纸 → SIP 生成工作台 ======== -->
+    <div class="glass wb">
+      <div class="sec-title"><span style="color:var(--blue);">📐</span> 图纸 → SIP 生成工作台 <span class="pill live">演示工作台</span>
+        <span class="tag">按内置示例行演示生成与审批 · 不解析上传文件</span></div>
+
+      <div class="upload-bar">
+        <label class="file-btn" for="sipFile">＋ 选择图纸 PDF</label>
+        <input type="file" id="sipFile" accept=".pdf" style="display:none;">
+        <button class="btn main" id="sipGenBtn" onclick="window.__sipGenerate()">开始生成 SIP</button>
+        <span id="fileChip" style="display:none;" class="file-chip">📄 <span class="fn"></span><span class="fs"></span></span>
+        <span id="sipGenMsg" class="status-line" style="color:var(--dim);">请选择图纸后开始生成</span>
+        <div style="width:100%; margin-top:2px;" class="steps-hint">
+          <span><b>1</b> 选择图纸</span><span class="arr">→</span>
+          <span><b>2</b> AI 读图解析（约 10~60 秒）</span><span class="arr">→</span>
+          <span><b>3</b> 生成 SIP 草稿</span><span class="arr">→</span>
+          <span><b>4</b> 人工编辑保存</span><span class="arr">→</span>
+          <span><b>5</b> 审批生效</span><span class="arr">→</span>
+          <span><b>6</b> 查看内置示例行</span>
+        </div>
+      </div>
+
+      <div class="wb-body">
+        <div class="sip-list-col">
+          <div class="lh">SIP 草稿列表</div>
+          <div id="sipList"><div class="sip-row" data-id="SIP-DEMO-001"><div class="sn">绝缘PC膜 检验指导书</div></div><div class="sip-row" data-id="SIP-DEMO-002"><div class="sn">左把手支架 检验指导书</div></div></div></div>
+        </div>
+        <div class="sip-detail" id="sipDetail">
+          <div class="empty">👈 左侧选择一份 SIP 草稿，或上传图纸生成新的。<br/>AI 读图提取图纸信息 → 按您公司的 SIP 模板组装 →<br/>确认无误后批准，并可查看内置示例行。</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="slogan">数据打通 · 规则驱动 · AI 决策 · 人机协同 · 持续优化 —— <b>从检验执行，走向质量决策</b></div>
+    <div>图纸 → SIP 生成工作台 · 演示工作台 · 数字均来自实时接口 · AI 草稿需人工审批</div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var API = '';
+var TOKEN = localStorage.getItem('iqc_token') || (DemoAuth.isFileProtocol() ? DemoAuth.DEMO_TOKEN : '');
+  if (!DemoAuth.requireDemoAuth()) { return; }
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function apiGet(path){ return DemoAPI.get(path); }
+  function apiPost(path, body){ return DemoAPI.post(path, body); }
+
+  // 文件选择 → 立即显示文件名
+  var selFile = null;
+  $('sipFile').addEventListener('change', function(){
+    var f = this.files && this.files[0];
+    if(!f){ return; }
+    selFile = f;
+    var kb = (f.size / 1024).toFixed(1);
+    var chip = $('fileChip');
+    chip.style.display = 'inline-flex';
+    chip.querySelector('.fn').textContent = f.name;
+    chip.querySelector('.fs').textContent = kb + ' KB';
+    $('sipGenMsg').innerHTML = '<span style="color:var(--ok);">✓ 已选择文件，可开始生成</span>';
+  });
+
+  // 生成：分步提示
+  function __sipGenerate(){
+    if(!selFile){
+      $('sipGenMsg').innerHTML = '<span style="color:var(--warn);">⚠ 请先选择图纸 PDF</span>';
+      return;
+    }
+    var btn = $('sipGenBtn');
+    btn.disabled = true;
+    $('sipGenMsg').innerHTML = '<span class="sp"></span><span style="color:var(--cyan);">正在上传图纸…</span>';
+    $('sipGenMsg').innerHTML = '<span class="sp"></span><span style="color:var(--cyan);">正在使用内置示例行生成演示草稿…</span>';
+    setTimeout(function(){
+      DemoAPI.post('/iqc-agent/sip/generate', { name: selFile ? selFile.name : '' }).then(function(d){
+        $('sipGenMsg').innerHTML = '<span style="color:var(--ok); font-weight:700;">✓ 已生成演示草稿：' + esc(d.sip_id) + '（演示包使用内置示例行，不解析上传文件）</span>';
+        __sipLoadList();
+        __sipShow(d.sip_id);
+      }).catch(function(e){
+        $('sipGenMsg').innerHTML = '<span style="color:var(--danger);">✗ 生成失败：' + esc(e.message) + '</span>';
+      }).finally(function(){ btn.disabled = false; });
+    }, 400);
+  }
+
+  // 列表
+  function __sipLoadList(){
+    apiGet('/iqc-agent/sip/list').then(function(d){
+      var box = $('sipList');
+      var items = d.items || [];
+      if(!items.length){ box.innerHTML = '<div class="empty" style="padding:30px 0;">暂无 SIP 草稿</div>'; return; }
+      box.innerHTML = items.map(function(s){
+        var st = s.status === 'APPROVED' ? '<span class="pill ok">已批准</span>' : '<span class="pill warn">草稿</span>';
+        return '<div class="sip-row" data-id="' + s.sip_id + '" onclick="window.__sipShow(\'' + s.sip_id + '\')">' +
+          '<div style="flex:1;min-width:0;"><div class="sn">' + esc(s.sip_name || s.sip_id) + '</div>' +
+          '<div class="sd">' + esc(s.drawing_no || '') + '<br/>' + esc(s.created_at || '') + ' · ' + esc(s.source_file || '') + '</div></div>' + st + '</div>';
+      }).join('');
+    }).catch(function(e){ $('sipList').innerHTML = '<div class="empty">加载失败：' + esc(e.message) + '</div>'; });
+  }
+
+  // 详情
+  function __sipShow(id){
+    var panel = $('sipDetail');
+    panel.innerHTML = '<div class="loading"><span class="sp"></span>加载 SIP…</div>';
+    apiGet('/iqc-agent/sip/' + id).then(function(d){
+      __sipRender(panel, d);
+      var rows = document.querySelectorAll('#sipList .sip-row');
+      rows.forEach(function(r){ r.classList.toggle('sel', r.getAttribute('data-id') === d.sip_id); });
+    }).catch(function(e){ panel.innerHTML = '<div class="empty">加载失败：' + esc(e.message) + '</div>'; });
+  }
+
+  // 当前展示/编辑的 SIP 对象
+  var curSip = null, curSipId = null, curStatus = 'DRAFT';
+
+  function __sipRender(panel, d){
+    var sip = d.sip, h = sip.header;
+    curSip = sip; curSipId = d.sip_id; curStatus = d.status;
+    var stPill = d.status === 'APPROVED' ? '<span class="pill ok">已批准</span>' : '<span class="pill warn">草稿待审批</span>';
+    var html = '<div class="panel-hd"><span class="pt">' + esc(h.sip_name) + '</span>' + stPill +
+      '<span class="ps">' + esc(d.sip_id) + ' · ' + esc(d.created_at || '') + '</span></div>';
+    html += '<div class="warn-bar">⚠ ' + esc(h.ai_warning || '') + '</div>';
+    html += '<div class="sip-hd">' +
+      hd('产品图号', h.drawing_no) + hd('图纸版本', h.drawing_version) + hd('SIP 版本', h.sip_version) + hd('文件编号', h.file_no) +
+      hd('材质', h.material) + hd('表面处理', h.finish || '—') + hd('重量', h.mass || '—') + hd('比例', h.scale || '—') + '</div>';
+    html += '<table class="sip-table"><tr><th style="width:84px;">检验步骤</th><th style="width:116px;">检验项目</th><th>检验内容</th><th style="width:72px;">检验方法</th><th style="width:104px;">检验工具</th><th style="width:110px;">检验频率</th><th style="width:80px;">检验数量</th></tr>';
+    sip.groups.forEach(function(g){
+      g.items.forEach(function(it, i){
+        html += '<tr>' + (i === 0 ? '<td class="step" rowspan="' + g.items.length + '">' + esc(g.step) + '</td>' : '') +
+          '<td>' + esc(it.project) + '</td><td>' + esc(it.content).replace(/\n/g, '<br/>') + '</td><td>' + esc(it.method) + '</td><td>' + esc(it.tool) + '</td><td>' + esc(it.freq) + '</td><td>' + esc(it.sample) + '</td></tr>';
+      });
+    });
+    html += '</table>';
+    html += '<div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">';
+    if(d.status !== 'APPROVED'){ html += '<button class="btn edit" onclick="window.__sipEdit()">✏️ 编辑草稿</button>'; }
+    if(d.status !== 'APPROVED'){ html += '<button class="btn approve" onclick="window.__sipApprove(\'' + d.sip_id + '\')">✓ 批准生效</button>'; }
+    html += '<button class="btn main" onclick="window.__sipDownload(\'' + d.sip_id + '\',\'xlsx\')">演示包使用内置示例行，不解析上传文件</button>';
+    html += '<button class="btn ghost" onclick="window.__sipDownload(\'' + d.sip_id + '\',\'pdf\')">演示包使用内置示例行，不解析上传文件</button></div>';
+    panel.innerHTML = html;
+    function hd(k, v){ return '<div class="cell"><div class="k">' + k + '</div><div class="v">' + esc(v || '—') + '</div></div>'; }
+  }
+
+  // ===== 编辑模式 =====
+  function __sipEdit(){
+    if(!curSip || curStatus === 'APPROVED'){ alert('已批准的 SIP 不可编辑'); return; }
+    var sip = curSip, h = sip.header, panel = $('sipDetail');
+    var html = '<div class="panel-hd"><span class="pt">' + esc(h.sip_name) + '</span><span class="pill warn">编辑中</span>' +
+      '<span class="ps">' + esc(curSipId) + '</span></div>';
+    html += '<div class="ed-bar">✏️ 编辑模式：可直接修改头部信息与检验表格；修改完成后点「保存草稿」，确认无误后再点「批准生效」。</div>';
+    html += '<div class="sip-hd">' +
+      edHd('ed_name', '指导书名称', h.sip_name) + edHd('ed_drawing_no', '产品图号', h.drawing_no) + edHd('ed_drawing_version', '图纸版本', h.drawing_version) + edHd('ed_sip_version', 'SIP 版本', h.sip_version) +
+      edHd('ed_file_no', '文件编号', h.file_no) + edHd('ed_material', '材质', h.material) + edHd('ed_finish', '表面处理', h.finish) + edHd('ed_mass', '重量', h.mass) + edHd('ed_scale', '比例', h.scale) + '</div>';
+    sip.groups.forEach(function(g, gi){
+      html += '<div class="ed-group" data-step="' + esc(g.step) + '">' +
+        '<div class="ed-gtitle"><span>' + esc(g.step) + '</span><button class="btn add" onclick="window.__edAddRow(' + gi + ')">＋ 添加检验行</button></div>';
+      g.items.forEach(function(it){
+        html += edRow(gi, it.project, it.content, it.method, it.tool, it.freq, it.sample);
+      });
+      html += '</div>';
+    });
+    html += '<div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">' +
+      '<button class="btn main" onclick="window.__sipSave()">💾 保存草稿</button>' +
+      '<button class="btn ghost" onclick="window.__sipShow(curSipId)">取消编辑</button>' +
+      '<span style="font-size:11px; color:var(--dim); align-self:center;">保存后仅更新本页演示数据，不写入服务器</span></div>';
+    panel.innerHTML = html;
+
+    function edHd(id, k, v){ return '<div class="cell"><div class="k">' + k + '</div><input class="ed-hd-input" id="' + id + '" value="' + esc(v == null ? '' : v) + '"></div>'; }
+    function edRow(gi, p, c, m, t, f, s){
+      return '<div class="ed-row" data-g="' + gi + '">' +
+        '<input class="ed-inp ed-p" placeholder="检验项目" value="' + esc(p || '') + '">' +
+        '<textarea class="ed-area ed-c" placeholder="检验内容">' + esc(c || '') + '</textarea>' +
+        '<input class="ed-inp ed-m" placeholder="方法" value="' + esc(m || '') + '">' +
+        '<input class="ed-inp ed-t" placeholder="工具" value="' + esc(t || '') + '">' +
+        '<input class="ed-inp ed-f" placeholder="频率" value="' + esc(f || '') + '">' +
+        '<input class="ed-inp ed-s" placeholder="图示/样本" value="' + esc(s || '') + '">' +
+        '<button class="ed-del" title="删除此行" onclick="window.__edDelRow(this)">✕</button></div>';
+    }
+  }
+
+  window.__edAddRow = function(gi){
+    var groups = document.querySelectorAll('.ed-group');
+    var g = groups[gi];
+    if(!g){ return; }
+    var row = document.createElement('div');
+    row.className = 'ed-row'; row.setAttribute('data-g', gi);
+    row.innerHTML = '<input class="ed-inp ed-p" placeholder="检验项目">' +
+      '<textarea class="ed-area ed-c" placeholder="检验内容"></textarea>' +
+      '<input class="ed-inp ed-m" placeholder="方法" value="目视">' +
+      '<input class="ed-inp ed-t" placeholder="工具">' +
+      '<input class="ed-inp ed-f" placeholder="频率" value="每批">' +
+      '<input class="ed-inp ed-s" placeholder="图示/样本">' +
+      '<button class="ed-del" title="删除此行" onclick="window.__edDelRow(this)">✕</button>';
+    g.appendChild(row);
+  };
+  window.__edDelRow = function(btn){
+    if(document.querySelectorAll('.ed-row').length <= 1){ alert('至少保留一行检验内容'); return; }
+    btn.closest('.ed-row').remove();
+  };
+
+  function __sipSave(){
+    var groups = [];
+    document.querySelectorAll('.ed-group').forEach(function(g){
+      var items = [];
+      g.querySelectorAll('.ed-row').forEach(function(r){
+        var it = {
+          project: r.querySelector('.ed-p').value.trim(),
+          content: r.querySelector('.ed-c').value.trim(),
+          method: r.querySelector('.ed-m').value.trim(),
+          tool: r.querySelector('.ed-t').value.trim(),
+          freq: r.querySelector('.ed-f').value.trim(),
+          sample: r.querySelector('.ed-s').value.trim(),
+        };
+        if(it.content || it.project){ items.push(it); }
+      });
+      if(items.length){ groups.push({ step: g.getAttribute('data-step'), items: items }); }
+    });
+    if(!groups.length){ alert('请至少保留一个检验分组'); return; }
+    var h = curSip.header;
+    var sip = {
+      header: {
+        company: h.company, sip_version: val('ed_sip_version'), drawing_version: val('ed_drawing_version'),
+        drawing_no: val('ed_drawing_no'), sip_name: val('ed_name') || h.sip_name,
+        file_no: val('ed_file_no'), maker: h.maker, date: h.date,
+        reviewer: h.reviewer || '', approver: h.approver || '',
+        material: val('ed_material'), finish: val('ed_finish'), mass: val('ed_mass'), scale: val('ed_scale'),
+        source_file: h.source_file, ai_warning: h.ai_warning,
+      },
+      groups: groups,
+    };
+    var panel = $('sipDetail');
+    panel.innerHTML = '<div class="loading"><span class="sp"></span>正在保存并重新生成文件…</div>';
+    apiPost('/iqc-agent/sip/' + curSipId + '/update', { sip: sip })
+      .then(function(d){
+        __sipShow(curSipId);
+        __sipLoadList();
+      })
+      .catch(function(e){ panel.innerHTML = '<div class="empty">保存失败：' + esc(e.message) + '</div>'; });
+    function val(id){ var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  }
+
+  function __sipApprove(id){
+    apiPost('/iqc-agent/sip/' + id + '/approve').then(function(){ __sipShow(id); __sipLoadList(); })
+      .catch(function(e){ alert('批准失败：' + e.message); });
+  }
+
+  function __sipDownload(id, type){
+    alert(DemoAPI.excelNotice);
+  }
+
+  window.__sipGenerate = __sipGenerate;
+  window.__sipShow = __sipShow;
+  window.__sipApprove = __sipApprove;
+  window.__sipDownload = __sipDownload;
+  window.__sipEdit = __sipEdit;
+  window.__sipSave = __sipSave;
+
+  $('connState').textContent = '演示';
+  $('srcState').textContent = '本地示例数据';
+  $('srcState').style.color = 'var(--ok)';
+
+  __sipLoadList();
+})();
+</script>
+</body>
+</html>

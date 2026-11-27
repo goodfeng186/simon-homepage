@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>355 NPI 核心协同体 - 登录</title>
+<link rel="stylesheet" href="assets/demo.css">
+    <!-- STREAMING_CHUNK:Loading Tailwind CSS and Fonts -->
+<!-- STREAMING_CHUNK:Defining CSS Variables and Base Styles -->
+    <style>
+        :root {
+            --bg-deep: #040b14;
+            --accent-cyan: #38bdf8;
+            --accent-blue: #3b82f6;
+            --panel-bg: rgba(10, 25, 47, 0.75);
+            --panel-border: rgba(56, 189, 248, 0.25);
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: var(--bg-deep);
+            color: #e2e8f0;
+            overflow: hidden; /* Hide scrollbars for cinematic full-screen */
+        }
+
+        .font-tech {
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        /* STREAMING_CHUNK:Styling Cinematic Background Elements */
+        .cinematic-bg {
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(circle at 15% 30%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 70%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+                linear-gradient(180deg, #020617 0%, #0f172a 100%);
+            z-index: -3; /* Moved further back */
+        }
+
+        .grid-overlay {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -2; /* Moved further back */
+            opacity: 0.6;
+            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        }
+
+        /* STREAMING_CHUNK:Styling Credits Wrapper — moved to LEFT side per annotation */
+        .credits-wrapper {
+            position: absolute;
+            /* Position on the LEFT side of the screen */
+            left: 3%;
+            top: 0;
+            width: 24%;
+            max-width: 320px;
+            height: 100vh;
+            overflow: hidden;
+            pointer-events: none;
+            /* Faded edges top and bottom */
+            mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+            /* z-index is crucial: behind main content (z-10) but above deep background */
+            z-index: 1;
+            opacity: 0.4; /* Make it subtle so it doesn't distract from the foreground */
+        }
+
+        .credits-track {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            /* Slower animation since it's in the background now */
+            animation: scrollCredits 60s linear infinite;
+        }
+
+        @keyframes scrollCredits {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
+
+        /* STREAMING_CHUNK:Styling Individual Credit Blocks with Reduced Font Sizes */
+        .credit-block {
+            padding: 1rem 1.5rem;
+            /* Center text alignment for background aesthetics */
+            text-align: center;
+        }
+
+        .credit-role {
+            font-size: 0.6rem; /* Reduced from 0.75rem */
+            color: #7dd3fc;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 0.2rem;
+            opacity: 0.7;
+            font-weight: 500;
+        }
+
+        .credit-name {
+            font-size: 1rem; /* Reduced from 1.3rem */
+            font-weight: 400;
+            color: #f8fafc;
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
+            opacity: 0.8;
+        }
+
+        .credit-desc {
+            font-size: 0.65rem; /* Reduced from 0.78rem */
+            color: #94a3b8;
+            margin-top: 0.2rem;
+            line-height: 1.4;
+            max-width: 90%;
+            margin-left: auto;
+            margin-right: auto;
+            opacity: 0.6;
+        }
+
+        /* STREAMING_CHUNK:Styling the Glass Panel (Main Container) */
+        .glass-panel {
+            background: var(--panel-bg);
+            /* Slightly increased blur to separate from background text */
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), inset 0 0 25px rgba(56, 189, 248, 0.08);
+        }
+
+        /* STREAMING_CHUNK:Styling Input Fields */
+        .input-glow {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(100, 116, 139, 0.4);
+            color: #f8fafc;
+            transition: all 0.3s ease;
+        }
+
+        .input-glow:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+            background: rgba(15, 23, 42, 0.85);
+        }
+
+        /* STREAMING_CHUNK:Styling Cyberpunk Button */
+        .btn-cyber {
+            background: linear-gradient(135deg, var(--accent-blue), #0284c7);
+            border: 1px solid #38bdf8;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-cyber::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -60%;
+            width: 20%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(30deg);
+            transition: all 0.6s ease;
+        }
+
+        .btn-cyber:hover::after {
+            left: 120%;
+        }
+
+        .btn-cyber:hover {
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.6);
+            transform: translateY(-1px);
+        }
+
+        /* STREAMING_CHUNK:Styling Process Chain Progress Indicator */
+        .process-chain {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 1.2rem;
+            position: relative;
+        }
+
+        .process-line-bg {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            right: 10px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4), transparent);
+            z-index: 0;
+        }
+
+        .process-node {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .node-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #1e293b;
+            border: 1px solid #475569;
+            transition: all 0.3s ease;
+        }
+
+        .node-label {
+            font-size: 0.6rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .process-node:hover .node-dot,
+        .process-node.active .node-dot {
+            background: var(--accent-cyan);
+            border-color: #fff;
+            box-shadow: 0 0 10px var(--accent-cyan);
+        }
+
+        .process-node:hover .node-label,
+        .process-node.active .node-label {
+            color: #e0f2fe;
+            font-weight: 500;
+        }
+
+        /* STREAMING_CHUNK:Adding Fade-in Animation */
+        .fade-in-up {
+            animation: fadeInUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+<script src="assets/demo-auth.js"></script>
+<script src="assets/demo-data.js"></script>
+</head>
+<body>
+
+    <!-- STREAMING_CHUNK:Rendering Background Layers -->
+    <div class="cinematic-bg"></div>
+    <div class="grid-overlay"></div>
+
+    <!-- Left Background: Rolling Credits (Seamless Infinite Loop) -->
+    <!-- Moved to the LEFT side per annotation -->
+    <div class="credits-wrapper hidden xl:block">
+        <div class="credits-track" id="creditsTrack">
+            <!-- Populated via JavaScript -->
+        </div>
+    </div>
+
+    <!-- STREAMING_CHUNK:Rendering Main Centered Layout Container -->
+    <div class="h-screen w-full flex items-center justify-center relative z-10 px-4 sm:px-6 lg:px-12 xl:px-16 overflow-hidden">
+
+        <!-- UNIFIED HUD TERMINAL (Integrates SVG & Login) -->
+        <div class="flex-1 w-full max-w-[440px] xl:max-w-none xl:min-w-[900px] xl:max-w-[1100px] 2xl:max-w-[1200px] glass-panel rounded-3xl flex flex-col xl:flex-row overflow-hidden fade-in-up border border-sky-500/30 shadow-[0_0_50px_-12px_rgba(56,189,248,0.3)] relative z-20" style="animation-delay: 0.2s;">
+
+            <!-- Framework Badges — moved to TOP of panel per annotation (box2) -->
+            <div class="absolute top-4 left-1/2 -translate-x-1/2 z-30">
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="bg-slate-900/70 backdrop-blur-md border border-sky-500/25 rounded-lg px-3 py-1.5 text-center shadow-[0_0_15px_-5px_rgba(56,189,248,0.3)]">
+                        <div class="text-[10px] text-slate-400">控制底座</div>
+                        <div class="text-xs font-bold text-cyan-300 mt-0.5">3 个基础</div>
+                    </div>
+                    <div class="bg-slate-900/70 backdrop-blur-md border border-sky-500/25 rounded-lg px-3 py-1.5 text-center shadow-[0_0_15px_-5px_rgba(56,189,248,0.3)]">
+                        <div class="text-[10px] text-slate-400">业务对象</div>
+                        <div class="text-xs font-bold text-cyan-300 mt-0.5">5 个流程</div>
+                    </div>
+                    <div class="bg-slate-900/70 backdrop-blur-md border border-sky-500/25 rounded-lg px-3 py-1.5 text-center shadow-[0_0_15px_-5px_rgba(56,189,248,0.3)]">
+                        <div class="text-[10px] text-slate-400">改造验证</div>
+                        <div class="text-xs font-bold text-cyan-300 mt-0.5">5 步循环</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STREAMING_CHUNK:Rendering Left Side NPI Logic Graphic (SVG) -->
+            <!-- Left Side: NPI Logic Graphic (Blueprint Display Area) -->
+            <div class="hidden xl:flex flex-1 justify-center items-center p-8 xl:p-12 relative bg-gradient-to-br from-slate-900/60 to-slate-950/90 z-20">
+                <!-- Subtle background glow behind the SVG -->
+                <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.08)_0%,transparent_60%)]"></div>
+                </div>
+
+                <!-- STREAMING_CHUNK:Rendering Complex NPI SVG Graphic -->
+                <svg viewBox="0 0 720 560" class="w-full max-w-[620px] h-auto drop-shadow-[0_0_35px_rgba(56,189,248,0.25)] relative z-30" role="img" aria-label="NPI 主线五个端到端流程逻辑图">
+                    <defs>
+                        <radialGradient id="hubCore" cx="50%" cy="40%" r="72%">
+                            <stop offset="0%" stop-color="#22d3ee"/>
+                            <stop offset="100%" stop-color="#0b3a6b"/>
+                        </radialGradient>
+                        <marker id="c1Arr" markerWidth="12" markerHeight="12" refX="7" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8Z" fill="#67e8f9"/></marker>
+                        <marker id="c2Arr" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#fcd34d"/></marker>
+                        <marker id="c3Arr" markerWidth="12" markerHeight="12" refX="7" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8Z" fill="#c084fc"/></marker>
+                    </defs>
+
+                    <!-- CHAIN 1 · 物料链 (cyan) -->
+                    <g fill="none" stroke="#67e8f9" stroke-width="2.6" stroke-linecap="round" marker-end="url(#c1Arr)">
+                        <path d="M310,216 Q300,140 320,120" stroke-dasharray="7 9"><animate attributeName="stroke-dashoffset" from="32" to="0" dur="1.2s" repeatCount="indefinite"/></path>
+                        <path d="M376,64 Q464,92 500,154" stroke-dasharray="7 9"><animate attributeName="stroke-dashoffset" from="32" to="0" dur="1.2s" begin="0.18s" repeatCount="indefinite"/></path>
+                        <path d="M542,250 Q520,340 488,382" stroke-dasharray="7 9"><animate attributeName="stroke-dashoffset" from="32" to="0" dur="1.2s" begin="0.36s" repeatCount="indefinite"/></path>
+                    </g>
+                    <rect x="428" y="114" width="80" height="24" rx="12" fill="rgba(34,211,238,0.14)" stroke="rgba(103,232,249,0.38)" stroke-width="1"/>
+                    <text x="468" y="130" text-anchor="middle" font-size="11" font-weight="700" fill="#a5f3fc">① 物料链</text>
+
+                    <!-- CHAIN 2 · 文控链 (amber) -->
+                    <g fill="none" stroke="#fcd34d" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="3 6" opacity="0.85" marker-end="url(#c2Arr)">
+                        <path d="M300,208 Q280,130 316,116"><animate attributeName="stroke-dashoffset" from="18" to="0" dur="1.4s" begin="0.55s" repeatCount="indefinite"/></path>
+                        <path d="M384,240 Q460,180 498,172"><animate attributeName="stroke-dashoffset" from="18" to="0" dur="1.4s" begin="0.65s" repeatCount="indefinite"/></path>
+                        <path d="M360,332 Q420,400 444,380"><animate attributeName="stroke-dashoffset" from="18" to="0" dur="1.4s" begin="0.75s" repeatCount="indefinite"/></path>
+                        <path d="M256,312 Q190,380 196,398"><animate attributeName="stroke-dashoffset" from="18" to="0" dur="1.4s" begin="0.85s" repeatCount="indefinite"/></path>
+                    </g>
+                    <rect x="100" y="276" width="80" height="24" rx="12" fill="rgba(252,211,77,0.13)" stroke="rgba(252,211,77,0.34)" stroke-width="1"/>
+                    <text x="140" y="292" text-anchor="middle" font-size="11" font-weight="700" fill="#fde68a">② 文控链</text>
+
+                    <!-- CHAIN 3 · 信息流链 (violet) -->
+                    <g fill="none" stroke="#c084fc" stroke-width="2.2" stroke-linecap="round" marker-end="url(#c3Arr)">
+                        <path d="M290,204 Q260,120 308,116" stroke-dasharray="5 10"><animate attributeName="stroke-dashoffset" from="30" to="0" dur="1.3s" begin="0.05s" repeatCount="indefinite"/></path>
+                        <path d="M392,228 Q480,160 502,168" stroke-dasharray="5 10"><animate attributeName="stroke-dashoffset" from="30" to="0" dur="1.3s" begin="0.20s" repeatCount="indefinite"/></path>
+                        <path d="M370,328 Q440,400 452,378" stroke-dasharray="5 10"><animate attributeName="stroke-dashoffset" from="30" to="0" dur="1.3s" begin="0.35s" repeatCount="indefinite"/></path>
+                    </g>
+                    <rect x="536" y="304" width="96" height="24" rx="12" fill="rgba(192,132,252,0.13)" stroke="rgba(192,132,252,0.34)" stroke-width="1"/>
+                    <text x="584" y="320" text-anchor="middle" font-size="11" font-weight="700" fill="#ddd6fe">③ 信息流链</text>
+
+                    <!-- Rotating Halo -->
+                    <circle cx="320" cy="270" r="94" fill="none" stroke="rgba(56,189,248,0.20)" stroke-width="1.8" stroke-dasharray="3 9">
+                        <animateTransform attributeName="transform" type="rotate" from="0 320 270" to="360 320 270" dur="20s" repeatCount="indefinite"/>
+                    </circle>
+
+                    <!-- SATELLITES -->
+                    <circle cx="320" cy="62" r="60" fill="rgba(10,25,47,0.92)" stroke="#38bdf8" stroke-width="2.5"/>
+                    <text x="320" y="57" text-anchor="middle" font-size="14" font-weight="800" fill="#eaf6ff">新物料认证</text>
+                    <text x="320" y="76" text-anchor="middle" font-size="9.5" fill="#a9cdf2">需求触发·提前认证</text>
+
+                    <circle cx="542" cy="198" r="60" fill="rgba(10,25,47,0.92)" stroke="#38bdf8" stroke-width="2.5"/>
+                    <text x="542" y="194" text-anchor="middle" font-size="14" font-weight="800" fill="#eaf6ff">IQC来料质量</text>
+                    <text x="542" y="213" text-anchor="middle" font-size="9.5" fill="#a9cdf2">画像驱动检验</text>
+
+                    <circle cx="456" cy="432" r="60" fill="rgba(10,25,47,0.92)" stroke="#38bdf8" stroke-width="2.5"/>
+                    <text x="456" y="428" text-anchor="middle" font-size="14" font-weight="800" fill="#eaf6ff">制造风险停复线</text>
+                    <text x="456" y="447" text-anchor="middle" font-size="9.5" fill="#a9cdf2">R0-R5 控制</text>
+
+                    <circle cx="174" cy="444" r="60" fill="rgba(10,25,47,0.92)" stroke="#fbbf24" stroke-width="2.5"/>
+                    <text x="174" y="440" text-anchor="middle" font-size="14" font-weight="800" fill="#eaf6ff">文件流程控制</text>
+                    <text x="174" y="459" text-anchor="middle" font-size="9.5" fill="#a9cdf2">受控文控体系</text>
+
+                    <!-- CENTER CORE -->
+                    <circle cx="320" cy="270" r="74" fill="url(#hubCore)" stroke="#7dd3fc" stroke-width="2.5"/>
+                    <text x="320" y="262" text-anchor="middle" font-size="21" font-weight="800" fill="#eaf6ff">NPI 主线</text>
+                    <text x="320" y="286" text-anchor="middle" font-size="10.5" fill="#bfe6ff">控制塔 · 统筹全局</text>
+                </svg>
+            </div>
+
+            <!-- STREAMING_CHUNK:Rendering Divider and Login Panel -->
+            <!-- Glowing Holographic Divider between SVG and Form -->
+            <div class="hidden xl:block w-[1px] bg-gradient-to-b from-transparent via-sky-400/50 to-transparent shadow-[0_0_15px_rgba(56,189,248,0.6)] relative z-40"></div>
+
+            <!-- Right Side: Interactive Login Panel (Control Matrix) -->
+            <div class="w-full xl:w-[440px] shrink-0 p-8 xl:p-10 flex flex-col justify-center bg-slate-950/70 relative backdrop-blur-md z-40">
+
+                <!-- System Header -->
+                <div class="flex items-center gap-3.5 mb-6 pb-5 border-b border-sky-500/20">
+                    <!-- LOGO: inline SVG placeholder -->
+                    <svg class="w-11 h-11 rounded-xl" viewBox="0 0 44 44" role="img" aria-label="演示标志" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="44" height="44" rx="10" fill="#0b1b2e" stroke="#38bdf8" stroke-width="1.5"/>
+                        <circle cx="22" cy="22" r="9" fill="none" stroke="#38bdf8" stroke-width="2.2"/>
+                        <circle cx="22" cy="22" r="3.2" fill="#38bdf8"/>
+                    </svg>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="font-tech font-bold tracking-wider text-white">
+                                <span class="text-3xl text-cyan-300">355</span> <span class="text-xl">NPI AGENT</span>
+                            </h2>
+                            <!-- v2.5 badge removed per request -->
+                        </div>
+                        <p class="text-xs text-slate-400">企业级智能体协同中枢</p>
+                    </div>
+                </div>
+
+                <!-- Login Form -->
+                <form onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5 uppercase tracking-wider">公司编码 / COMPANY CODE</label>
+                        <input type="text" id="loginCompany" value="DEMO" placeholder="请输入公司编码"
+                            class="w-full px-4 py-3 rounded-xl input-glow text-sm placeholder:text-slate-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1.5 uppercase tracking-wider">授权工号 / AUTHORIZED ID</label>
+                        <input type="text" id="loginId" value="demo" required placeholder="请输入您的员工工号或权限账号"
+                            class="w-full px-4 py-3 rounded-xl input-glow text-sm placeholder:text-slate-600">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <label class="block text-xs font-medium text-slate-300 uppercase tracking-wider">安全密钥 / SECURITY KEY</label>
+                            <a href="#" onclick="showResetNotice(event)" class="text-[11px] text-cyan-400 hover:text-cyan-300 transition-colors">请求接入权限?</a>
+                        </div>
+                        <input type="password" id="loginPw" value="demo" required placeholder="••••••••••••"
+                            class="w-full px-4 py-3 rounded-xl input-glow text-sm placeholder:text-slate-600">
+                    </div>
+
+                    <div id="loginError" class="hidden text-red-400 text-xs px-2 py-2 rounded-lg bg-red-500/10 border border-red-500/30 mb-1"></div>
+
+                    <button type="submit" class="w-full py-3.5 px-4 rounded-xl btn-cyber text-white font-medium text-sm flex items-center justify-center gap-2 mt-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        初始化系统接入
+                    </button>
+                </form>
+
+                <!-- Process Progress Indicator -->
+                <div class="process-chain">
+                    <div class="process-line-bg"></div>
+                    <div class="process-node active">
+                        <div class="node-dot"></div>
+                        <span class="node-label">NPI主线</span>
+                    </div>
+                    <div class="process-node">
+                        <div class="node-dot"></div>
+                        <span class="node-label">新物料</span>
+                    </div>
+                    <div class="process-node">
+                        <div class="node-dot"></div>
+                        <span class="node-label">IQC检验</span>
+                    </div>
+                    <div class="process-node">
+                        <div class="node-dot"></div>
+                        <span class="node-label">制程停线</span>
+                    </div>
+                    <div class="process-node">
+                        <div class="node-dot"></div>
+                        <span class="node-label">文控受控</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- STREAMING_CHUNK:Initializing JavaScript Logic -->
+    <script>
+        // Core Team & Architectural Roles
+        const projectTeam = [
+            { role: "统筹决策 · 组长", name: "[姓名]", desc: "项目组长，统筹整体推进、资源协调与关键决策。" },
+            { role: "顶层设计与程序架构 · 架构师", name: "[姓名]", desc: "整体方案与技术路线规划；承载智能体运行环与五能力分级框架。" },
+            { role: "NPI作业流架构 · 架构师", name: "[姓名]", desc: "主责《NPI作业流控制程序》落地；智能体运行环设计。" },
+            { role: "系统与接口 · IT与智能体", name: "[姓名]", desc: "智能体接口打通、权限管理；兼数据Owner，负责时间戳与质量。" },
+            { role: "流程主责 · 新物料认证", name: "[姓名]", desc: "主责新物料认证流程的 AI+ 重构与 S/A/B 防呆落地。" },
+            { role: "协同主责 · 新物料认证", name: "[姓名]", desc: "协同主承接新物料认证流程的智能化重构。" },
+            { role: "流程主责 · IQC进料检验", name: "[姓名]", desc: "主责《[程序编号]进料检验》，执行流程AI重构与防呆。" },
+            { role: "流程主责 · 制造停线管理", name: "[姓名]", desc: "主责《[程序编号]制造停线规范》，贯穿试制到量产的风险控制。" },
+            { role: "流程主责 · 文件控制程序", name: "[姓名]", desc: "负责文件流程控制，文件版本更新，确保证据一致性 (文控)。" },
+            { role: "硬件保障 · 设备支持", name: "[姓名]", desc: "提供现场设备、硬件及自动化采集环境的支持与保障。" },
+            { role: "版本管理 · 团队文书", name: "[姓名]", desc: "会议内容落地、进度追踪与系统版本整理。" },
+            { role: "沟通协调 · 纪要管理", name: "[姓名]", desc: "负责跨部门沟通协同、纪要整理与团队文书。" }
+        ];
+
+        // Populate rolling credits with seamless double-buffering for infinite loop
+        function initializeCredits() {
+            const track = document.getElementById('creditsTrack');
+            let htmlStr = '';
+
+            projectTeam.forEach(member => {
+                htmlStr += `
+                    <div class="credit-block">
+                        <div class="credit-role">${member.role}</div>
+                        <div class="credit-name">${member.name}</div>
+                        <div class="credit-desc">${member.desc}</div>
+                    </div>
+                `;
+            });
+
+            // Duplicate exact array to achieve continuous seamless loop
+            track.innerHTML = htmlStr + htmlStr + htmlStr;
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalContent = btn.innerHTML;
+            const errBox = document.getElementById('loginError');
+            const company = (document.getElementById('loginCompany').value || '').trim() || 'DEMO';
+            const id = (document.getElementById('loginId').value || '').trim();
+            const pw = document.getElementById('loginPw').value || '';
+            errBox.classList.add('hidden');
+
+            if (!id || !pw) {
+                errBox.textContent = '请输入工号和密码';
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            btn.innerHTML = '正在进入演示…';
+            btn.style.opacity = '0.85';
+            btn.style.cursor = 'wait';
+
+            var user = {
+                username: id,
+                full_name: '[姓名]',
+                role: 'quality_engineer',
+                company_code: company,
+                company_name: '[公司]',
+                employee_no: id
+            };
+            DemoAuth.writeSession(user);
+
+            btn.innerHTML = '验证通过 - 载入智能体协同中枢';
+            btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+            btn.style.borderColor = '#34d399';
+            btn.style.boxShadow = '0 0 25px rgba(16, 185, 129, 0.4)';
+
+            const nodes = document.querySelectorAll('.process-node');
+            nodes.forEach((node, index) => {
+                setTimeout(() => {
+                    node.classList.add('active');
+                }, index * 180);
+            });
+
+            setTimeout(() => {
+                window.location.href = './dashboard.html';
+            }, 600);
+        }
+
+        function showResetNotice(e) {
+            e.preventDefault();
+            alert("请联系系统管理员申请演示账号");
+        }
+
+        window.onload = () => {
+            initializeCredits();
+        };
+    </script>
+</body>
+</html>

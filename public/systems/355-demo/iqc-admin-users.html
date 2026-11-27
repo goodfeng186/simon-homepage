@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>账号管理 · 355 智能体协同中枢</title>
+<link rel="stylesheet" href="assets/demo.css">
+<style>
+body{background:#0b1220;color:#e2e8f0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+.card{background:#111a2e;border:1px solid #1e3a5f;border-radius:14px}
+input,select{background:#0d1626;border:1px solid #2a4368;color:#e2e8f0;border-radius:8px;padding:8px 12px;font-size:14px;width:100%}
+input:focus,select:focus{outline:none;border-color:#38bdf8}
+.btn{border-radius:8px;padding:8px 16px;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-primary{background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-ghost{border:1px solid #2a4368;color:#94a3b8}
+.btn-ghost:hover{color:#e2e8f0;border-color:#38bdf8}
+.btn-danger{border:1px solid #7f1d1d;color:#f87171}
+.btn-danger:hover{background:rgba(127,29,29,.25)}
+table{width:100%;font-size:14px}
+th{color:#64748b;font-weight:500;text-align:left;padding:10px 12px;border-bottom:1px solid #1e3a5f}
+td{padding:10px 12px;border-bottom:1px solid #182742}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px}
+.tag-admin{background:rgba(251,191,36,.15);color:#fbbf24}
+.tag-mgr{background:rgba(56,189,248,.15);color:#38bdf8}
+.tag-eng{background:rgba(52,211,153,.15);color:#34d399}
+.tag-ins{background:rgba(192,132,252,.15);color:#c084fc}
+.tag-ro{background:rgba(148,163,184,.15);color:#94a3b8}
+.msg{font-size:13px;padding:8px 12px;border-radius:8px;display:none}
+.msg.ok{background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+.msg.err{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.3)}
+.roleMap{color:#64748b;font-size:12px}
+</style>
+<script src="assets/demo-auth.js"></script>
+<script src="assets/demo-data.js"></script>
+</head>
+<body class="min-h-screen p-6">
+<div class=\"demo-banner\"><strong>演示数据，不写入服务器</strong></div>
+<div class="max-w-6xl mx-auto">
+    <!-- 顶栏 -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-cyan-300">账号管理</h1>
+            <p class="text-sm text-slate-500 mt-1">管理员可创建员工账号、分配角色、重置密码、停用账号</p>
+        </div>
+        <div class="flex gap-3">
+            <button class="btn btn-ghost" onclick="location.href='./dashboard.html'">返回主界面</button>
+            <button class="btn btn-ghost" onclick="doLogout()">退出登录</button>
+        </div>
+    </div>
+
+    <div id="msgBox" class="msg mb-4"></div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 左：新建账号 -->
+        <div class="card p-5">
+            <h2 class="text-lg font-semibold mb-4 text-cyan-200">新建员工账号</h2>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-slate-400 mb-1 block">登录工号（员工用它登录）</label>
+                    <input id="fUser" placeholder="如 demo02">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 mb-1 block">姓名</label>
+                    <input id="fName" placeholder="如 [姓名]">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 mb-1 block">初始密码（至少6位，员工登录后管理员可重置）</label>
+                    <input id="fPw" type="password" placeholder="初始密码">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 mb-1 block">角色</label>
+                    <select id="fRole">
+                        <option value="quality_manager">质量经理（查看所有记录、审批）</option>
+                        <option value="quality_engineer">质量工程师（处理分析）</option>
+                        <option value="inspector">检验员（录入检验结果）</option>
+                        <option value="readonly">只读（仅查看）</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 mb-1 block">工号（可填员工编号，选填）</label>
+                    <input id="fEmpNo" placeholder="如 E1001">
+                </div>
+                <button class="btn btn-primary w-full" onclick="createUser()">创建账号</button>
+            </div>
+        </div>
+
+        <!-- 右：账号列表 -->
+        <div class="card p-5 lg:col-span-2">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-cyan-200">账号列表</h2>
+                <button class="btn btn-ghost text-sm" onclick="loadUsers()">刷新</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table>
+                    <thead><tr><th>姓名</th><th>工号</th><th>角色</th><th>状态</th><th>最近登录</th><th>操作</th></tr></thead>
+                    <tbody id="userRows"><tr><td>[姓名]</td><td class="text-slate-400">demo</td><td>管理员</td><td>启用</td><td>演示</td><td></td></tr><tr><td>[姓名]</td><td class="text-slate-400">qe01</td><td>质量工程师</td><td>启用</td><td>演示</td><td></td></tr></tbody>
+                </table>
+            </div>
+            <div class="roleMap mt-4 text-xs space-y-1">
+                <div>角色说明：</div>
+                <div>· 质量经理 — 查看所有记录、AI 建议审批</div>
+                <div>· 质量工程师 — 处理分析、AI 协同</div>
+                <div>· 检验员 — 录入检验结果</div>
+                <div>· 只读 — 仅查看，不可操作</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+if (!DemoAuth.requireDemoAuth()) { /* redirected */ }
+function showMsg(text, type) {
+    var m = document.getElementById('msgBox');
+    m.textContent = text;
+    m.className = 'msg ' + type;
+    m.style.display = 'block';
+    setTimeout(function(){ m.style.display = 'none'; }, 5000);
+}
+function api(path, opts) {
+    opts = opts || {};
+    var method = (opts.method || 'GET').toUpperCase();
+    var body = opts.body ? JSON.parse(opts.body) : {};
+    if (method === 'GET') return DemoAPI.get(path).then(function (d) { return { ok: true, d: d }; });
+    if (method === 'PUT') return DemoAPI.put(path, body).then(function (d) { return { ok: true, d: d }; });
+    return DemoAPI.post(path, body).then(function (d) { return { ok: true, d: d }; });
+}
+var ROLE_LABEL = { 'company_admin': ['管理员', 'tag-admin'], 'quality_manager': ['质量经理', 'tag-mgr'], 'quality_engineer': ['质量工程师', 'tag-eng'], 'inspector': ['检验员', 'tag-ins'], 'readonly': ['只读', 'tag-ro'] };
+
+function loadUsers() {
+    api('/admin/users').then(function (res) {
+        if (!res.ok) { document.getElementById('userRows').innerHTML = '<tr><td colspan="6" class="text-center text-red-400 py-6">无法载入演示账号</td></tr>'; return; }
+        var rows = res.d || [];
+        if (!rows.length) { document.getElementById('userRows').innerHTML = '<tr><td colspan="6" class="text-center text-slate-500 py-6">暂无账号，请先创建</td></tr>'; return; }
+        var html = rows.map(function (u) {
+            var rl = ROLE_LABEL[u.role] || [u.role, 'tag-ro'];
+            return '<tr>' +
+                '<td>' + (u.full_name || '-') + '</td>' +
+                '<td class="text-slate-400">' + (u.username || '-') + (u.employee_no ? ' <span class="text-slate-600">(' + u.employee_no + ')</span>' : '') + '</td>' +
+                '<td><span class="tag ' + rl[1] + '">' + rl[0] + '</span></td>' +
+                '<td>' + (u.is_active ? '<span class="text-emerald-400">启用</span>' : '<span class="text-red-400">停用</span>') + '</td>' +
+                '<td class="text-slate-500">' + (u.last_login_at ? new Date(u.last_login_at).toLocaleString('zh-CN') : '从未登录') + '</td>' +
+                '<td class="whitespace-nowrap">' +
+                    '<button class="btn btn-ghost text-xs mr-2" onclick="resetPw(' + u.id + ')">重置密码</button>' +
+                    (u.is_active ? '<button class="btn btn-danger text-xs" onclick="deactivate(' + u.id + ')">停用</button>' : '') +
+                '</td></tr>';
+        }).join('');
+        document.getElementById('userRows').innerHTML = html;
+    });
+}
+function createUser() {
+    var username = document.getElementById('fUser').value.trim();
+    var full_name = document.getElementById('fName').value.trim();
+    var password = document.getElementById('fPw').value;
+    var role = document.getElementById('fRole').value;
+    var employee_no = document.getElementById('fEmpNo').value.trim() || null;
+    if (!username || !full_name || !password) { showMsg('请填写工号、姓名和初始密码', 'err'); return; }
+    if (password.length < 6) { showMsg('密码至少6位', 'err'); return; }
+    api('/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: username, full_name: full_name, role: role, employee_no: employee_no }) }).then(function (res) {
+        if (res.ok) { showMsg('账号 ' + username + ' 已在本地登记（演示数据，不写入服务器）', 'ok'); document.getElementById('fUser').value = document.getElementById('fName').value = document.getElementById('fPw').value = document.getElementById('fEmpNo').value = ''; loadUsers(); }
+        else { showMsg('创建失败', 'err'); }
+    });
+}
+function resetPw(uid) {
+    var np = prompt('请输入新密码（至少6位，仅本页演示，不会写入服务器）：');
+    if (!np) return;
+    api('/admin/users/' + uid + '/reset-password', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ noted: true }) }).then(function (res) {
+        if (res.ok) { showMsg('已在本地标记重置（演示数据，不写入服务器）', 'ok'); } else { showMsg('重置失败', 'err'); }
+    });
+}
+function deactivate(uid) {
+    if (!confirm('确认停用该演示账号？此操作仅更新本页列表。')) return;
+    api('/admin/users/' + uid + '/deactivate', { method: 'PUT' }).then(function (res) {
+        if (res.ok) { showMsg('已在本页停用（演示数据，不写入服务器）', 'ok'); loadUsers(); } else { showMsg('停用失败', 'err'); }
+    });
+}
+function doLogout() { DemoAuth.logout(); }
+loadUsers();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IQC 智能体全景控制塔 | 真实数据版</title>
+<link rel="stylesheet" href="assets/demo.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --bg:#020617; --panel:#0f172a; --panel2:#1e293b; --line:rgba(255,255,255,.07);
+    --blue:#3b82f6; --cyan:#06b6d4; --indigo:#6366f1; --glow:#60a5fa;
+    --ok:#10b981; --warn:#f59e0b; --danger:#ef4444; --purple:#a78bfa;
+    --txt:#e2e8f0; --mut:#94a3b8; --dim:#64748b;
+  }
+  html,body{ height:100%; }
+  body{
+    font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif;
+    background:var(--bg); color:var(--txt); overflow-x:hidden;
+    background-image:radial-gradient(circle at 50% 22%, rgba(30,58,138,.18) 0%, transparent 58%),
+      linear-gradient(to right, rgba(30,41,59,.28) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(30,41,59,.28) 1px, transparent 1px);
+    background-size:100% 100%, 40px 40px, 40px 40px;
+  }
+  ::-webkit-scrollbar{ width:5px; height:5px; }
+  ::-webkit-scrollbar-thumb{ background:rgba(59,130,246,.45); border-radius:3px; }
+  .wrap{ min-height:100vh; display:flex; flex-direction:column; max-width:1920px; margin:0 auto; }
+  .glass{
+    background:linear-gradient(145deg, rgba(15,23,42,.82), rgba(2,6,23,.92));
+    backdrop-filter:blur(14px); border:1px solid var(--line);
+    box-shadow:0 10px 30px -10px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .edge{ position:relative; }
+  .edge::before{ content:''; position:absolute; top:0; left:10%; right:10%; height:1px;
+    background:linear-gradient(90deg, transparent, rgba(59,130,246,.8), transparent); z-index:10; }
+
+  header{ height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 26px; flex-shrink:0; position:sticky; top:0; z-index:50; }
+  .logo{ display:flex; align-items:center; gap:12px; }
+  .logo-mark{ width:40px; height:40px; border-radius:12px; background:var(--panel2); border:1px solid rgba(59,130,246,.35);
+    display:flex; align-items:center; justify-content:center; box-shadow:0 0 18px rgba(59,130,246,.25); }
+  .logo h1{ font-size:19px; letter-spacing:2px; }
+  .logo h1 small{ font-weight:300; color:var(--mut); font-size:13px; letter-spacing:0; margin-left:6px; }
+  .statusbar{ display:flex; align-items:center; gap:16px; background:rgba(2,6,23,.55); border:1px solid var(--line);
+    border-radius:999px; padding:7px 20px; font-size:12px; }
+  .statusbar .dot{ position:relative; width:8px; height:8px; border-radius:50%; background:var(--ok); }
+  .statusbar .dot::after{ content:''; position:absolute; inset:-4px; border-radius:50%; background:var(--ok); opacity:.35; animation:pulse 2s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:.35;} 50%{opacity:.9;} }
+  .head-right{ display:flex; align-items:center; gap:18px; color:var(--mut); }
+  .role-pill{ display:flex; align-items:center; gap:8px; background:var(--panel2); border:1px solid rgba(59,130,246,.25);
+    border-radius:10px; padding:8px 14px; font-size:13px; color:var(--txt); }
+
+  main{ flex:1; padding:22px 26px; display:flex; flex-direction:column; gap:20px; }
+
+  .kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px; }
+  .kpi{ border-radius:16px; padding:16px 18px; position:relative; overflow:hidden; transition:.25s; }
+  .kpi:hover{ transform:translateY(-2px); }
+  .kpi .glow{ position:absolute; right:-26px; top:-26px; width:96px; height:96px; border-radius:50%; filter:blur(28px); opacity:.5; }
+  .kpi .lbl{ font-size:11px; color:var(--mut); letter-spacing:1px; display:flex; justify-content:space-between; align-items:center; }
+  .kpi .ico{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:14px; border:1px solid; }
+  .kpi .num{ font-size:30px; font-weight:700; margin-top:8px; font-family:Consolas,monospace; }
+  .kpi .delta{ font-size:11px; margin-top:6px; }
+
+  .sec-title{ font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .sec-title .tag{ margin-left:auto; font-size:11px; font-weight:400; color:var(--mut); }
+  .pill{ display:inline-block; font-size:10px; padding:2px 9px; border-radius:999px; font-weight:400; }
+  .pill.ok{ background:rgba(16,185,129,.12); color:#34d399; border:1px solid rgba(16,185,129,.3); }
+  .pill.plan{ background:rgba(100,116,139,.15); color:var(--mut); border:1px dashed rgba(148,163,184,.4); }
+  .pill.warn{ background:rgba(245,158,11,.12); color:var(--warn); border:1px solid rgba(245,158,11,.3); }
+  .pill.danger{ background:rgba(239,68,68,.12); color:var(--danger); border:1px solid rgba(239,68,68,.3); }
+  .pill.live{ background:rgba(6,182,212,.12); color:var(--cyan); border:1px solid rgba(6,182,212,.4); animation:pulse 2s infinite; }
+
+  .band{ display:grid; grid-template-columns:280px 1fr 300px; gap:18px; }
+  @media (max-width:1180px){ .band{ grid-template-columns:1fr; } }
+
+  .src-list{ padding:14px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
+  .src{ background:rgba(2,6,23,.5); border:1px solid rgba(51,65,85,.55); border-radius:12px; padding:10px 12px; transition:.2s; }
+  .src:hover{ border-color:rgba(59,130,246,.55); }
+  .src .hd{ display:flex; align-items:center; gap:9px; }
+  .src .ic{ width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; }
+  .src .nm{ font-size:12px; font-weight:700; }
+  .src .sys{ font-size:10px; color:var(--cyan); }
+  .src .ds{ font-size:10px; color:var(--dim); margin:6px 0 0 35px; line-height:1.6; }
+  .st-dot{ width:6px; height:6px; border-radius:50%; display:inline-block; margin-right:5px; }
+
+  .brain{ position:relative; overflow:hidden; }
+  .brain-body{ padding:18px; display:flex; flex-direction:column; gap:16px; }
+  .stage-nav{ display:flex; align-items:center; justify-content:center; gap:0; font-size:12px; color:var(--mut); flex-wrap:wrap; }
+  .stage-nav .seg{ padding:4px 14px; border:1px solid var(--line); background:rgba(15,23,42,.6); }
+  .stage-nav .seg:first-child{ border-radius:999px 0 0 999px; }
+  .stage-nav .seg:last-child{ border-radius:0 999px 999px 0; }
+  .stage-nav .seg.on{ color:var(--cyan); border-color:rgba(6,182,212,.4); background:rgba(6,182,212,.08); }
+  .stage-nav .ar{ color:var(--dim); margin:0 6px; }
+  .flow-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  @media (max-width:1180px){ .flow-grid{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:640px){ .flow-grid{ grid-template-columns:1fr; } }
+  .stage-col{ border-radius:14px; padding:12px; border:1px solid var(--line); background:rgba(15,23,42,.45); display:flex; flex-direction:column; gap:10px; }
+  .stage-col .st-t{ font-size:12px; font-weight:700; display:flex; align-items:center; gap:7px; padding-bottom:8px; border-bottom:1px dashed var(--line); }
+  .stage-col .st-t .no{ width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; flex-shrink:0; }
+  .node{ background:rgba(2,6,23,.55); border:1px solid rgba(51,65,85,.6); border-radius:11px; padding:10px 11px; transition:.2s; position:relative; }
+  .node:hover{ transform:translateX(2px); }
+  .node .nd{ font-size:12.5px; font-weight:700; display:flex; align-items:center; gap:7px; }
+  .node .nd .nid{ font-size:10px; color:var(--dim); }
+  .node .nds{ font-size:10px; color:var(--dim); margin-top:4px; line-height:1.6; }
+  .node .badge{ position:absolute; top:8px; right:8px; }
+  .node .live-stat{ font-size:10px; margin-top:6px; padding-top:6px; border-top:1px dashed rgba(51,65,85,.5); color:var(--cyan); }
+  .chip-wrap{ display:flex; align-items:center; justify-content:center; gap:12px; padding:10px 0 4px; }
+  .chip{ position:relative; width:64px; height:64px; border-radius:18px; background:var(--panel2); border:1.5px solid rgba(6,182,212,.55);
+    display:flex; align-items:center; justify-content:center; box-shadow:0 0 30px rgba(6,182,212,.3), inset 0 0 18px rgba(6,182,212,.12); }
+  .chip .ring{ position:absolute; inset:-7px; border-radius:22px; border:1px dashed rgba(6,182,212,.35); animation:spin 14s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .chip .ring2{ position:absolute; inset:-15px; border-radius:28px; border:1px solid rgba(59,130,246,.15); }
+  .chip svg{ width:30px; height:30px; }
+  .chip-txt{ font-size:13px; font-weight:700; line-height:1.5; }
+  .chip-txt small{ display:block; font-size:10px; color:var(--dim); font-weight:400; margin-top:2px; }
+  .order-line{ display:flex; align-items:center; justify-content:center; gap:6px; font-size:11px; color:var(--dim); flex-wrap:wrap; }
+  .order-line b{ color:var(--cyan); font-weight:700; }
+  .order-line .sp{ color:rgba(6,182,212,.5); }
+
+  .role-list{ padding:14px; display:flex; flex-direction:column; gap:12px; }
+  .role{ border-radius:12px; padding:12px; background:linear-gradient(135deg, var(--panel2), rgba(2,6,23,.9)); border:1px solid var(--line); position:relative; overflow:hidden; }
+  .role .bar{ position:absolute; left:0; top:0; bottom:0; width:3px; }
+  .role .rh{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .role .ric{ width:24px; height:24px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px; }
+  .role .rn{ font-size:12.5px; font-weight:700; }
+  .role .rr{ font-size:10px; color:var(--mut); margin-left:auto; }
+  .role .rd{ font-size:10.5px; color:var(--mut); line-height:1.7; padding-left:32px; }
+  .role .act{ margin:8px 0 0 32px; font-size:10px; display:inline-block; padding:3px 9px; border-radius:8px; border:1px solid; }
+
+  /* ===== 实时工作台 ===== */
+  .wb-body{ display:grid; grid-template-columns:380px 1fr; gap:0; }
+  @media (max-width:1180px){ .wb-body{ grid-template-columns:1fr; } }
+  .wb-left{ border-right:1px solid var(--line); max-height:460px; overflow-y:auto; }
+  .wb-left .hdr{ display:grid; grid-template-columns:1fr 1fr 64px 74px; gap:8px; padding:10px 14px; font-size:10.5px; color:var(--dim); border-bottom:1px solid var(--line); position:sticky; top:0; background:rgba(2,6,23,.92); }
+  .task-row{ display:grid; grid-template-columns:1fr 1fr 64px 74px; gap:8px; padding:12px 14px; border-bottom:1px solid rgba(51,65,85,.3); cursor:pointer; transition:.15s; align-items:center; }
+  .task-row:hover{ background:rgba(59,130,246,.07); }
+  .task-row.sel{ background:rgba(6,182,212,.1); border-left:3px solid var(--cyan); }
+  .task-row .tno{ font-size:12px; font-weight:700; }
+  .task-row .tmt{ font-size:10px; color:var(--mut); margin-top:2px; }
+  .pri{ font-size:9.5px; padding:2px 6px; border-radius:6px; justify-self:start; font-weight:700; }
+  .pri.HIGH{ background:rgba(239,68,68,.15); color:var(--danger); border:1px solid rgba(239,68,68,.4); }
+  .pri.NORMAL{ background:rgba(59,130,246,.12); color:var(--blue); border:1px solid rgba(59,130,246,.35); }
+  .pri.LOW{ background:rgba(148,163,184,.12); color:var(--mut); border:1px solid rgba(148,163,184,.35); }
+  .stg{ font-size:9.5px; padding:2px 6px; border-radius:6px; justify-self:start; border:1px solid rgba(51,65,85,.5); color:var(--mut); }
+  .stg.RECEIVED{ color:var(--warn); border-color:rgba(245,158,11,.4); background:rgba(245,158,11,.08); }
+  .stg.CLOSED{ color:var(--ok); border-color:rgba(16,185,129,.4); background:rgba(16,185,129,.08); }
+  .wb-right{ padding:16px 20px; max-height:460px; overflow-y:auto; min-height:300px; }
+  .panel-hd{ display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .panel-hd .pt{ font-size:15px; font-weight:700; }
+  .panel-hd .ps{ font-size:11px; color:var(--mut); }
+  .an-sec{ margin-bottom:14px; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:rgba(2,6,23,.4); }
+  .an-sec .at{ font-size:12px; font-weight:700; padding:9px 13px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--line); }
+  .an-sec .ab{ padding:12px 14px; }
+  .kv{ display:flex; gap:8px; align-items:baseline; padding:3px 0; font-size:12px; }
+  .kv .k{ color:var(--dim); flex-shrink:0; width:110px; }
+  .kv .v{ color:var(--txt); }
+  .factor{ display:flex; justify-content:space-between; gap:10px; padding:5px 0; border-bottom:1px dashed rgba(51,65,85,.4); font-size:11.5px; }
+  .factor:last-child{ border-bottom:none; }
+  .factor .fk{ color:var(--mut); }
+  .factor .fr{ color:var(--dim); font-size:10.5px; }
+  .person{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px dashed rgba(51,65,85,.4); font-size:12px; }
+  .person:last-child{ border-bottom:none; }
+  .person .rank{ width:22px; height:22px; border-radius:50%; background:var(--panel2); border:1px solid rgba(59,130,246,.4); display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--blue); }
+  .person .pn{ font-weight:700; }
+  .person .psc{ margin-left:auto; color:var(--cyan); font-family:Consolas,monospace; font-weight:700; }
+  .adv-row{ display:flex; align-items:flex-start; gap:10px; padding:10px 14px; border-bottom:1px solid rgba(51,65,85,.3); font-size:12px; flex-wrap:wrap; }
+  .adv-row:last-child{ border-bottom:none; }
+  .adv-row .as{ font-size:10px; padding:2px 8px; border-radius:6px; flex-shrink:0; margin-top:1px; }
+  .adv-row .abtn{ margin-left:auto; display:flex; gap:6px; }
+  .btn{ font-size:11px; padding:4px 12px; border-radius:8px; cursor:pointer; border:1px solid; transition:.15s; background:transparent; }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn.approve{ color:var(--ok); border-color:rgba(16,185,129,.5); }
+  .btn.approve:hover{ background:rgba(16,185,129,.15); }
+  .btn.reject{ color:var(--danger); border-color:rgba(239,68,68,.5); }
+  .btn.reject:hover{ background:rgba(239,68,68,.15); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .loading{ text-align:center; padding:36px 0; color:var(--dim); font-size:12px; }
+  .loading .sp{ display:inline-block; width:16px; height:16px; border:2px solid var(--panel2); border-top-color:var(--cyan); border-radius:50%; animation:spin .8s linear infinite; margin-right:8px; vertical-align:-3px; }
+  .empty{ text-align:center; padding:48px 0; color:var(--dim); font-size:12px; line-height:2; }
+  .hint{ font-size:11px; color:var(--dim); line-height:1.8; }
+
+  .flow{ position:relative; }
+  .flow-wrap{ padding:22px 18px; position:relative; }
+  .flow-line{ position:absolute; left:40px; right:40px; top:50%; height:2px; background:#334155; }
+  .flow-line .prog{ height:100%; background:linear-gradient(90deg,#06b6d4,#3b82f6); box-shadow:0 0 10px rgba(6,182,212,.6); width:50%; position:relative; }
+  .flow-line .prog::after{ content:''; position:absolute; right:-3px; top:-3px; width:8px; height:8px; border-radius:50%; background:#fff; box-shadow:0 0 10px #fff; }
+  .steps{ display:flex; justify-content:space-between; position:relative; }
+  .step{ display:flex; flex-direction:column; align-items:center; gap:8px; width:110px; position:relative; }
+  .step .c{ width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; border:2px solid #334155; background:var(--panel2); z-index:2; }
+  .step.done .c{ border-color:var(--ok); color:var(--ok); }
+  .step.cur .c{ border-color:var(--cyan); color:var(--cyan); box-shadow:0 0 16px rgba(6,182,212,.5); animation:pulse 2s infinite; }
+  .step .t{ font-size:10px; color:var(--mut); text-align:center; line-height:1.5; }
+  .step.cur .t{ color:#fff; font-weight:700; }
+  .step .ai{ font-size:9px; color:var(--blue); background:rgba(59,130,246,.14); border:1px solid rgba(59,130,246,.45); padding:1px 7px; border-radius:6px; margin-top:2px; }
+  .step .ai.cyan{ color:var(--cyan); border-color:rgba(6,182,212,.45); background:rgba(6,182,212,.12); }
+  @media (max-width:1100px){ .steps{ overflow-x:auto; justify-content:flex-start; gap:26px; } }
+
+  .bottom-row{ display:grid; grid-template-columns:1.6fr 1fr 1.4fr; gap:18px; }
+  @media (max-width:1180px){ .bottom-row{ grid-template-columns:1fr; } }
+  .know-grid{ padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:10px; flex:1; }
+  .know{ background:rgba(2,6,23,.5); border:1px solid rgba(51,65,85,.5); border-radius:11px; padding:10px 12px; transition:.2s; }
+  .know:hover{ background:var(--panel2); }
+  .know .kt{ font-size:12px; font-weight:700; margin-bottom:3px; }
+  .know .kd{ font-size:9.5px; color:var(--dim); line-height:1.6; }
+  .int-list{ padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .int{ background:rgba(2,6,23,.5); border:1px solid rgba(51,65,85,.5); border-radius:10px; padding:9px 11px; display:flex; gap:9px; align-items:flex-start; }
+  .int .ii{ width:24px; height:24px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; }
+  .int .it{ font-size:11px; font-weight:700; }
+  .int .id{ font-size:9.5px; color:var(--dim); margin-top:2px; line-height:1.5; }
+  .int .live-flag{ margin-left:auto; font-size:9px; }
+
+  footer{ padding:14px 26px 20px; text-align:center; font-size:12px; color:var(--dim); border-top:1px solid var(--line); flex-shrink:0; }
+  footer .slogan{ color:var(--mut); margin-bottom:4px; letter-spacing:1px; }
+  footer .slogan b{ color:var(--cyan); font-weight:700; }
+
+  /* ===== 图纸→SIP ===== */
+  .sip-row{ display:flex; align-items:center; gap:8px; padding:11px 14px; border-bottom:1px solid rgba(51,65,85,.3); cursor:pointer; font-size:12px; transition:.15s; }
+  .sip-row:hover{ background:rgba(59,130,246,.07); }
+  .sip-row.sel{ background:rgba(6,182,212,.1); border-left:3px solid var(--cyan); }
+  .sip-row .sn{ font-weight:700; }
+  .sip-row .sd{ font-size:10px; color:var(--dim); margin-top:2px; }
+  .sip-table{ width:100%; border-collapse:collapse; font-size:11.5px; }
+  .sip-table th{ background:rgba(59,130,246,.12); color:var(--cyan); font-weight:700; padding:7px 9px; text-align:left; border:1px solid rgba(51,65,85,.5); }
+  .sip-table td{ border:1px solid rgba(51,65,85,.4); padding:7px 9px; vertical-align:top; line-height:1.6; }
+  .sip-table td.step{ font-weight:700; color:#7dd3fc; white-space:nowrap; }
+  .btn.main{ color:#fff; background:linear-gradient(135deg,var(--blue),var(--cyan)); border:none; }
+  .btn.ghost{ color:var(--mut); border-color:rgba(148,163,184,.4); }
+  .sip-hd{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px; margin-bottom:12px; }
+  .sip-hd .cell{ background:rgba(2,6,23,.5); border:1px solid rgba(51,65,85,.5); border-radius:9px; padding:8px 10px; }
+  .sip-hd .k{ font-size:9.5px; color:var(--dim); }
+  .sip-hd .v{ font-size:12px; font-weight:700; margin-top:2px; }
+  .warn-bar{ background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.35); color:var(--warn); font-size:11px; border-radius:9px; padding:8px 12px; margin-bottom:12px; line-height:1.7; }
+  .file-btn{ font-size:12px; padding:7px 14px; border-radius:9px; border:1px dashed rgba(59,130,246,.5); color:var(--blue); background:rgba(59,130,246,.07); cursor:pointer; transition:.15s; }
+  .file-btn:hover{ background:rgba(59,130,246,.15); }
+
+  /* ===== 安全接入 · 登录门（355 风格） ===== */
+  #loginGate{ position:fixed; inset:0; z-index:9999; display:none; align-items:center; justify-content:center;
+    background: radial-gradient(circle at 15% 30%, rgba(56,189,248,.10) 0%, transparent 40%),
+                radial-gradient(circle at 85% 70%, rgba(59,130,246,.10) 0%, transparent 40%),
+                linear-gradient(180deg, #020617 0%, #0f172a 100%);
+    font-family:'Noto Sans SC','Microsoft YaHei',sans-serif; }
+  #loginGate .gridbg{ position:absolute; inset:0;
+    background-image: linear-gradient(rgba(56,189,248,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,.04) 1px, transparent 1px);
+    background-size:50px 50px; -webkit-mask-image:radial-gradient(circle at center, black 35%, transparent 100%); mask-image:radial-gradient(circle at center, black 35%, transparent 100%); }
+  #loginPanel{ position:relative; width:min(92vw,430px); background:rgba(10,25,47,.78); backdrop-filter:blur(24px);
+    border:1px solid rgba(56,189,248,.28); border-radius:22px; padding:34px 32px 26px; color:#e2e8f0;
+    box-shadow:0 30px 60px -15px rgba(0,0,0,.8), inset 0 0 25px rgba(56,189,248,.08); animation:fadeUp .9s cubic-bezier(.16,1,.3,1) forwards; }
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(28px);} to{opacity:1; transform:translateY(0);} }
+  #loginPanel h2{ font-size:22px; letter-spacing:.04em; }
+  #loginPanel h2 b{ color:#38bdf8; }
+  #loginPanel .sub{ font-size:12px; color:#94a3b8; margin-top:4px; }
+  #loginHead{ display:flex; align-items:center; gap:12px; padding-bottom:16px; border-bottom:1px solid rgba(56,189,248,.18); margin-bottom:18px; }
+  #loginHead .badge{ width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg, rgba(56,189,248,.25), rgba(59,130,246,.15)); border:1px solid rgba(56,189,248,.4); }
+  .demo-card{ background:rgba(56,189,248,.08); border:1px dashed rgba(56,189,248,.4); border-radius:12px; padding:10px 14px; margin-bottom:16px; font-size:12.5px; color:#a5f3fc; }
+  .demo-card b{ color:#f8fafc; }
+  .lg-field{ margin-bottom:13px; }
+  .lg-field label{ display:block; font-size:11px; color:#cbd5e1; letter-spacing:.08em; margin-bottom:6px; text-transform:uppercase; }
+  .lg-field input{ width:100%; padding:12px 14px; border-radius:12px; background:rgba(15,23,42,.6); border:1px solid rgba(100,116,139,.4); color:#f8fafc; font-size:14px; transition:all .3s ease; }
+  .lg-field input:focus{ outline:none; border-color:#38bdf8; box-shadow:0 0 15px rgba(56,189,248,.25); background:rgba(15,23,42,.85); }
+  #loginBtn{ width:100%; padding:14px; border-radius:12px; border:1px solid #38bdf8; color:#fff; font-size:14px; font-weight:500; cursor:pointer;
+    background:linear-gradient(135deg, #3b82f6, #0284c7); box-shadow:0 0 20px rgba(56,189,248,.3); transition:all .3s ease; position:relative; overflow:hidden; }
+  #loginBtn:hover{ box-shadow:0 0 30px rgba(56,189,248,.6); transform:translateY(-1px); }
+  #loginBtn:disabled{ opacity:.7; cursor:wait; }
+  #loginErr{ display:none; margin-top:12px; padding:9px 12px; border-radius:10px; background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.35); color:#fca5a5; font-size:12.5px; }
+  #loginFoot{ margin-top:16px; text-align:center; font-size:11px; color:#64748b; }
+</style>
+<script src="assets/demo-auth.js"></script>
+<script src="assets/demo-data.js"></script>
+</head>
+<body>
+<div class=\"demo-banner\"><strong>演示数据，不写入服务器</strong></div>
+<div id="loginGate" style="display:none">
+  <div class="gridbg"></div>
+  <div id="loginPanel">
+    <div id="loginHead">
+      <div class="badge"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#38bdf8" stroke-width="1.6"/><path d="M8 8h8M8 12h8M8 16h5" stroke="#60a5fa" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+      <div>
+        <h2>IQC <b>智能体全景控制塔</b></h2>
+        <div class="sub">安全接入 · 演示环境 · AI Agent Platform</div>
+      </div>
+    </div>
+    <div class="demo-card">演示账号（写死）&nbsp;:&nbsp; <b>demo</b> &nbsp;·&nbsp; 密码: <b>demo</b> &nbsp;·&nbsp; 公司: <b>DEMO</b></div>
+    <div class="lg-field"><label>公司编码 / Company</label>
+      <input id="loginCompany" type="text" value="DEMO" placeholder="请输入公司编码"></div>
+    <div class="lg-field"><label>授权账号 / Account</label>
+      <input id="loginUser" type="text" placeholder="请输入账号" autocomplete="username"></div>
+    <div class="lg-field"><label>安全密钥 / Password</label>
+      <input id="loginPass" type="password" placeholder="请输入密码" autocomplete="current-password"></div>
+    <button id="loginBtn" onclick="window.__iqcLogin()">初始化系统接入</button>
+    <div id="loginErr"></div>
+    <div id="loginFoot">仅演示环境使用 · 正式接入请联系系统管理员</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ======== 顶部 ======== -->
+  <header class="glass edge">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#06b6d4" stroke-width="1.6"/><path d="M8 8h8M8 12h8M8 16h5" stroke="#60a5fa" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+      <h1>IQC<small>AI Agent Platform · 智能体全景控制塔</small></h1>
+    </div>
+    <div class="statusbar">
+      <span style="display:flex;align-items:center;gap:7px;"><span class="dot"></span><span style="color:var(--mut);">系统状态</span><span id="connState" style="color:var(--ok);">连接中…</span></span>
+      <span style="color:#334155;">|</span>
+      <span><span style="color:var(--mut);">数据源</span> <span id="srcState" style="color:var(--dim);">检测中…</span></span>
+      <span style="color:#334155;">|</span>
+      <span><span style="color:var(--mut);">当前公司</span> <span id="demoState" style="color:var(--cyan);">DEMO</span></span>
+    </div>
+    <div class="head-right">
+      <div class="role-pill"><span style="color:var(--cyan);">⬢</span> 全局视角（管理层）<span style="color:var(--dim); font-size:10px;">▾</span><span style="margin-left:10px;"><a href="javascript:void(0)" onclick="window.__iqcLogout()" style="color:var(--cyan);text-decoration:none;font-size:12px;border:1px solid rgba(56,189,248,.35);padding:3px 10px;border-radius:8px;">退出</a></span></div>
+      <span style="position:relative;">🔔<span style="position:absolute; top:-3px; right:-5px; width:8px; height:8px; border-radius:50%; background:var(--danger); box-shadow:0 0 8px var(--danger);"></span></span>
+      <span style="width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--blue),var(--cyan)); display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; box-shadow:0 0 14px rgba(6,182,212,.4);">管</span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ======== KPI（真实数据填充） ======== -->
+    <div class="kpis">
+      <div class="kpi glass">
+        <div class="glow" style="background:var(--blue);"></div>
+        <div class="lbl"><span>演示库批次总数</span><span class="ico" style="color:var(--blue); border-color:rgba(59,130,246,.3); background:rgba(59,130,246,.1);">▤</span></div>
+        <div class="num" id="kpiBatch">5</div>
+        <div class="delta"><span id="kpiBatchD" style="color:var(--dim);">读取中…</span></div>
+      </div>
+      <div class="kpi glass">
+        <div class="glow" style="background:var(--danger);"></div>
+        <div class="lbl"><span>高风险批次</span><span class="ico" style="color:var(--danger); border-color:rgba(239,68,68,.3); background:rgba(239,68,68,.1);">⚠</span></div>
+        <div class="num" id="kpiRisk">2</div>
+        <div class="delta"><span id="kpiRiskD" style="color:var(--danger);">读取中…</span></div>
+      </div>
+      <div class="kpi glass">
+        <div class="glow" style="background:var(--cyan);"></div>
+        <div class="lbl"><span>待检验批次</span><span class="ico" style="color:var(--cyan); border-color:rgba(6,182,212,.3); background:rgba(6,182,212,.1);">☑</span></div>
+        <div class="num" id="kpiDoing">5</div>
+        <div class="delta"><span id="kpiDoingD" style="color:var(--dim);">读取中…</span></div>
+      </div>
+      <div class="kpi glass">
+        <div class="glow" style="background:var(--purple);"></div>
+        <div class="lbl"><span>NPI 新物料首检</span><span class="ico" style="color:var(--purple); border-color:rgba(167,139,250,.3); background:rgba(167,139,250,.1);">✦</span></div>
+        <div class="num" id="kpiNpi">–</div>
+        <div class="delta"><span id="kpiNpiD" style="color:var(--dim);">读取中…</span></div>
+      </div>
+      <div class="kpi glass">
+        <div class="glow" style="background:var(--indigo);"></div>
+        <div class="lbl"><span>AI 建议落地率</span><span class="ico" style="color:var(--indigo); border-color:rgba(99,102,241,.3); background:rgba(99,102,241,.1);">◉</span></div>
+        <div class="num" id="kpiAuto">–</div>
+        <div class="delta" id="kpiAutoBar" style="height:6px; background:var(--panel2); border-radius:99px; margin-top:10px;"><div id="kpiAutoFill" style="width:0%; height:100%; border-radius:99px; background:linear-gradient(90deg,var(--blue),var(--indigo));"></div></div>
+      </div>
+    </div>
+
+    <!-- ======== 三栏：输入 / 大脑 / 角色 ======== -->
+    <div class="band">
+
+      <div class="glass" style="border-radius:16px; display:flex; flex-direction:column; max-height:640px;">
+        <div class="sec-title"><span style="color:var(--cyan);">▣</span> 数据输入层 <span class="tag">规划图 · 第 1 层</span></div>
+        <div class="src-list">
+          <div class="src"><span class="st-dot" style="background:var(--ok);"></span>
+            <div class="hd"><span class="ic" style="color:var(--blue); background:rgba(59,130,246,.1);">图</span>
+              <div><div class="nm">客户 / NPI 要求</div><div class="sys">图纸 · 技术规格书 · 客户要求</div></div></div>
+            <div class="ds">NPI 新项目要求下发，系统自动获取（标准基线）</div>
+          </div>
+          <div class="src"><span class="st-dot" style="background:var(--ok);"></span>
+            <div class="hd"><span class="ic" style="color:var(--purple); background:rgba(167,139,250,.1);">规</span>
+              <div><div class="nm">SIP / 检验标准</div><div class="sys">SIP 文件 · 检验项目库 · 版本管理</div></div></div>
+            <div class="ds">检验规范、CTQ 关键特性（可追溯版本）</div>
+          </div>
+          <div class="src"><span class="st-dot" style="background:var(--ok);"></span>
+            <div class="hd"><span class="ic" style="color:var(--warn); background:rgba(245,158,11,.1);">料</span>
+              <div><div class="nm">PEBS · 来料数据</div><div class="sys">来料信息 · PO/批次 · 物料主数据 · 供应商</div></div></div>
+            <div class="ds">批次到达自动触发检验流程</div>
+          </div>
+          <div class="src"><span class="st-dot" style="background:var(--ok);"></span>
+            <div class="hd"><span class="ic" style="color:var(--danger); background:rgba(239,68,68,.1);">史</span>
+              <div><div class="nm">WPS · 质量历史</div><div class="sys">历史检验数据 · NCR/客诉 · 不良案例</div></div></div>
+            <div class="ds">"以前哪里出过问题"的记忆来源</div>
+          </div>
+          <div class="src"><span class="st-dot" style="background:var(--warn);"></span>
+            <div class="hd"><span class="ic" style="color:var(--ok); background:rgba(16,185,129,.1);">岗</span>
+              <div><div class="nm">打卡 / 人事系统</div><div class="sys">人员在岗状态 · 打卡记录 · 请假/排班</div></div></div>
+            <div class="ds">派工时判断"谁现在能干活"（待接入）</div>
+          </div>
+          <div class="src"><span class="st-dot" style="background:var(--warn);"></span>
+            <div class="hd"><span class="ic" style="color:var(--cyan); background:rgba(6,182,212,.1);">能</span>
+              <div><div class="nm">检验员能力库</div><div class="sys">技能资质 · 设备授权 · 擅长领域 · 绩效</div></div></div>
+            <div class="ds">演示库含 2 名检验员技能画像（部分字段待接）</div>
+          </div>
+          <div class="src"><span class="st-dot" style="background:var(--warn);"></span>
+            <div class="hd"><span class="ic" style="color:var(--indigo); background:rgba(99,102,241,.1);">变</span>
+              <div><div class="nm">其他数据</div><div class="sys">变更/ECN · 供应商评级 · 行业标准</div></div></div>
+            <div class="ds">变更影响评估与风险加权的输入（待接入）</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI 核心大脑 -->
+      <div class="glass brain edge" style="border-radius:16px; display:flex; flex-direction:column;">
+        <div class="sec-title"><span style="color:var(--blue);">◈</span> IQC 智能体核心决策大脑 <span class="pill live" style="margin-left:10px;">● 实时推理中</span>
+          <span class="tag">规划图 · 第 2 层 · 理解—判断—规划—调度</span></div>
+
+        <div class="brain-body">
+          <div class="chip-wrap">
+            <div class="chip"><div class="ring"></div><div class="ring2"></div>
+              <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#06b6d4" stroke-width="1.4"/><path d="M8 7v10M12 7v10M16 7v10M7 8h10M7 12h10M7 16h10" stroke="#60a5fa" stroke-width="0.9" opacity="0.8"/></svg>
+            </div>
+            <div class="chip-txt">IQC 智能体核心<span style="display:block; color:var(--mut); font-size:11px; font-weight:400;">大模型 + 业务规则 + 企业知识库</span></div>
+          </div>
+
+          <div class="stage-nav">
+            <span class="seg on">① 理解 · 解析</span><span class="ar">→</span>
+            <span class="seg">② 判断 · 风控</span><span class="ar">→</span>
+            <span class="seg">④ 规划 · 派工</span><span class="ar">→</span>
+            <span class="seg">⑥ 调度优化 · 学习</span>
+          </div>
+
+          <div class="flow-grid">
+            <div class="stage-col" style="border-color:rgba(59,130,246,.35);">
+              <div class="st-t"><span class="no" style="background:var(--blue);">1</span><span style="color:var(--blue);">理解 · 解析</span></div>
+              <div class="node" style="border-color:rgba(59,130,246,.4); cursor:pointer;"
+                   onclick="window.open('iqc-sip-workbench.html?v=3','_blank')" title="点击进入图纸→SIP生成工作台">
+                <div class="nd"><span class="nid">①</span> 图纸 / SIP 解析 <span class="pill ok">已实现</span></div>
+                <div class="nds">AI 读图理解尺寸、公差与特殊特性，生成检验项目</div>
+                <div class="live-stat" style="color:var(--blue);">点击进入 → 图纸→SIP 生成工作台</div>
+              </div>
+            </div>
+            <div class="stage-col" style="border-color:rgba(239,68,68,.3);">
+              <div class="st-t"><span class="no" style="background:var(--danger);">2</span><span style="color:#f87171;">判断 · 风控</span></div>
+              <div class="node" style="border-color:rgba(239,68,68,.35);">
+                <div class="nd"><span class="nid">②</span> 风险识别 <span class="pill ok">已实现</span></div>
+                <div class="nds">物料 / 供应商 / 历史不良综合评分</div>
+                <div class="live-stat" id="statRisk">加载中…</div>
+              </div>
+              <div class="node" style="border-color:rgba(239,68,68,.35);">
+                <div class="nd"><span class="nid">③</span> 抽样策略判断 <span class="pill ok">已实现</span></div>
+                <div class="nds">正常 / 加严 / 放宽 / 全检，AQL 与转移规则</div>
+                <div class="live-stat" id="statSampling">加载中…</div>
+              </div>
+            </div>
+            <div class="stage-col" style="border-color:rgba(6,182,212,.35);">
+              <div class="st-t"><span class="no" style="background:var(--cyan);">3</span><span style="color:var(--cyan);">规划 · 派工</span></div>
+              <div class="node" style="border-color:rgba(6,182,212,.35);">
+                <div class="nd"><span class="nid">④</span> 任务拆解与工作量估算 <span class="pill plan">规划中</span></div>
+                <div class="nds">检验项拆解为任务，估算工时与设备占用</div>
+              </div>
+              <div class="node" style="border-color:rgba(6,182,212,.35);">
+                <div class="nd"><span class="nid">⑤</span> 检验员智能派工 <span class="pill ok">已实现</span></div>
+                <div class="nds">按技能 / 在岗 / 优先级匹配建议</div>
+                <div class="live-stat" id="statDispatch">加载中…</div>
+              </div>
+            </div>
+            <div class="stage-col" style="border-color:rgba(167,139,250,.35);">
+              <div class="st-t"><span class="no" style="background:var(--purple);">4</span><span style="color:var(--purple);">调度优化 · 学习</span></div>
+              <div class="node" style="border-color:rgba(167,139,250,.35);">
+                <div class="nd"><span class="nid">⑥</span> 过程监控与动态调度 <span class="pill plan">规划中</span></div>
+                <div class="nds">任务超时/积压预警，动态再分配</div>
+              </div>
+              <div class="node" style="border-color:rgba(167,139,250,.35);">
+                <div class="nd"><span class="nid">⑦</span> 结果分析与持续优化 <span class="pill plan">规划中</span></div>
+                <div class="nds">检验策略调优，反哺知识库</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="order-line"><span>能力顺序：</span><b>① 解析</b><span class="sp">→</span><b>② 风险</b><span class="sp">→</span><b>③ 抽样</b><span class="sp">→</span><b>④ 拆解</b><span class="sp">→</span><b>⑤ 派工</b><span class="sp">→</span><b>⑥ 监控</b><span class="sp">→</span><b>⑦ 分析</b><span style="margin-left:8px; color:var(--dim);">（①②③⑤已实现 · ④⑥⑦规划中）</span></div>
+        </div>
+      </div>
+
+      <div class="glass" style="border-radius:16px; display:flex; flex-direction:column; max-height:640px;">
+        <div class="sec-title"><span style="color:var(--indigo);">☰</span> 执行层与终端角色 <span class="tag">规划图 · 第 6 层</span></div>
+        <div class="role-list">
+          <div class="role"><div class="bar" style="background:var(--mut);"></div>
+            <div class="rh"><span class="ric" style="background:rgba(148,163,184,.15); color:var(--mut);">📈</span><span class="rn">管理层</span><span class="rr">看板 · 决策</span></div>
+            <div class="rd">宏观质量看板、来料风险总览、供应商排名、整体检验效率趋势。</div>
+          </div>
+          <div class="role"><div class="bar" style="background:var(--indigo);"></div>
+            <div class="rh"><span class="ric" style="background:rgba(99,102,241,.18); color:var(--indigo);">⚙</span><span class="rn">质量工程师 QE</span><span class="rr">规则 · 策略</span></div>
+            <div class="rd">维护 SIP 规则、风险策略优化、审核异常、优化检验策略。</div>
+          </div>
+          <div class="role"><div class="bar" style="background:var(--ok);"></div>
+            <div class="rh"><span class="ric" style="background:rgba(16,185,129,.15); color:var(--ok);">⇄</span><span class="rn">供应商质量 SQE</span><span class="rr">供方 · 改善</span></div>
+            <div class="rd">供应商绩效、异常沟通、改善跟踪与红线管理。</div>
+          </div>
+          <div class="role"><div class="bar" style="background:var(--warn);"></div>
+            <div class="rh"><span class="ric" style="background:rgba(245,158,11,.16); color:var(--warn);">🛡</span><span class="rn">IQC 班组长</span><span class="rr">监控 · 调度</span></div>
+            <div class="rd">监控任务池、调整人力资源、处理超时或异常升级。</div>
+          </div>
+          <div class="role"><div class="bar" style="background:var(--cyan);"></div>
+            <div class="rh"><span class="ric" style="background:rgba(6,182,212,.15); color:var(--cyan);">🔍</span><span class="rn">IQC 检验员</span><span class="rr">执行端</span></div>
+            <div class="rd">接收 AI 拆解分发的任务，执行现场检验，系统化上传结果。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== 实时工作台：真实任务 + AI 分析 ======== -->
+    <div class="glass" style="border-radius:16px; overflow:hidden;">
+      <div class="sec-title"><span style="color:var(--ok);">⚡</span> AI 实时分析工作台 <span class="pill live">演示数据，不写入服务器</span>
+        <span class="tag">点击左侧任务 → 实时调用规则引擎，可批准/驳回 AI 建议</span></div>
+      <div class="wb-body">
+        <div class="wb-left">
+          <div class="hdr"><span>任务 / 物料</span><span>PO</span><span>优先级</span><span>阶段</span></div>
+          <div id="taskRows"><div class="task-row" data-id="1"><div><div class="tno">IQCT-DEMO-001</div><div class="tmt">93122427 · 绝缘PC膜 安装板底部绝缘膜</div></div></div><div class="task-row" data-id="2"><div><div class="tno">IQCT-DEMO-002</div><div class="tmt">DKBA8.136.9475 · 左把手支架</div></div></div></div>
+        </div>
+        <div class="wb-right" id="detailPanel">
+          <div class="empty">👈 点击左侧任意任务，<br/>这里会实时显示 AI 的风险评估、抽样方案、<br/>派工建议，并可批准或驳回。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== 底部：闭环流程 / 知识库 / 系统集成 ======== -->
+    <div class="bottom-row">
+
+      <div class="glass flow" style="border-radius:16px; display:flex; flex-direction:column;">
+        <div class="sec-title"><span style="color:var(--glow);">⟳</span> IQC 业务闭环 <span class="tag">规划图 · 第 3 层 · 演示批次：<b id="curBatch" style="color:var(--cyan);">读取中…</b></span></div>
+        <div class="flow-wrap">
+          <div class="flow-line"><div class="prog"></div></div>
+          <div class="steps">
+            <div class="step done"><div class="c">✓</div><div class="t">① 来料/要求输入<br/><span style="color:var(--cyan); font-size:9px;">NPI 新物料</span></div><span class="ai">NPI</span></div>
+            <div class="step done"><div class="c">✓</div><div class="t">② 解析生成检验要求<br/>AI 读图纸/SIP</div><span class="ai">AI 解析</span></div>
+            <div class="step done"><div class="c">✓</div><div class="t">③ 风险评估与抽样<br/>正常/加严/放宽/全检</div><span class="ai">AI 风控</span></div>
+            <div class="step done"><div class="c">✓</div><div class="t">④ 任务生成与派工<br/>拆解 · 估算 · 匹配</div><span class="ai">AI 拆解</span></div>
+            <div class="step cur"><div class="c">⑤</div><div class="t">智能派工<br/>技能+在岗+优先级</div><span class="ai cyan">当前</span></div>
+            <div class="step"><div class="c">⑥</div><div class="t">检验执行<br/>实测值 · 拍照 · 上报</div></div>
+            <div class="step"><div class="c">⑦</div><div class="t">结果反馈与关闭<br/>OK/NG · 触发 NCR · 回写</div></div>
+            <div class="step"><div class="c">⑧</div><div class="t">绩效与持续优化<br/>效率 · 能力画像</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass" style="border-radius:16px; display:flex; flex-direction:column;">
+        <div class="sec-title"><span style="color:var(--purple);">▤</span> 知识与规则沉淀层 <span class="tag">规划图 · 第 4 层</span></div>
+        <div class="know-grid">
+          <div class="know"><div class="kt"><span style="color:var(--blue);">📘</span> 项目知识库</div><div class="kd">图纸 → SIP → 检验项目的映射。如：某类螺钉必检扭矩。</div></div>
+          <div class="know"><div class="kt"><span style="color:var(--danger);">🐞</span> 历史异常库</div><div class="kd">NCR、客诉、退货记录，构成"以前哪里出过问题"的记忆。</div></div>
+          <div class="know"><div class="kt"><span style="color:var(--warn);">📏</span> 抽样规则库</div><div class="kd">MIL 标准、企业规则、加严/放宽转移控制逻辑。</div></div>
+          <div class="know"><div class="kt"><span style="color:var(--ok);">🪪</span> 人员能力库</div><div class="kd">动态更新的人员技能地图与资质状态，匹配派工。</div></div>
+        </div>
+      </div>
+
+      <div class="glass" style="border-radius:16px; display:flex; flex-direction:column;">
+        <div class="sec-title"><span style="color:var(--ok);">⇌</span> 系统集成层 <span class="tag">规划图 · 第 5 层</span></div>
+        <div class="int-list">
+          <div class="int"><span class="ii" style="color:var(--warn); background:rgba(245,158,11,.1);">⇄</span>
+            <div><div class="it">PEBS 接口</div><div class="id">检验任务/结果/NCR 回写</div></div>
+            <span class="live-flag pill plan">待接</span></div>
+          <div class="int"><span class="ii" style="color:var(--blue); background:rgba(59,130,246,.1);">▤</span>
+            <div><div class="it">WPS 接口</div><div class="id">来料/物料/供应商同步</div></div>
+            <span class="live-flag pill plan">待接</span></div>
+          <div class="int"><span class="ii" style="color:var(--purple); background:rgba(167,139,250,.1);">📁</span>
+            <div><div class="it">文件系统</div><div class="id">图纸/SIP/规格书归档</div></div>
+            <span class="live-flag pill plan">待接</span></div>
+          <div class="int"><span class="ii" style="color:var(--ok); background:rgba(16,185,129,.1);">🕐</span>
+            <div><div class="it">打卡系统</div><div class="id">在岗状态/排班</div></div>
+            <span class="live-flag pill plan">待接</span></div>
+          <div class="int"><span class="ii" style="color:var(--cyan); background:rgba(6,182,212,.1);">👤</span>
+            <div><div class="it">人事系统</div><div class="id">人员信息/绩效数据</div></div>
+            <span class="live-flag pill plan">待接</span></div>
+          <div class="int"><span class="ii" style="color:var(--indigo); background:rgba(99,102,241,.1);">🗄</span>
+            <div><div class="it">数据库 (SQL)</div><div class="id">历史数据查询/写入</div></div>
+            <span class="live-flag pill ok" id="intDb">已接通</span></div>
+          <div class="int"><span class="ii" style="color:var(--danger); background:rgba(239,68,68,.1);">🤖</span>
+            <div><div class="it">RPA / 界面自动化</div><div class="id">无 API 时的可选通道</div></div>
+            <span class="live-flag pill plan">待接</span></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="slogan">数据打通 · 规则驱动 · AI 决策 · 人机协同 · 持续优化 —— <b>从检验执行，走向质量决策</b></div>
+    <div>IQC 智能体全景控制塔 · 演示版 · 内置 5 个示例批次 · 数字来自页面内示例数据</div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var API = '';
+var TOKEN = localStorage.getItem('iqc_token') || (DemoAuth.isFileProtocol() ? DemoAuth.DEMO_TOKEN : '');
+  var state = { tasks: [], selected: null };
+
+  // 显示当前公司（来自登录页保存的 qms_user，2026-10-08 统一账号体系）
+  (function showCompany() {
+    try {
+      var u = JSON.parse(localStorage.getItem('qms_user') || '{}');
+      var el = document.getElementById('demoState');
+      if (el && u.company_name) { el.textContent = u.company_name; }
+    } catch (e) {}
+  })();
+
+  // ---- 安全接入（演示登录门）----
+  function showLogin(msg){ if (!DemoAuth.isFileProtocol()) { location.href = 'login.html'; } }
+  function hideLogin(){ var g = document.getElementById('loginGate'); if (g) g.style.display = 'none'; }
+  function doLogin(){ location.href = 'login.html'; }
+  window.__iqcLogin = doLogin;
+  window.__iqcLogout = function(){ DemoAuth.logout(); };
+
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  function apiGet(path){ return DemoAPI.get(path); }
+  function apiPost(path, body){ return DemoAPI.post(path, body); }
+
+  var STAGE_ZH = { 'RECEIVED':'已收料', 'SAMPLING':'抽样中', 'INSPECTING':'检验中', 'REVIEW':'复核中', 'CLOSED':'已关闭' };
+  var ADV_STAGE_ZH = { 'risk':'风险识别', 'sampling':'抽样策略', 'dispatch':'智能派工', 'judgment':'综合判定', 'parse':'图纸解析' };
+  var FACTOR_ZH = { 'ncr_count':'历史 NCR', 'complaint_count':'客诉数', 'return_count':'退货数', 'supplier_rating':'供应商评分' };
+  var ADV_STATUS = { 'DRAFT':'待确认', 'APPROVED':'已批准', 'REJECTED':'已驳回', 'SUPERSEDED':'已替代' };
+
+  function priClass(p){ return 'pri ' + (p || 'NORMAL').toUpperCase(); }
+  function stgClass(s){ return 'stg ' + (s || '').toUpperCase(); }
+  function stageZh(s){ return STAGE_ZH[s] || s || '未知'; }
+
+  function renderKpis(tasks){
+    var total = tasks.total || 0;
+    var items = tasks.items || [];
+    var high = items.filter(function(t){ return (t.priority||'').toUpperCase() === 'HIGH'; }).length;
+    var waiting = items.filter(function(t){ return (t.stage||'') !== 'CLOSED'; }).length;
+    $('kpiBatch').textContent = total;
+    $('kpiBatchD').innerHTML = '演示库任务单总数';
+    $('kpiRisk').textContent = high;
+    $('kpiRiskD').innerHTML = 'HIGH 优先级批次（演示）';
+    $('kpiDoing').textContent = waiting;
+    $('kpiDoingD').innerHTML = '未关闭批次（演示）';
+    $('kpiNpi').textContent = '—';
+    $('kpiNpiD').innerHTML = '演示库暂无 NPI 字段';
+    $('kpiAuto').textContent = '—';
+    $('kpiAutoFill').style.width = '0%';
+    $('kpiAutoD') && ($('kpiAutoD').innerHTML = '');
+  }
+
+  function renderTaskRows(){
+    var items = state.tasks.items || [];
+    var box = $('taskRows');
+    if(!items.length){ box.innerHTML = '<div class="empty">演示库暂无任务</div>'; return; }
+    box.innerHTML = items.map(function(t){
+      return '<div class="task-row" data-id="' + t.id + '" onclick="window.__iqcSelect && window.__iqcSelect(' + t.id + ')">' +
+        '<div><div class="tno">' + esc(t.task_no) + '</div><div class="tmt">' + esc(t.material_code) + ' · ' + esc(t.material_name) + '</div></div>' +
+        '<div><span class="tmt">' + esc(t.po_no || '—') + '</span></div>' +
+        '<span class="' + priClass(t.priority) + '">' + esc((t.priority||'').toUpperCase()) + '</span>' +
+        '<span class="' + stgClass(t.stage) + '">' + esc(stageZh(t.stage)) + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function setConn(ok, msg){
+    $('connState').textContent = ok ? '在线' : '未连接';
+    $('connState').style.color = ok ? 'var(--ok)' : 'var(--danger)';
+    $('srcState').textContent = ok ? '本地示例数据' : '未载入';
+    $('srcState').style.color = ok ? 'var(--ok)' : 'var(--danger)';
+  }
+
+  function init(){
+    apiGet('/iqc-agent/tasks?page_size=50').then(function(data){
+      state.tasks = data;
+      renderKpis(data);
+      renderTaskRows();
+      setConn(true, '在线');
+      $('curBatch').textContent = (data.items && data.items[0]) ? (data.items[0].task_no + ' / ' + data.items[0].material_code) : '无';
+      // 大脑节点真实徽标
+      var items = data.items || [];
+      var high = items.filter(function(t){ return (t.priority||'').toUpperCase()==='HIGH'; }).length;
+      $('statRisk').textContent = high + ' 个 HIGH 高风险批次 · ' + items.length + ' 批次';
+      var low = items.filter(function(t){ return (t.priority||'').toUpperCase()==='LOW'; }).length;
+      $('statSampling').textContent = 'HIGH ' + high + ' · NORMAL ' + (items.length-high-low) + ' · LOW ' + low;
+      $('statDispatch').textContent = '2 名检验员（检验员甲/检验员乙）可派工';
+    }).catch(function(e){
+      setConn(false, '未连接');
+      $('taskRows').innerHTML = '<div class="empty">未能载入演示任务</div>';
+      $('kpiBatch').textContent = '—'; $('kpiRisk').textContent = '—'; $('kpiDoing').textContent = '—';
+      $('kpiBatchD').innerHTML = '接口不可达'; $('kpiRiskD').innerHTML = '接口不可达'; $('kpiDoingD').innerHTML = '接口不可达';
+      $('statRisk').textContent = '未连接后端'; $('statSampling').textContent = '未连接后端'; $('statDispatch').textContent = '未连接后端';
+    });
+  }
+
+  // ---------- 任务详情 + AI 实时分析 ----------
+  function renderPanel(t){
+    var panel = $('detailPanel');
+    panel.innerHTML =
+      '<div class="panel-hd"><span class="pt">' + esc(t.task_no) + '</span>' +
+      '<span class="ps">' + esc(t.material_code) + ' · ' + esc(t.material_name) + '</span>' +
+      '<span class="' + priClass(t.priority) + '">' + esc((t.priority||'').toUpperCase()) + '</span>' +
+      '<span class="' + stgClass(t.stage) + '">' + esc(stageZh(t.stage)) + '</span></div>' +
+      '<div class="loading"><span class="sp"></span>AI 正在实时推理（风险 → 抽样 → 派工）…</div>';
+    // 串行调用三段
+    var stages = ['risk','sampling','dispatch'];
+    var results = {};
+    var chain = Promise.resolve();
+    stages.forEach(function(s){
+      chain = chain.then(function(){
+        return apiPost('/ai/iqc/orchestrate', { task_id: t.id, stage: s }).then(function(r){ results[s] = r; });
+      });
+    });
+    chain.then(function(){
+      return apiGet('/ai/iqc/advice?task_id=' + t.id + '&page_size=10').then(function(a){ results.advice = a; });
+    }).then(function(){
+      renderAnalysis(panel, t, results);
+    }).catch(function(e){
+      panel.innerHTML = '<div class="empty">演示推理失败：' + esc(e.message) + '</div>';
+    });
+  }
+
+  function renderAnalysis(panel, t, r){
+    var risk = r.risk && r.risk.payload, samp = r.sampling && r.sampling.payload, disp = r.dispatch && r.dispatch.payload;
+    var html = '<div class="panel-hd"><span class="pt">' + esc(t.task_no) + '</span>' +
+      '<span class="ps">' + esc(t.material_code) + ' · ' + esc(t.material_name) + ' · ' + esc(t.po_no||'') + '</span>' +
+      '<span class="' + priClass(t.priority) + '">' + esc((t.priority||'').toUpperCase()) + '</span>' +
+      '<span class="' + stgClass(t.stage) + '">' + esc(stageZh(t.stage)) + '</span></div>';
+
+    // 风险
+    if(risk){
+      var lv = (risk.level||'').toUpperCase();
+      var lvPill = lv==='HIGH' ? '<span class="pill danger">高风险</span>' : (lv==='MEDIUM'||lv==='MED' ? '<span class="pill warn">中风险</span>' : '<span class="pill ok">低风险</span>');
+      html += '<div class="an-sec"><div class="at"><span style="color:#f87171;">②</span> 风险识别 <span style="margin-left:auto;">' + lvPill + ' <span style="font-size:18px;color:var(--txt);font-family:Consolas,monospace;">' + esc(risk.score) + '</span><span style="font-size:10px;color:var(--dim);"> 分</span></span></div><div class="ab">';
+      (risk.factors || []).forEach(function(f){
+        html += '<div class="factor"><span class="fk">' + esc(FACTOR_ZH[f.key] || f.key) + '</span><span class="fr">' + esc(f.reason || '') + '</span><span style="color:var(--mut);font-family:Consolas,monospace;">+' + esc(f.score_part) + '</span></div>';
+      });
+      html += '</div></div>';
+    }
+    // 抽样
+    if(samp){
+      var schemePill = samp.scheme === 'TIGHTENED' ? '<span class="pill danger">加严</span>' : (samp.scheme === 'REDUCED' ? '<span class="pill warn">放宽</span>' : '<span class="pill ok">正常</span>');
+      html += '<div class="an-sec"><div class="at"><span style="color:#f87171;">③</span> 抽样策略判断 <span style="margin-left:auto;">' + schemePill + '</span></div><div class="ab">' +
+        '<div class="kv"><span class="k">抽样方案</span><span class="v">' + esc(samp.scheme) + (samp.full_inspection ? '（全检）' : '') + '</span></div>' +
+        '<div class="kv"><span class="k">抽检数量 n</span><span class="v"><b>' + esc(samp.sample_qty) + '</b> 件</span></div>' +
+        '<div class="kv"><span class="k">判定 Ac / Re</span><span class="v">' + esc(samp.accept_qty) + ' / ' + esc(samp.reject_qty) + '</span></div>' +
+        '<div class="kv"><span class="k">下一批转移</span><span class="v">' + esc(samp.next_scheme_state || '—') + '</span></div>' +
+        (samp.calibration_status ? '<div class="kv"><span class="k">量具校准</span><span class="v">' + (samp.calibration_status === 'ok' ? '正常' : esc(samp.calibration_status)) + '</span></div>' : '') +
+        '</div></div>';
+    }
+    // 派工
+    if(disp){
+      html += '<div class="an-sec"><div class="at"><span style="color:var(--cyan);">⑤</span> 检验员智能派工 <span style="margin-left:auto;font-size:10px;color:var(--dim);">按 技能 40% · 负载 25% · 擅长 15% · 优先级 20%</span></div><div class="ab">';
+      (disp.suggestions || []).forEach(function(p, i){
+        html += '<div class="person"><span class="rank">' + (i+1) + '</span><span class="pn">' + esc(p.name) + '</span>' +
+          '<span style="font-size:10px;color:var(--dim);">' + (p.reasons||[]).map(esc).join(' · ') + '</span>' +
+          '<span class="psc">' + esc((Math.round(p.score*1000)/10)) + '%</span></div>';
+      });
+      html += '</div></div>';
+    }
+    // AI 建议
+    var advs = (r.advice && r.advice.items) || [];
+    html += '<div class="an-sec"><div class="at"><span style="color:var(--indigo);">◈</span> AI 建议与决策（' + advs.length + ' 条）<span style="margin-left:auto;font-size:10px;color:var(--dim);">批准后写入知识库</span></div>';
+    if(!advs.length){ html += '<div class="ab hint">该任务暂无 AI 建议记录。</div>'; }
+    advs.forEach(function(a){
+      var st = a.status || 'DRAFT';
+      var stPill = st === 'APPROVED' ? '<span class="pill ok">' + ADV_STATUS[st] + '</span>' : (st === 'REJECTED' || st === 'SUPERSEDED' ? '<span class="pill plan">' + ADV_STATUS[st] + '</span>' : '<span class="pill warn">' + ADV_STATUS[st] + '</span>');
+      var brief = summaryOf(a);
+      html += '<div class="adv-row"><span class="as">' + esc(ADV_STAGE_ZH[a.stage] || a.stage) + '</span>' + stPill +
+        '<span style="color:var(--mut);">' + brief + '</span>';
+      if(st === 'DRAFT'){
+        html += '<span class="abtn"><button class="btn approve" onclick="window.__iqcApprove(' + a.id + ',this)">批准</button>' +
+          '<button class="btn reject" onclick="window.__iqcReject(' + a.id + ',this)">驳回</button></span>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+    panel.innerHTML = html;
+  }
+
+  function summaryOf(a){
+    var p = a.payload || {};
+    if(a.stage === 'risk' && p.score != null){ return '风险 ' + (p.level||'') + ' ' + p.score + ' 分'; }
+    if(a.stage === 'sampling' && p.scheme){ return '抽样 ' + p.scheme + ' · n=' + p.sample_qty + ' · ' + p.accept_qty + '/' + p.reject_qty; }
+    if(a.stage === 'dispatch' && p.suggestions){ return '推荐 ' + p.suggestions.map(function(s){ return s.name; }).join(' / '); }
+    if(a.stage === 'judgment' && p.conclusion){ return p.conclusion; }
+    var s = JSON.stringify(p); return s.length > 60 ? s.slice(0,60) + '…' : s;
+  }
+
+  function doDecision(id, act, btn){
+    if(btn){ btn.disabled = true; btn.textContent = '处理中…'; }
+    var path = act === 'approve' ? '/iqc-agent/advice/' + id + '/approve' : '/iqc-agent/advice/' + id + '/reject';
+    apiPost(path, { reason: act === 'approve' ? '控制塔演示：确认采纳' : '控制塔演示：不采纳' })
+      .then(function(){
+        if(state.selected){ renderPanel(state.selected); }
+      })
+      .catch(function(e){
+        if(btn){ btn.disabled = false; btn.textContent = act === 'approve' ? '批准' : '驳回'; }
+        alert('操作失败：' + e.message);
+      });
+  }
+
+  window.__iqcSelect = function(id){
+    var items = state.tasks.items || [];
+    var t = null;
+    items.forEach(function(x){ if(x.id === id) t = x; });
+    if(!t) return;
+    state.selected = t;
+    var rows = document.querySelectorAll('.task-row');
+    rows.forEach(function(r){ r.classList.toggle('sel', Number(r.getAttribute('data-id')) === id); });
+    renderPanel(t);
+  };
+  window.__iqcApprove = function(id, btn){ doDecision(id, 'approve', btn); };
+  window.__iqcReject = function(id, btn){ doDecision(id, 'reject', btn); };
+
+  if (DemoAuth.requireDemoAuth()) { hideLogin(); init(); }
+})();
+</script>
+</body>
+</html>

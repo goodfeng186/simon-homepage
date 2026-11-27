@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>355 智能体协同中枢 · 五流程总览</title>
+<link rel="stylesheet" href="assets/demo.css">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23040b14'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='%2338bdf8' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%2338bdf8'/%3E%3C/svg%3E">
+<style>
+        :root {
+            --bg-deep: #040b14;
+            --accent-cyan: #38bdf8;
+            --accent-blue: #3b82f6;
+            --panel-bg: rgba(10, 25, 47, 0.72);
+            --panel-border: rgba(56, 189, 248, 0.25);
+            --ok: #34d399;
+            --warn: #fbbf24;
+            --muted: #94a3b8;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: var(--bg-deep);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        .font-tech { font-family: 'Rajdhani', sans-serif; }
+        .cinematic-bg {
+            position: fixed; inset: 0; z-index: -3;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(56,189,248,.09) 0%, transparent 42%),
+                radial-gradient(circle at 85% 75%, rgba(59,130,246,.09) 0%, transparent 42%),
+                linear-gradient(180deg, #020617 0%, #0f172a 100%);
+        }
+        .grid-overlay {
+            position: fixed; inset: 0; z-index: -2; opacity: .5;
+            background-image:
+                linear-gradient(rgba(56,189,248,.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(56,189,248,.035) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(circle at 50% 40%, black 30%, transparent 90%);
+            -webkit-mask-image: radial-gradient(circle at 50% 40%, black 30%, transparent 90%);
+        }
+        .glass {
+            background: var(--panel-bg);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 18px 45px -18px rgba(0,0,0,.75), inset 0 0 22px rgba(56,189,248,.06);
+        }
+
+        /* 顶部导航 */
+        .topbar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 28px; border-bottom: 1px solid rgba(56,189,248,.18);
+            background: rgba(4,11,20,.72); backdrop-filter: blur(14px); position: sticky; top: 0; z-index: 40;
+        }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-logo {
+            width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, rgba(56,189,248,.18), rgba(59,130,246,.10));
+            border: 1px solid rgba(56,189,248,.4);
+        }
+        .brand h1 { font-size: 20px; font-weight: 700; letter-spacing: .06em; color: #fff; }
+        .brand h1 span { color: var(--accent-cyan); font-size: 26px; }
+        .brand p { font-size: 11px; color: var(--muted); margin-top: 1px; letter-spacing: .12em; }
+        .userbox { display: flex; align-items: center; gap: 12px; }
+        .user-chip {
+            display: flex; align-items: center; gap: 9px;
+            background: rgba(15,23,42,.7); border: 1px solid rgba(100,116,139,.35);
+            border-radius: 999px; padding: 6px 14px 6px 7px;
+        }
+        .avatar {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: linear-gradient(135deg, #38bdf8, #3b82f6);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700; color: #040b14;
+        }
+        .user-chip .uname { font-size: 13px; font-weight: 500; color: #e2e8f0; }
+        .user-chip .urole { font-size: 10px; color: var(--muted); }
+        .btn-exit {
+            background: transparent; border: 1px solid rgba(248,113,113,.45); color: #fca5a5;
+            padding: 7px 16px; border-radius: 999px; font-size: 12px; cursor: pointer;
+            transition: all .25s ease; font-family: inherit;
+        }
+        .btn-exit:hover { background: rgba(248,113,113,.12); box-shadow: 0 0 16px rgba(248,113,113,.25); }
+
+        /* 主容器 */
+        .wrap { max-width: 1440px; margin: 0 auto; padding: 26px 28px 48px; }
+
+        /* 总览统计条 */
+        .summary {
+            display: flex; flex-wrap: wrap; align-items: stretch; gap: 14px; padding: 20px 24px;
+            border-radius: 16px; margin-bottom: 22px;
+        }
+        .sum-item { flex: 1; min-width: 150px; text-align: center; }
+        .sum-item .num { font-size: 34px; font-weight: 700; line-height: 1.05; }
+        .sum-item .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; letter-spacing: .08em; }
+        .sum-item.c-ai .num { color: var(--ok); text-shadow: 0 0 18px rgba(52,211,153,.4); }
+        .sum-item.c-human .num { color: var(--warn); text-shadow: 0 0 18px rgba(251,191,36,.35); }
+        .sum-item.c-total .num { color: var(--accent-cyan); text-shadow: 0 0 18px rgba(56,189,248,.4); }
+        .sum-div { width: 1px; background: linear-gradient(180deg, transparent, rgba(56,189,248,.35), transparent); }
+
+        .section-title {
+            display: flex; align-items: center; gap: 10px; margin: 26px 0 14px;
+            font-size: 16px; font-weight: 700; color: #e0f2fe;
+        }
+        .section-title .bar { width: 4px; height: 18px; border-radius: 2px; background: var(--accent-cyan); box-shadow: 0 0 10px rgba(56,189,248,.6); }
+        .section-title .sub { font-size: 12px; color: var(--muted); font-weight: 400; }
+
+        /* 五流程卡片 */
+        .flow-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        @media (min-width: 768px)  { .flow-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (min-width: 1280px) { .flow-grid { grid-template-columns: repeat(5, 1fr); } }
+        .flow-card {
+            border-radius: 16px; padding: 20px 18px 16px; position: relative; overflow: hidden;
+            transition: transform .25s ease, box-shadow .25s ease; cursor: pointer;
+            display: flex; flex-direction: column;
+        }
+        .flow-card:hover { transform: translateY(-4px); box-shadow: 0 22px 40px -18px rgba(56,189,248,.4); }
+        .flow-card.disabled { cursor: not-allowed; opacity: .82; filter: grayscale(.55) saturate(.55); background: rgba(15,23,42,.55); border-color: rgba(100,116,139,.3); }
+        .flow-card.disabled:hover { transform: none; box-shadow: 0 18px 45px -18px rgba(0,0,0,.75), inset 0 0 22px rgba(56,189,248,.06); }
+        .flow-card.disabled .fname { color: #cbd5e1; }
+        .flow-card.disabled .enter { background: rgba(100,116,139,.12); border-color: rgba(100,116,139,.35); color: #94a3b8; }
+        .flow-card.disabled .n.ai { color: #64748b; text-shadow: none; }
+        .flow-card.disabled .n.hm { color: #64748b; text-shadow: none; }
+        .flow-card .badge {
+            display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500;
+            padding: 2px 10px; border-radius: 999px; margin-left: auto;
+        }
+        .badge.pending { color: #fde68a; background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.4); }
+        .badge.building { color: #93c5fd; background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.4); }
+        .badge.ready { color: #6ee7b7; background: rgba(52,211,153,.12); border: 1px solid rgba(52,211,153,.4); }
+        .flow-card .glow {
+            position: absolute; top: 0; right: 0; width: 110px; height: 110px;
+            background: radial-gradient(circle at top right, rgba(56,189,248,.18), transparent 70%); pointer-events: none;
+        }
+        .flow-card .fname { font-size: 17px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .flow-card .fname .ic {
+            width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(56,189,248,.14); border: 1px solid rgba(56,189,248,.35);
+        }
+        .flow-card .fstat { display: flex; gap: 10px; margin-bottom: 14px; }
+        .flow-card .fstat .col { flex: 1; background: rgba(4,11,20,.55); border-radius: 10px; padding: 10px 8px; text-align: center; }
+        .flow-card .fstat .n { font-size: 24px; font-weight: 700; line-height: 1; }
+        .flow-card .fstat .t { font-size: 11px; color: var(--muted); margin-top: 5px; }
+        .flow-card .fstat .n.ai { color: var(--ok); }
+        .flow-card .fstat .n.hm { color: var(--warn); }
+        .flow-card .fowner { font-size: 11px; color: var(--muted); margin: 6px 0 14px; }
+        .flow-card .prog-wrap { height: 6px; background: rgba(15,23,42,.8); border-radius: 99px; overflow: hidden; margin-bottom: 10px; }
+        .flow-card .prog { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #22d3ee, #38bdf8); box-shadow: 0 0 10px rgba(56,189,248,.5); transition: width 1s ease; }
+        .flow-card .fmeta { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+        .flow-card .fmeta b { color: #bae6fd; font-weight: 600; }
+        .flow-card .enter {
+            margin-top: 14px; display: flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 9px 0; border-radius: 10px; font-size: 12px; font-weight: 500; color: #e0f2fe;
+            background: rgba(56,189,248,.10); border: 1px solid rgba(56,189,248,.3);
+            transition: all .25s ease;
+        }
+        .flow-card:hover .enter { background: linear-gradient(135deg, rgba(59,130,246,.35), rgba(2,132,199,.35)); box-shadow: 0 0 18px rgba(56,189,248,.3); }
+
+        /* 快捷入口 */
+        .quick-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        @media (min-width: 640px)  { .quick-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 1024px) { .quick-grid { grid-template-columns: repeat(4, 1fr); } }
+        .quick-card {
+            display: flex; align-items: center; gap: 12px; padding: 15px 16px; border-radius: 14px;
+            cursor: pointer; transition: all .25s ease; text-decoration: none; color: inherit;
+        }
+        .quick-card:hover { transform: translateY(-3px); box-shadow: 0 16px 30px -16px rgba(56,189,248,.45); border-color: rgba(56,189,248,.5); }
+        .quick-card .qi {
+            width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, rgba(56,189,248,.16), rgba(59,130,246,.08));
+            border: 1px solid rgba(56,189,248,.35);
+        }
+        .quick-card .qt { font-size: 14px; font-weight: 600; color: #e0f2fe; }
+        .quick-card .qd { font-size: 11px; color: var(--muted); margin-top: 2px; }
+        .quick-card .go { margin-left: auto; color: var(--accent-cyan); }
+
+        .foot-note { margin-top: 26px; font-size: 11px; color: #64748b; text-align: center; line-height: 1.7; }
+        .badge-demo {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.4); color: #fde68a;
+            font-size: 11px; padding: 3px 10px; border-radius: 999px;
+        }
+        .badge-live {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(52,211,153,.12); border: 1px solid rgba(52,211,153,.4); color: #6ee7b7;
+            font-size: 11px; padding: 3px 10px; border-radius: 999px;
+        }
+        /* 提示气泡 */
+        .toast {
+            position: fixed; left: 50%; bottom: 36px; transform: translateX(-50%) translateY(20px);
+            background: rgba(10,25,47,.96); border: 1px solid rgba(56,189,248,.4);
+            color: #e0f2fe; font-size: 13px; padding: 10px 22px; border-radius: 10px;
+            opacity: 0; pointer-events: none; transition: all .3s ease; z-index: 99;
+            box-shadow: 0 12px 30px -10px rgba(0,0,0,.8);
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .fade-up { animation: fadeUp .7s cubic-bezier(.16,1,.3,1) both; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 导入弹窗 */
+        .import-gate { position: fixed; inset: 0; background: rgba(2,6,23,.8); z-index: 100; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+        .ig-box { width: 460px; max-width: 92vw; max-height: 88vh; overflow-y: auto; background: #0b1a2e; border: 1px solid rgba(56,189,248,.35); border-radius: 16px; padding: 22px 24px; box-shadow: 0 24px 60px -18px rgba(0,0,0,.9); }
+        .ig-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+        .ig-title { font-size: 17px; font-weight: 700; color: #fff; }
+        .ig-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+        .ig-x { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; line-height: 1; }
+        .ig-x:hover { color: #fff; }
+        .ig-form .f { margin-bottom: 12px; }
+        .ig-form .f label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+        .ig-form .f label b { color: #f87171; font-style: normal; }
+        .ig-form .f input, .ig-form .f select, .ig-form .f textarea { width: 100%; padding: 9px 11px; background: rgba(15,23,42,.9); border: 1px solid rgba(100,116,139,.35); border-radius: 8px; color: #e2e8f0; font-size: 13px; }
+        .ig-form .f input:focus, .ig-form .f select:focus, .ig-form .f textarea:focus { outline: none; border-color: #38bdf8; }
+        .ig-form .f textarea { min-height: 58px; resize: vertical; }
+        .ig-form .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .ig-form .btn { width: 100%; margin-top: 8px; padding: 10px; border: none; border-radius: 9px; background: linear-gradient(135deg, #2563eb, #0891b2); color: #fff; font-weight: 600; font-size: 14px; cursor: pointer; }
+        .ig-form .btn:disabled { opacity: .55; cursor: not-allowed; }
+        .ig-res { margin-top: 12px; padding: 10px 14px; border-radius: 8px; font-size: 13px; display: none; line-height: 1.7; }
+        .ig-res.ok { display: block; background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.45); color: #34d399; }
+        .ig-res.err { display: block; background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.45); color: #f87171; }
+        .ig-tip { margin-top: 12px; padding: 9px 13px; border-radius: 8px; background: rgba(56,189,248,.06); border: 1px dashed rgba(56,189,248,.3); color: var(--muted); font-size: 11.5px; line-height: 1.8; }
+        .ig-tip a { color: #38bdf8; text-decoration: none; }
+        .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: igR 1s linear infinite; vertical-align: -2px; margin-right: 6px; }
+        @keyframes igR { to { transform: rotate(360deg); } }
+    </style>
+<script src="assets/demo-auth.js"></script>
+<script src="assets/demo-data.js"></script>
+</head>
+<body>
+    <div class="cinematic-bg"></div>
+    <div class="grid-overlay"></div>
+
+    <!-- 顶部导航 -->
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-logo">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2" fill="#38bdf8" stroke="none"/>
+                    <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                </svg>
+            </div>
+            <div>
+                <h1><span>355</span> 智能体协同中枢</h1>
+                <p>ENTERPRISE AGENT COORDINATION HUB</p>
+            </div>
+        </div>
+        <div class="userbox">
+            <div class="user-chip">
+                <div class="avatar" id="curAvatar">演</div>
+                <div>
+                    <div class="uname" id="curName">[姓名]</div>
+                    <div class="urole" id="curRole">演示用户 · [公司]</div>
+                </div>
+            </div>
+            <button class="btn-exit" id="btnExit" type="button">退出登录</button>
+        </div>
+    </header>
+
+    <main class="wrap">
+        <!-- 总览统计 -->
+        <section class="summary glass fade-up" style="animation-delay:.05s;">
+            <div class="sum-item c-ai">
+                <div class="num font-tech" id="sumAi">115</div>
+                <div class="lbl">AI 已处理节点</div>
+            </div>
+            <div class="sum-div"></div>
+            <div class="sum-item c-human">
+                <div class="num font-tech" id="sumHuman">41</div>
+                <div class="lbl">需人工参考节点</div>
+            </div>
+            <div class="sum-div"></div>
+            <div class="sum-item c-total">
+                <div class="num font-tech" id="sumTotal">184</div>
+                <div class="lbl">流程总节点</div>
+            </div>
+            <div class="sum-div"></div>
+            <div class="sum-item" style="display:flex;align-items:center;justify-content:center;min-width:180px;">
+                <span class="badge-demo" id="modeBadge">静态示例数据</span>
+            </div>
+        </section>
+
+        <!-- 五个流程状况 -->
+        <div class="section-title fade-up" style="animation-delay:.1s;">
+            <span class="bar"></span> 五个流程状况 <span class="sub">按节点数统计 · 点击卡片进入对应智能体</span>
+        </div>
+                <section class="flow-grid" id="flowGrid">
+            <article class="flow-card glass fade-up" style="animation-delay:0.10s;" data-key="iqc">
+                <div class="glow"></div>
+                <div class="fname"><span class="ic">IQC</span>进料检验<span class="badge ready">运行中</span></div>
+                <div class="fowner">流程主责 · [姓名]</div>
+                <div class="fstat"><div class="col"><div class="n font-tech ai">56</div><div class="t">AI 已处理</div></div><div class="col"><div class="n font-tech hm">12</div><div class="t">需人工参考</div></div></div>
+                <div class="prog-wrap"><div class="prog" style="width:85%;"></div></div>
+                <div class="fmeta"><span>已推进 <b>68/80</b> 节点</span><span>85%</span></div>
+                <div class="enter">进入 进料检验</div>
+            </article>
+            <article class="flow-card glass fade-up" style="animation-delay:0.16s;" data-key="doc">
+                <div class="glow"></div>
+                <div class="fname"><span class="ic">DOC</span>文件控制<span class="badge building">建设中</span></div>
+                <div class="fowner">流程主责 · [姓名]</div>
+                <div class="fstat"><div class="col"><div class="n font-tech ai">32</div><div class="t">AI 已处理</div></div><div class="col"><div class="n font-tech hm">8</div><div class="t">需人工参考</div></div></div>
+                <div class="prog-wrap"><div class="prog" style="width:89%;"></div></div>
+                <div class="fmeta"><span>已推进 <b>40/45</b> 节点</span><span>89%</span></div>
+                <div class="enter">进入 文件控制</div>
+            </article>
+            <article class="flow-card glass fade-up disabled" style="animation-delay:0.22s;" data-key="npi">
+                <div class="glow"></div>
+                <div class="fname"><span class="ic">NPI</span>NPI<span class="badge pending">待接入</span></div>
+                <div class="fowner">流程主责 · [姓名]</div>
+                <div class="fstat"><div class="col"><div class="n font-tech ai">9</div><div class="t">AI 已处理</div></div><div class="col"><div class="n font-tech hm">10</div><div class="t">需人工参考</div></div></div>
+                <div class="prog-wrap"><div class="prog" style="width:100%;"></div></div>
+                <div class="fmeta"><span>已推进 <b>19/19</b> 节点</span><span>100%</span></div>
+                <div class="enter">待接入 · 敬请期待</div>
+            </article>
+            <article class="flow-card glass fade-up disabled" style="animation-delay:0.28s;" data-key="mat">
+                <div class="glow"></div>
+                <div class="fname"><span class="ic">MAT</span>新物料<span class="badge building">建设中</span></div>
+                <div class="fowner">流程主责 · [姓名]</div>
+                <div class="fstat"><div class="col"><div class="n font-tech ai">15</div><div class="t">AI 已处理</div></div><div class="col"><div class="n font-tech hm">5</div><div class="t">需人工参考</div></div></div>
+                <div class="prog-wrap"><div class="prog" style="width:80%;"></div></div>
+                <div class="fmeta"><span>已推进 <b>20/25</b> 节点</span><span>80%</span></div>
+                <div class="enter">建设中 · 敬请期待</div>
+            </article>
+            <article class="flow-card glass fade-up disabled" style="animation-delay:0.34s;" data-key="line">
+                <div class="glow"></div>
+                <div class="fname"><span class="ic">LINE</span>制造停线<span class="badge building">建设中</span></div>
+                <div class="fowner">流程主责 · [姓名]</div>
+                <div class="fstat"><div class="col"><div class="n font-tech ai">3</div><div class="t">AI 已处理</div></div><div class="col"><div class="n font-tech hm">6</div><div class="t">需人工参考</div></div></div>
+                <div class="prog-wrap"><div class="prog" style="width:60%;"></div></div>
+                <div class="fmeta"><span>已推进 <b>9/15</b> 节点</span><span>60%</span></div>
+                <div class="enter">建设中 · 敬请期待</div>
+            </article>
+        </section>
+
+        <!-- 快捷入口 -->
+        <div class="section-title fade-up" style="animation-delay:.15s;">
+            <span class="bar"></span> 功能入口 <span class="sub">已就绪的智能体界面</span>
+        </div>
+                <section class="quick-grid" id="quickGrid">
+            <a class="quick-card glass fade-up" href="iqc-check.html"><span class="qt">检验员现场核对</span><br><span class="qd">现场扫码核对 · 自动判定 · 留痕记录</span></a>
+            <a class="quick-card glass fade-up" href="iqc-control-tower.html"><span class="qt">IQC 智能体全景控制塔</span><br><span class="qd">各智能体运行状态 · 任务总览</span></a>
+            <a class="quick-card glass fade-up" href="iqc-sip-workbench.html"><span class="qt">图纸 → SIP 工作台</span><br><span class="qd">按内置示例行演示生成与审批</span></a>
+            <a class="quick-card glass fade-up" href="iqc-import-center.html"><span class="qt">来料与不良导入</span><br><span class="qd">演示登记，不写入服务器</span></a>
+            <a class="quick-card glass fade-up" href="iqc-knowledge-center.html"><span class="qt">知识库</span><br><span class="qd">程序、SIP 与案例的演示条目</span></a>
+            <div class="quick-card glass fade-up" role="note"><span class="qt">体系 AI</span><br><span class="qd">本演示包不含该模块</span></div>
+            <a class="quick-card glass fade-up" href="iqc-demo.html"><span class="qt">IQC 演示页</span><br><span class="qd">全流程演示环境</span></a>
+            <a class="quick-card glass fade-up" href="iqc-admin-users.html"><span class="qt">账号管理</span><br><span class="qd">演示账号列表与本地操作</span></a>
+            <a class="quick-card glass fade-up" href="iqc-audit-logs.html"><span class="qt">操作记录</span><br><span class="qd">演示证据链，可筛选查看</span></a>
+        </section>
+
+        <p class="foot-note fade-up" style="animation-delay:.2s;">
+            355项目 · AI+质量体系重构 · 本页为静态示例数据，不连接服务器
+        </p>
+    </main>
+
+    <!-- ===== 导入弹窗：来料任务 / 不良案例 ===== -->
+    <div class="import-gate" id="importGate" style="display:none;">
+      <div class="ig-box">
+        <div class="ig-head">
+          <div>
+            <div class="ig-title" id="igTitle">来料任务导入</div>
+            <div class="ig-sub" id="igSub">手工登记待检验来料批次 → 自动生成任务号 IQCT-</div>
+          </div>
+          <button class="ig-x" onclick="__closeImportModal()">×</button>
+        </div>
+        <div id="igBody"></div>
+      </div>
+    </div>
+
+    <script>
+        var TOWER_URL = 'iqc-control-tower.html';
+        var SIP_URL = 'iqc-sip-workbench.html';
+        var DEMO_URL = 'iqc-demo.html';
+        var ADMIN_URL = 'iqc-admin-users.html';
+        var AUDIT_URL = 'iqc-audit-logs.html';
+        var CHECK_URL = 'iqc-check.html';
+        var KNOWLEDGE_URL = 'iqc-knowledge-center.html';
+        var IMPORT_URL = 'iqc-import-center.html';
+
+        // ============================================================
+        // 统一身份（2026-10-08）：登录页验证成功后已存 iqc_token（同一凭证全系统通用），
+        // 主界面直接沿用，无需再调用登录接口；无凭证（直接访问本页）时控制塔登录门兜底。
+        // ============================================================
+        (function autoAuthIQC() {
+            var tok = localStorage.getItem('iqc_token');
+            if (!tok) return; // 无凭证：不主动登录，控制塔会显示登录门
+        })();
+
+        // 静态示例数据（后端不可用时的兜底；后端可用时被真实数据覆盖）
+        var FLOW_DATA = [
+            {
+                key: 'iqc', name: '进料检验', owner: '[姓名]',
+                ai: 56, human: 12, total: 80, status: 'ready', clickable: true,
+                target: 'iqc-control-tower.html',
+                desc: 'IQC 来料检验 · 图纸→SIP'
+            },
+            {
+                key: 'doc', name: '文件控制', owner: '[姓名]',
+                ai: 32, human: 8, total: 45, status: 'building', clickable: true,
+                target: 'iqc-knowledge-center.html',
+                desc: '受控文件 · 知识库'
+            },
+            {
+                key: 'npi', name: 'NPI', owner: '[姓名]',
+                ai: 9, human: 10, total: 19, status: 'pending', clickable: false,
+                target: '',
+                desc: 'NPI 流程 · 待接入'
+            },
+            {
+                key: 'mat', name: '新物料', owner: '[姓名]',
+                ai: 15, human: 5, total: 25, status: 'building', clickable: false,
+                target: '',
+                desc: '新物料认证 · 建设中'
+            },
+            {
+                key: 'line', name: '制造停线', owner: '[姓名]',
+                ai: 3, human: 6, total: 15, status: 'building', clickable: false,
+                target: '',
+                desc: '停线管理 · 建设中'
+            }
+        ];
+
+        var QUICK_DATA = [
+            { name: '检验员现场核对', desc: '现场扫码核对 · 自动判定 · 留痕记录', target: CHECK_URL },
+            { name: 'IQC 智能体全景控制塔', desc: '各智能体运行状态 · 任务总览', target: TOWER_URL },
+            { name: '图纸 → SIP 工作台', desc: '上传图纸自动生成检验指导书', target: SIP_URL },
+            { name: '来料与不良导入', desc: '演示登记，不写入服务器', target: IMPORT_URL },
+            { name: '体系 AI', desc: '本演示包不含该模块', target: '', blocked: true },
+            { name: 'IQC 演示页', desc: '全流程演示环境', target: DEMO_URL },
+            { name: '知识库', desc: '程序、SIP 与案例的演示条目', target: KNOWLEDGE_URL },
+            { name: '账号管理', desc: '演示账号列表与本地操作', target: ADMIN_URL },
+            { name: '操作记录', desc: '演示证据链，可筛选查看', target: AUDIT_URL }
+        ];
+
+        var BADGE_TEXT = { ready: '运行中', building: '建设中', pending: '待接入' };
+
+        // 图标（内联 SVG，风格统一）
+        var ICONS = {
+            iqc: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg>',
+            doc: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+            npi: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>',
+            mat: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><path d="M21 8L12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>',
+            line: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+            check: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+            tower: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
+            sip: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><path d="M4 4h16v16H4z"/><path d="M4 4l16 16M20 4L4 20"/></svg>',
+            ai: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><path d="M12 2a4 4 0 0 1 4 4c0 .6-.1 1.1-.3 1.6a4 4 0 0 1 4.3 4.3c.5.2 1 .3 1.6.3a4 4 0 0 1 0 8c-.6 0-1.1-.1-1.6-.3a4 4 0 0 1-4.3 4.3c-.2.5-.3 1-.3 1.6a4 4 0 0 1-8 0c0-.6.1-1.1.3-1.6a4 4 0 0 1-4.3-4.3c-.5-.2-1-.3-1.6-.3a4 4 0 0 1 0-8c.6 0 1.1.1 1.6.3a4 4 0 0 1 4.3-4.3c.2-.5.3-1 .3-1.6a4 4 0 0 1 4-4z"/><circle cx="12" cy="12" r="3"/></svg>',
+            demo: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4z"/></svg>',
+            admin: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+            audit: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+            import: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>',
+            badcase: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 8l8 8M16 8l-8 8"/></svg>'
+        };
+
+        var DATA_MODE = 'static'; // static=示例数据 / live=后端实时
+
+        function render() {
+            // 总览统计
+            var sumAi = 0, sumHuman = 0, sumTotal = 0;
+            FLOW_DATA.forEach(function (f) { sumAi += f.ai; sumHuman += f.human; sumTotal += f.total; });
+            document.getElementById('sumAi').textContent = sumAi;
+            document.getElementById('sumHuman').textContent = sumHuman;
+            document.getElementById('sumTotal').textContent = sumTotal;
+
+            // 数据来源徽标
+            var modeBadge = document.getElementById('modeBadge');
+            if (modeBadge) {
+                modeBadge.textContent = '静态示例数据';
+                modeBadge.className = 'badge-demo';
+            }
+
+            // 五流程卡片
+            var grid = document.getElementById('flowGrid');
+            var html = '';
+            FLOW_DATA.forEach(function (f, i) {
+                var done = f.ai + f.human;
+                var pct = f.total > 0 ? Math.round(done / f.total * 100) : 0;
+                var cls = 'flow-card glass fade-up' + (f.clickable ? '' : ' disabled');
+                var badge = '<span class="badge ' + f.status + '">' + BADGE_TEXT[f.status] + '</span>';
+                var enterTxt = f.clickable
+                    ? '进入 ' + f.name + ' <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
+                    : (f.status === 'pending' ? '待接入 · 敬请期待' : '建设中 · 敬请期待');
+                html += '<article class="' + cls + '" style="animation-delay:' + (0.1 + i * 0.06).toFixed(2) + 's;" data-key="' + f.key + '">'
+                    + '<div class="glow"></div>'
+                    + '<div class="fname"><span class="ic">' + ICONS[f.key] + '</span>' + f.name + badge + '</div>'
+                    + '<div class="fowner">流程主责 · ' + f.owner + '</div>'
+                    + '<div class="fstat">'
+                    +   '<div class="col"><div class="n font-tech ai">' + f.ai + '</div><div class="t">AI 已处理</div></div>'
+                    +   '<div class="col"><div class="n font-tech hm">' + f.human + '</div><div class="t">需人工参考</div></div>'
+                    + '</div>'
+                    + '<div class="prog-wrap"><div class="prog" style="width:' + pct + '%;"></div></div>'
+                    + '<div class="fmeta"><span>已推进 <b>' + done + '/' + f.total + '</b> 节点</span><span>' + pct + '%</span></div>'
+                    + '<div class="enter">' + enterTxt + '</div>'
+                    + '</article>';
+            });
+            grid.innerHTML = html;
+
+            // 快捷入口（按当前用户角色过滤：账号管理仅管理员、操作记录经理及以上）
+            var qg = document.getElementById('quickGrid');
+            var qhtml = '';
+            var qIcons = [ICONS.check, ICONS.tower, ICONS.sip, ICONS.import, ICONS.badcase, ICONS.ai, ICONS.demo, ICONS.admin, ICONS.audit];
+            var curRole = (JSON.parse(localStorage.getItem('qms_user') || '{}')).role || '';
+            QUICK_DATA.forEach(function (q, i) {
+                var delay = 'animation-delay:' + (0.15 + i * 0.06).toFixed(2) + 's;';
+                if (q.blocked) {
+                    qhtml += '<div class="quick-card glass fade-up" style="' + delay + '" role="note">'
+                        + '<span class="qi">' + (qIcons[i] || ICONS.ai) + '</span>'
+                        + '<span><span class="qt">' + q.name + '</span><br><span class="qd">' + q.desc + '</span></span>'
+                        + '</div>';
+                    return;
+                }
+                var clickAttr = q.modal
+                    ? 'href="javascript:void(0)" onclick="__openImportModal(\'' + q.modal + '\')"'
+                    : 'href="' + q.target + '"';
+                qhtml += '<a class="quick-card glass fade-up" style="' + delay + '" ' + clickAttr + '>'
+                    + '<span class="qi">' + (qIcons[i] || ICONS.ai) + '</span>'
+                    + '<span><span class="qt">' + q.name + '</span><br><span class="qd">' + q.desc + '</span></span>'
+                    + '<span class="go"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>'
+                    + '</a>';
+            });
+            qg.innerHTML = qhtml;
+
+            // 卡片点击：可点跳转 / 禁点提示
+            Array.prototype.forEach.call(grid.querySelectorAll('.flow-card'), function (card) {
+                card.addEventListener('click', function () {
+                    var key = card.getAttribute('data-key');
+                    var f = null;
+                    FLOW_DATA.forEach(function (x) { if (x.key === key) f = x; });
+                    if (!f) return;
+                    if (!f.clickable) {
+                        showToast(f.status === 'pending' ? 'NPI 智能体待接入，敬请期待' : f.name + ' 智能体建设中，敬请期待');
+                        return;
+                    }
+                    if (f.target) { window.location.href = f.target; }
+                    else { showToast('该界面待接入，敬请期待'); }
+                });
+            });
+        }
+
+        function showToast(msg) {
+            var t = document.getElementById('toast');
+            if (!t) {
+                t = document.createElement('div');
+                t.id = 'toast';
+                t.className = 'toast';
+                document.body.appendChild(t);
+            }
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(t._timer);
+            t._timer = setTimeout(function () { t.classList.remove('show'); }, 2200);
+        }
+
+        // ============================================================
+        // 首页直通导入：来料任务 / 不良案例（不跳中间页，弹窗直接提交）
+        // ============================================================
+        var IMPORT_SUPS = []; // 供应商下拉数据
+        var IMPORT_TPL = {
+            task: {
+                title: '来料任务导入',
+                sub: '手工登记待检验来料批次 → 自动生成任务号 IQCT-，检验员核对页即可看到',
+                html: ''
+                    + '<div class="f"><label>物料编码 <b>*</b></label><input id="igTMatCode" placeholder="如 93122427 / DKBA8.136.9475"></div>'
+                    + '<div class="f"><label>物料名称</label><input id="igTMatName" placeholder="如 绝缘PC膜 安装板底部绝缘膜"></div>'
+                    + '<div class="f"><label>供应商（可下拉选择或手动填写）</label><input id="igTSup" list="igSupList" placeholder="选择名录或直接输入供应商名称"></div>'
+                    + '<datalist id="igSupList"></datalist>'
+                    + '<div class="frow"><div class="f"><label>PO 单号</label><input id="igTPo" placeholder="如 DGOS202610010001"></div>'
+                    + '<div class="f"><label>来料数量 <b>*</b></label><input id="igTQty" type="number" min="1" placeholder="5000"></div></div>'
+                    + '<div class="frow"><div class="f"><label>优先级</label><select id="igTPri">'
+                    + '<option value="NORMAL">NORMAL 常规</option><option value="HIGH">HIGH 高</option><option value="LOW">LOW 低</option></select></div>'
+                    + '<div class="f"><label>要求完成日期</label><input id="igTDeadline" type="date"></div></div>'
+                    + '<button class="btn" id="igTBtn" onclick="__submitImport(\'task\')">创建来料任务</button>'
+                    + '<div class="ig-res" id="igTRes"></div>'
+                    + '<div class="ig-tip">创建后到「检验员现场核对」选择该批次 → 按 SIP 逐项核对（尺寸自动判定 / 使用内置示例行 / 案例核对）。演示数据，不写入服务器。</div>'
+            },
+            case: {
+                title: '不良案例导入',
+                sub: '登记历史不良 → 同物料同供应商"重点核对"优先挂载到核对页',
+                html: ''
+                    + '<div class="f"><label>物料编码 <b>*</b></label><input id="igCMatCode" placeholder="如 93122427"></div>'
+                    + '<div class="f"><label>物料名称</label><input id="igCMatName" placeholder="如 绝缘PC膜 安装板底部绝缘膜"></div>'
+                    + '<div class="f"><label>供应商（可下拉选择或手动填写）</label><input id="igCSup" list="igSupList" placeholder="选择名录或直接输入供应商名称"></div>'
+                    + '<div class="frow"><div class="f"><label>缺陷类型</label><input id="igCType" placeholder="如 边缘毛刺 / 尺寸超差 / 色差"></div>'
+                    + '<div class="f"><label>缺陷等级</label><select id="igCLevel"><option value="MA">MA 主要</option><option value="CR">CR 严重</option><option value="MI">MI 轻微</option></select></div></div>'
+                    + '<div class="f"><label>不良现象描述</label><textarea id="igCSymptom" placeholder="如：PC膜冲切边缘有毛刺，装机后刮伤塑胶外壳，导致装配间隙超差"></textarea></div>'
+                    + '<div class="f"><label>根因分析</label><textarea id="igCRoot" placeholder="如：冲切模具刃口磨损"></textarea></div>'
+                    + '<div class="frow"><div class="f"><label>案例来源</label><select id="igCSource">'
+                    + '<option value="INSPECTION">检验记录</option><option value="NCR">NCR</option><option value="COMPLAINT">客诉</option>'
+                    + '<option value="RETURN">退货</option><option value="MANUAL">手工登记</option></select></div>'
+                    + '<div class="f"><label>发生日期</label><input id="igCDate" type="date"></div></div>'
+                    + '<div class="f"><label>关键词（逗号分隔）</label><input id="igCKw" placeholder="如 毛刺,冲切,刮伤"></div>'
+                    + '<button class="btn" id="igCBtn" onclick="__submitImport(\'case\')">导入不良案例</button>'
+                    + '<div class="ig-res" id="igCRes"></div>'
+                    + '<div class="ig-tip">导入后，打开同物料 + 同供应商的检验任务，案例自动挂到核对页第一行"⚠ 历史不良案例核对"（重点核对优先）。</div>'
+            }
+        };
+
+        function __openImportModal(type) {
+            var tpl = IMPORT_TPL[type];
+            if (!tpl) return;
+            document.getElementById('igTitle').textContent = tpl.title;
+            document.getElementById('igSub').textContent = tpl.sub;
+            document.getElementById('igBody').innerHTML = tpl.html;
+            document.getElementById('importGate').style.display = 'flex';
+            // 供应商下拉建议（datalist）
+            var opts = IMPORT_SUPS.map(function (s) {
+                return '<option value="' + s.name + '">';
+            }).join('');
+            var dl = document.getElementById('igSupList');
+            if (dl) dl.innerHTML = opts;
+            if (!IMPORT_SUPS.length) __loadImportSuppliers();
+        }
+        function __closeImportModal() {
+            document.getElementById('importGate').style.display = 'none';
+        }
+        function __loadImportSuppliers() {
+            DemoAPI.get('/material/suppliers?page_size=100').then(function (d) {
+                IMPORT_SUPS = d.items || [];
+                var opts = IMPORT_SUPS.map(function (s) {
+                    return '<option value="' + s.name + '">';
+                }).join('');
+                var dl = document.getElementById('igSupList');
+                if (dl) dl.innerHTML = opts;
+            }).catch(function () {});
+        }
+        // 解析供应商输入：命中名录 → 返回 {supplier_id}；未命中 → 返回 {supplier_name} 由后端自动建档
+        function __resolveSup(val, supIdElId) {
+            var v = (val || '').trim();
+            if (!v) return {};
+            for (var i = 0; i < IMPORT_SUPS.length; i++) {
+                if (IMPORT_SUPS[i].name === v) return { supplier_id: IMPORT_SUPS[i].id };
+            }
+            return { supplier_name: v };
+        }
+        function __submitImport(type) {
+            if (type === 'task') {
+                var code = document.getElementById('igTMatCode').value.trim();
+                var qty = parseInt(document.getElementById('igTQty').value, 10);
+                if (!code) { showToast('请填写物料编码'); return; }
+                if (!qty || qty <= 0) { showToast('请填写来料数量（正整数）'); return; }
+                var btn = document.getElementById('igTBtn');
+                btn.disabled = true; btn.innerHTML = '<span class="spin"></span>创建中…';
+                var sup = __resolveSup(document.getElementById('igTSup').value);
+                var body = {
+                    material_code: code,
+                    material_name: document.getElementById('igTMatName').value.trim() || null,
+                    po_no: document.getElementById('igTPo').value.trim() || null,
+                    received_qty: qty,
+                    priority: document.getElementById('igTPri').value,
+                    deadline: document.getElementById('igTDeadline').value || null
+                };
+                if (sup.supplier_id) body.supplier_id = sup.supplier_id;
+                if (sup.supplier_name) body.supplier_name = sup.supplier_name;
+                DemoAPI.post('/iqc-agent/tasks', body).then(function (d) {
+                    var res = document.getElementById('igTRes');
+                    res.className = 'ig-res ok';
+                    res.innerHTML = '✅ 来料任务已在本地登记：<b>' + d.task_no + '</b>。演示数据，不写入服务器。';
+                    showToast('任务 ' + d.task_no + ' 已登记（演示）');
+                    document.getElementById('igTMatCode').value = ''; document.getElementById('igTMatName').value = '';
+                    document.getElementById('igTPo').value = ''; document.getElementById('igTQty').value = '';
+                    document.getElementById('igTDeadline').value = '';
+                }).catch(function (e) {
+                    var res = document.getElementById('igTRes');
+                    res.className = 'ig-res err';
+                    res.innerHTML = '❌ 登记失败：' + e.message;
+                    showToast('登记失败：' + e.message);
+                }).finally(function () {
+                    btn.disabled = false; btn.textContent = '创建来料任务';
+                });
+            } else {
+                var code = document.getElementById('igCMatCode').value.trim();
+                if (!code) { showToast('请填写物料编码'); return; }
+                var btn = document.getElementById('igCBtn');
+                btn.disabled = true; btn.innerHTML = '<span class="spin"></span>导入中…';
+                var kw = document.getElementById('igCKw').value.split(/[,，;；]/).map(function (s) { return s.trim(); }).filter(Boolean);
+                var sup = __resolveSup(document.getElementById('igCSup').value);
+                var body = {
+                    material_code: code,
+                    material_name: document.getElementById('igCMatName').value.trim() || null,
+                    defect_type: document.getElementById('igCType').value.trim() || null,
+                    defect_level: document.getElementById('igCLevel').value,
+                    symptom: document.getElementById('igCSymptom').value.trim() || null,
+                    root_cause: document.getElementById('igCRoot').value.trim() || null,
+                    source_type: document.getElementById('igCSource').value,
+                    keywords: kw.length ? kw : null,
+                    occurrence_date: document.getElementById('igCDate').value || null
+                };
+                if (sup.supplier_id) body.supplier_id = sup.supplier_id;
+                if (sup.supplier_name) body.supplier_name = sup.supplier_name;
+                DemoAPI.post('/iqc-agent/cases', body).then(function (d) {
+                    var res = document.getElementById('igCRes');
+                    res.className = 'ig-res ok';
+                    res.innerHTML = '✅ 不良案例已在本地登记（编号 #' + d.id + '）。演示数据，不写入服务器。';
+                    showToast('案例 #' + d.id + ' 已登记（演示）');
+                    document.getElementById('igCMatCode').value = ''; document.getElementById('igCMatName').value = '';
+                    document.getElementById('igCType').value = ''; document.getElementById('igCSymptom').value = '';
+                    document.getElementById('igCRoot').value = ''; document.getElementById('igCKw').value = '';
+                    document.getElementById('igCDate').value = '';
+                }).catch(function (e) {
+                    var res = document.getElementById('igCRes');
+                    res.className = 'ig-res err';
+                    res.innerHTML = '❌ 登记失败：' + e.message;
+                    showToast('登记失败：' + e.message);
+                }).finally(function () {
+                    btn.disabled = false; btn.textContent = '导入不良案例';
+                });
+            }
+        }
+
+        // 显示当前登录用户（来自登录页保存的 qms_user）
+        if (!DemoAuth.requireDemoAuth()) { /* redirected */ }
+        (function showUser() {
+            var u = DemoAuth.currentUser();
+            var nm = u.full_name || u.username || '[姓名]';
+            var roleMap = { 'company_admin': '系统管理员', 'quality_manager': '质量经理', 'quality_engineer': '质量工程师', 'inspector': '检验员', 'readonly': '只读' };
+            document.getElementById('curName').textContent = nm;
+            document.getElementById('curRole').textContent = (roleMap[u.role] || '演示用户') + ' · ' + (u.company_name || '[公司]');
+            document.getElementById('curAvatar').textContent = (nm || '演').charAt(0);
+        })();
+
+        // 退出登录 → 清理凭证 → 返回登录界面（同目录）
+        document.getElementById('btnExit').addEventListener('click', function () {
+            DemoAuth.logout();
+        });
+
+        render();
+    </script>
+</body>
+</html>
