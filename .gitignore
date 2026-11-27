@@ -1,0 +1,7 @@
+node_modules/
+dist/
+_drive_raw/
+*.log
+.DS_Store
+.env
+.env.*

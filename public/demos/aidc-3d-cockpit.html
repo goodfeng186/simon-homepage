@@ -1,0 +1,2128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3#厂房 AIDC 集装箱总装数字孪生驾驶舱</title>
+  <script src="../vendor/tailwind.min.js"></script>
+  <script src="../vendor/three.min.js"></script>
+  <script src="../vendor/lucide.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    * { box-sizing: border-box; user-select: none; }
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+      background: #040812;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: #e2e8f0;
+    }
+    #canvas-container {
+      position: fixed; inset: 0; z-index: 0; cursor: grab;
+    }
+    #canvas-container:active { cursor: grabbing; }
+
+    /* Cockpit glass panels */
+    .hud-panel {
+      background: linear-gradient(165deg, rgba(9, 18, 35, 0.90) 0%, rgba(5, 11, 22, 0.95) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      box-shadow: 0 12px 42px rgba(0, 0, 0, 0.68), inset 0 1px 0 rgba(125, 211, 252, 0.16);
+    }
+    .hud-header {
+      background: linear-gradient(180deg, rgba(5, 12, 24, 0.92) 0%, rgba(7, 16, 32, 0.72) 100%);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(56, 189, 248, 0.24);
+      box-shadow: 0 4px 28px rgba(0, 0, 0, 0.55);
+    }
+    .hud-glow-text {
+      text-shadow: 0 0 16px rgba(56, 189, 248, 0.55);
+    }
+    .corner-accent { position: relative; }
+    .corner-accent::before, .corner-accent::after {
+      content: ''; position: absolute; width: 11px; height: 11px; pointer-events: none;
+    }
+    .corner-accent::before {
+      top: -1px; left: -1px;
+      border-top: 2px solid #38bdf8; border-left: 2px solid #38bdf8;
+    }
+    .corner-accent::after {
+      bottom: -1px; right: -1px;
+      border-bottom: 2px solid #38bdf8; border-right: 2px solid #38bdf8;
+    }
+
+    /* Custom subtle scrollbars */
+    .slim-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+    .slim-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.4); }
+    .slim-scroll::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.35); border-radius: 4px; }
+    .slim-scroll::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.65); }
+
+    /* Pulsing indicators */
+    @keyframes pulseRing {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.75); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    .pulse-red { animation: pulseRing 1.6s infinite; }
+
+    @keyframes pulseAmber {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.75); }
+      70% { transform: scale(1); box-shadow: 0 0 0 7px rgba(245, 158, 11, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+    .pulse-amber { animation: pulseAmber 2s infinite; }
+
+    /* Floating 3D labels */
+    #labels-layer {
+      position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden;
+    }
+    .zone-3d-tag {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      padding: 2px 9px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      background: rgba(5, 13, 28, 0.80);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      color: #bae6fd;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+    }
+    .zone-3d-tag.ng-tag {
+      border-color: rgba(245, 158, 11, 0.65);
+      color: #fde68a;
+      background: rgba(45, 22, 6, 0.84);
+    }
+    .zone-3d-tag.kit-tag {
+      border-color: rgba(234, 179, 8, 0.55);
+      color: #fef08a;
+      background: rgba(36, 30, 6, 0.78);
+    }
+    .alert-3d-pin {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex; align-items: center; gap: 3px;
+      white-space: nowrap;
+      pointer-events: auto;
+      cursor: pointer;
+      box-shadow: 0 3px 14px rgba(0, 0, 0, 0.75);
+      transition: transform 0.15s ease;
+    }
+    .alert-3d-pin:hover { transform: translate(-50%, -108%) scale(1.08); }
+    .alert-3d-pin.anomaly {
+      background: rgba(220, 38, 38, 0.94);
+      border: 1px solid #fca5a5;
+      color: #fff;
+    }
+    .alert-3d-pin.defect {
+      background: rgba(217, 119, 6, 0.94);
+      border: 1px solid #fde68a;
+      color: #fff;
+    }
+
+    /* Tooltip */
+    #hover-tooltip {
+      position: fixed; z-index: 45; pointer-events: none;
+      opacity: 0; transition: opacity 0.12s ease;
+    }
+
+    /* Second-layer slide drawers (hidden by default on main screen) */
+    .side-panel {
+      transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+    }
+    .panel-hidden-left { transform: translateX(-115%); opacity: 0; pointer-events: none; }
+    .panel-hidden-right { transform: translateX(115%); opacity: 0; pointer-events: none; }
+
+    /* Sleek edge triggers for second-layer drawers */
+    .edge-trigger {
+      background: linear-gradient(160deg, rgba(10, 22, 42, 0.85), rgba(6, 13, 28, 0.92));
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.32);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+      transition: all 0.2s ease;
+    }
+    .edge-trigger:hover {
+      border-color: rgba(56, 189, 248, 0.75);
+      background: rgba(14, 34, 64, 0.92);
+    }
+
+    /* Modal backdrop */
+    .modal-backdrop {
+      background: rgba(2, 6, 16, 0.74);
+      backdrop-filter: blur(6px);
+    }
+  </style>
+</head>
+<body>
+  <!-- 3D WebGL Canvas (Primary Layer) -->
+  <div id="canvas-container"></div>
+
+  <!-- 3D Projected Labels & Alert Pins -->
+  <div id="labels-layer"></div>
+
+  <!-- Hover Tooltip -->
+  <div id="hover-tooltip" class="hud-panel rounded-lg px-3 py-2 text-xs min-w-[205px]">
+    <div class="flex items-center justify-between gap-3 mb-1">
+      <span id="tt-bay" class="font-bold text-sky-300">Z1-01</span>
+      <span id="tt-status" class="px-1.5 py-0.5 rounded text-[10px] font-semibold">生产中</span>
+    </div>
+    <div id="tt-sn" class="text-slate-200 font-medium">AIDC-30101 · 液冷算力集装箱</div>
+    <div class="flex items-center justify-between mt-1.5 text-[11px] text-slate-400">
+      <span id="tt-step">供配电与母线安装</span>
+      <span id="tt-pct" class="font-mono text-sky-300 font-semibold">68%</span>
+    </div>
+    <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1">
+      <div id="tt-bar" class="h-full bg-sky-400 rounded-full" style="width:68%"></div>
+    </div>
+    <div id="tt-issue" class="mt-1.5 text-[11px] text-rose-300 hidden"></div>
+  </div>
+
+  <!-- Top Cockpit Header (Primary Layer) -->
+  <header class="hud-header fixed top-0 left-0 right-0 z-20 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+    <!-- Title & Live Badge -->
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-300 shadow-[0_0_16px_rgba(56,189,248,0.28)]">
+        <i data-lucide="server" class="w-4 h-4"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm sm:text-base font-bold tracking-wider text-white hud-glow-text">3#厂房 AIDC 集装箱总装数字孪生驾驶舱</h1>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>实时监控
+          </span>
+        </div>
+        <div class="text-[11px] text-slate-400 font-mono flex items-center gap-2">
+          <span id="live-clock">--:--:--</span>
+          <span class="text-slate-600">|</span>
+          <span>AIDC 预制集装箱工位 86 台</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top KPI Strip -->
+    <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+      <button type="button" data-filter-kpi="all" class="kpi-btn px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-700/70 border border-slate-700/80 transition text-left">
+        <div class="text-[10px] text-slate-400 leading-tight">在制总数</div>
+        <div id="kpi-total" class="text-sm font-bold font-mono text-white leading-tight">86</div>
+      </button>
+      <button type="button" data-filter-kpi="producing" class="kpi-btn px-2.5 py-1 rounded-md bg-sky-950/60 hover:bg-sky-900/60 border border-sky-500/30 transition text-left">
+        <div class="text-[10px] text-sky-300/80 leading-tight">正常生产</div>
+        <div id="kpi-producing" class="text-sm font-bold font-mono text-sky-300 leading-tight">0</div>
+      </button>
+      <button type="button" data-filter-kpi="completed" class="kpi-btn px-2.5 py-1 rounded-md bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/30 transition text-left">
+        <div class="text-[10px] text-emerald-300/80 leading-tight">已完工</div>
+        <div id="kpi-completed" class="text-sm font-bold font-mono text-emerald-300 leading-tight">0</div>
+      </button>
+      <button type="button" data-filter-kpi="defect" class="kpi-btn px-2.5 py-1 rounded-md bg-amber-950/60 hover:bg-amber-900/60 border border-amber-500/40 transition text-left">
+        <div class="text-[10px] text-amber-300/90 leading-tight flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>不良品
+        </div>
+        <div id="kpi-defect" class="text-sm font-bold font-mono text-amber-300 leading-tight">0</div>
+      </button>
+      <button type="button" data-filter-kpi="anomaly" class="kpi-btn px-2.5 py-1 rounded-md bg-rose-950/70 hover:bg-rose-900/70 border border-rose-500/50 transition text-left">
+        <div class="text-[10px] text-rose-300/90 leading-tight flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-rose-500 pulse-red"></span>异常告警
+        </div>
+        <div id="kpi-anomaly" class="text-sm font-bold font-mono text-rose-300 leading-tight">0</div>
+      </button>
+      <div class="hidden xl:block px-2.5 py-1 rounded-md bg-slate-900/80 border border-sky-500/20">
+        <div class="text-[10px] text-slate-400 leading-tight">平均进度</div>
+        <div id="kpi-avg-progress" class="text-sm font-bold font-mono text-cyan-300 leading-tight">0%</div>
+      </div>
+    </div>
+
+    <!-- Camera & Action Controls -->
+    <div class="flex items-center gap-1.5">
+      <button type="button" id="btn-cam-overview" class="cam-btn px-2.5 py-1.5 rounded-md text-xs font-medium bg-sky-500/20 text-sky-200 border border-sky-400/40 hover:bg-sky-500/30 transition">全景</button>
+      <button type="button" id="btn-cam-top" class="cam-btn px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-800/80 text-slate-300 border border-slate-700 hover:bg-slate-700 transition">俯视</button>
+      <button type="button" id="btn-auto-orbit" class="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-800/80 text-slate-300 border border-slate-700 hover:bg-slate-700 transition flex items-center gap-1" title="自动巡航">
+        <i data-lucide="orbit" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">巡航</span>
+      </button>
+      <button type="button" id="btn-toggle-hud" class="px-2.5 py-1.5 rounded-md text-xs font-medium bg-slate-800/80 text-slate-300 border border-slate-700 hover:bg-slate-700 transition flex items-center gap-1" title="展开/收起双侧二级面板">
+        <i data-lucide="layers" class="w-3.5 h-3.5"></i><span class="hidden md:inline">二级面板</span>
+      </button>
+      <button type="button" id="btn-open-report" class="px-3 py-1.5 rounded-md text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-900/40 transition flex items-center gap-1">
+        <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i><span>异常上报</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Floating Side-Edge Triggers (Primary Layer -> Opens Second-Layer Drawers) -->
+  <button type="button" id="btn-open-left" class="edge-trigger fixed left-0 top-1/2 -translate-y-1/2 z-20 rounded-r-xl px-2 py-4 flex flex-col items-center gap-2 text-sky-300">
+    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+    <span class="text-[11px] font-semibold tracking-widest" style="writing-mode: vertical-rl;">产线进度</span>
+    <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-sky-400/70"></i>
+  </button>
+
+  <button type="button" id="btn-open-right" class="edge-trigger fixed right-0 top-1/2 -translate-y-1/2 z-20 rounded-l-xl px-2 py-4 flex flex-col items-center gap-2 text-rose-300">
+    <span id="edge-alert-dot" class="w-2 h-2 rounded-full bg-rose-500 pulse-red"></span>
+    <span class="text-[11px] font-semibold tracking-widest" style="writing-mode: vertical-rl;">不良异常</span>
+    <span id="edge-alert-count" class="px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-rose-500/30 text-rose-200">0</span>
+  </button>
+
+  <!-- SECOND LAYER: Left Drawer (Zone Progress & Product Filter, Hidden by Default) -->
+  <aside id="left-panel" class="side-panel panel-hidden-left hud-panel corner-accent fixed top-[68px] left-3 bottom-14 w-[290px] sm:w-[310px] z-30 rounded-xl flex flex-col overflow-hidden">
+    <!-- Drawer Header -->
+    <div class="px-3 py-2.5 border-b border-slate-800/90 flex items-center justify-between bg-sky-950/30">
+      <span class="text-xs font-semibold text-sky-300 tracking-wide flex items-center gap-1.5">
+        <i data-lucide="layers" class="w-3.5 h-3.5"></i>各总装区生产进度
+      </span>
+      <div class="flex items-center gap-2">
+        <button type="button" id="btn-zone-all" class="text-[11px] text-sky-400 hover:text-sky-300">全部区域</button>
+        <button type="button" id="btn-close-left" class="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white" title="收起至主界面">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Zone Progress Summary -->
+    <div class="p-3 border-b border-slate-800/90">
+      <div id="zone-cards" class="space-y-2"></div>
+    </div>
+
+    <!-- Search & Status Filter -->
+    <div class="p-3 border-b border-slate-800/90 space-y-2">
+      <div class="relative">
+        <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+        <input id="search-input" type="text" placeholder="搜索工位(Z2-05)或集装箱编号..."
+          class="w-full bg-slate-900/90 border border-slate-700/90 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-400" />
+      </div>
+      <div id="status-filters" class="flex flex-wrap gap-1.5">
+        <button type="button" data-status="all" class="status-chip px-2 py-0.5 rounded text-[11px] font-medium bg-sky-500/25 text-sky-200 border border-sky-400/50">全部</button>
+        <button type="button" data-status="producing" class="status-chip px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800/80 text-slate-300 border border-slate-700">生产中</button>
+        <button type="button" data-status="completed" class="status-chip px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800/80 text-slate-300 border border-slate-700">已完工</button>
+        <button type="button" data-status="defect" class="status-chip px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800/80 text-amber-300 border border-slate-700">不良</button>
+        <button type="button" data-status="anomaly" class="status-chip px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800/80 text-rose-300 border border-slate-700">异常</button>
+        <button type="button" data-status="idle" class="status-chip px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800/80 text-slate-400 border border-slate-700">待料</button>
+      </div>
+    </div>
+
+    <!-- Product List -->
+    <div class="px-3 pt-2 pb-1 flex items-center justify-between text-[11px] text-slate-400">
+      <span>AIDC 集装箱实时状态明细</span>
+      <span id="list-count" class="font-mono text-sky-300">86 台</span>
+    </div>
+    <div id="product-list" class="flex-1 overflow-y-auto slim-scroll px-2.5 pb-2.5 space-y-1.5"></div>
+  </aside>
+
+  <!-- SECOND LAYER: Right Drawer (Defect & Anomaly Feedback OR Selected Unit Inspector, Hidden by Default) -->
+  <aside id="right-panel" class="side-panel panel-hidden-right hud-panel corner-accent fixed top-[68px] right-3 bottom-14 w-[310px] sm:w-[335px] z-30 rounded-xl flex flex-col overflow-hidden">
+    <!-- Right Drawer Tabs + Close -->
+    <div class="flex items-center border-b border-slate-800/90 bg-sky-950/30">
+      <button type="button" id="tab-alerts" class="flex-1 py-2.5 text-xs font-semibold text-sky-300 border-b-2 border-sky-400 bg-sky-500/10 flex items-center justify-center gap-1.5">
+        <i data-lucide="bell-ring" class="w-3.5 h-3.5"></i>不良与异常
+        <span id="alert-badge-count" class="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500/30 text-rose-200 font-mono">0</span>
+      </button>
+      <button type="button" id="tab-inspector" class="flex-1 py-2.5 text-xs font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex items-center justify-center gap-1.5">
+        <i data-lucide="box" class="w-3.5 h-3.5"></i>单箱详情
+      </button>
+      <button type="button" id="btn-close-right" class="px-2.5 py-2.5 text-slate-400 hover:text-white border-l border-slate-800/80" title="收起至主界面">
+        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>
+
+    <!-- Tab 1: Alerts & Defects Feed -->
+    <div id="view-alerts" class="flex-1 flex flex-col overflow-hidden">
+      <div class="p-2.5 border-b border-slate-800/80 flex items-center justify-between gap-2">
+        <div class="flex gap-1">
+          <button type="button" data-alert-type="all" class="alert-filter-btn px-2 py-0.5 rounded text-[11px] bg-sky-500/20 text-sky-200 border border-sky-400/40">全部</button>
+          <button type="button" data-alert-type="anomaly" class="alert-filter-btn px-2 py-0.5 rounded text-[11px] bg-slate-800 text-rose-300 border border-slate-700">异常停线</button>
+          <button type="button" data-alert-type="defect" class="alert-filter-btn px-2 py-0.5 rounded text-[11px] bg-slate-800 text-amber-300 border border-slate-700">质量不良</button>
+        </div>
+        <span id="ng-zone-count" class="text-[10px] text-amber-300/90 font-mono">不良品: 0</span>
+      </div>
+      <div id="alerts-feed" class="flex-1 overflow-y-auto slim-scroll p-2.5 space-y-2"></div>
+    </div>
+
+    <!-- Tab 2: Selected Unit Inspector -->
+    <div id="view-inspector" class="flex-1 hidden flex-col overflow-y-auto slim-scroll p-3 space-y-3">
+      <div id="inspector-empty" class="h-full flex flex-col items-center justify-center text-center text-slate-400 py-12">
+        <i data-lucide="mouse-pointer-click" class="w-8 h-8 text-sky-400/50 mb-2"></i>
+        <div class="text-xs font-medium text-slate-300">点击 3D 场景中的任意 AIDC 集装箱</div>
+        <div class="text-[11px] text-slate-500 mt-1">查看总装工序进度与质量异常反馈</div>
+      </div>
+
+      <div id="inspector-content" class="hidden space-y-3">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="ins-bay" class="text-base font-bold text-white font-mono">Z1-01</span>
+              <span id="ins-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-semibold">生产中</span>
+            </div>
+            <div id="ins-sn" class="text-xs text-sky-300 font-mono mt-0.5">AIDC-30101</div>
+            <div id="ins-model" class="text-[11px] text-slate-400">型号: AIDC-2MW 液冷算力集装箱</div>
+          </div>
+          <button type="button" id="btn-focus-selected" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700" title="镜头聚焦">
+            <i data-lucide="crosshair" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Progress Card -->
+        <div class="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+          <div class="flex items-center justify-between text-xs mb-1.5">
+            <span class="text-slate-400">集装箱总装进度</span>
+            <span id="ins-progress-text" class="font-mono font-bold text-sky-300">68%</span>
+          </div>
+          <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+            <div id="ins-progress-bar" class="h-full bg-gradient-to-r from-sky-500 to-cyan-300 rounded-full transition-all duration-300" style="width:68%"></div>
+          </div>
+          <div class="mt-2.5 flex items-center justify-between text-[11px] text-slate-400">
+            <span>当前班组: <strong id="ins-team" class="text-slate-200">液冷集成二组</strong></span>
+            <span>节拍: <strong id="ins-takt" class="text-slate-200 font-mono">42m</strong></span>
+          </div>
+        </div>
+
+        <!-- 6-Step Process Stepper -->
+        <div class="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-slate-300">AIDC 总装工序节点</span>
+            <button type="button" id="btn-advance-step" class="px-2 py-0.5 rounded text-[11px] bg-sky-500/20 hover:bg-sky-500/35 text-sky-300 border border-sky-400/40 transition">推进工序</button>
+          </div>
+          <div id="ins-steps" class="space-y-1.5"></div>
+        </div>
+
+        <!-- Quick Anomaly / Defect Actions -->
+        <div class="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 space-y-2">
+          <div class="text-xs font-semibold text-slate-300">质量与异常处置</div>
+          <div id="ins-issue-box" class="hidden p-2 rounded bg-rose-950/60 border border-rose-500/40 text-xs space-y-1">
+            <div class="flex items-center justify-between">
+              <span id="ins-issue-type" class="font-semibold text-rose-300">异常告警</span>
+              <span id="ins-issue-time" class="text-[10px] font-mono text-rose-300/70">14:22</span>
+            </div>
+            <div id="ins-issue-desc" class="text-slate-200 text-[11px]"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="btn-mark-defect" class="py-1.5 px-2 rounded-lg text-xs font-medium bg-amber-600/25 hover:bg-amber-600/40 text-amber-200 border border-amber-500/40 transition">登记不良</button>
+            <button type="button" id="btn-mark-anomaly" class="py-1.5 px-2 rounded-lg text-xs font-medium bg-rose-600/25 hover:bg-rose-600/40 text-rose-200 border border-rose-500/40 transition">触发异常</button>
+          </div>
+          <button type="button" id="btn-resolve-issue" class="hidden w-full py-1.5 px-2 rounded-lg text-xs font-semibold bg-emerald-600/30 hover:bg-emerald-600/45 text-emerald-200 border border-emerald-500/50 transition">
+            解除不良/异常并恢复生产
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Legend & Quick Zone Bar (Primary Layer) -->
+  <footer class="fixed bottom-2.5 left-1/2 -translate-x-1/2 z-20 hud-panel rounded-full px-4 py-1.5 flex items-center gap-4 text-[11px] max-w-[95vw] overflow-x-auto slim-scroll">
+    <div class="flex items-center gap-1.5 whitespace-nowrap"><span class="w-2.5 h-2.5 rounded-sm bg-sky-400 shadow-[0_0_8px_#38bdf8]"></span>生产中</div>
+    <div class="flex items-center gap-1.5 whitespace-nowrap"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>已完工</div>
+    <div class="flex items-center gap-1.5 whitespace-nowrap"><span class="w-2.5 h-2.5 rounded-sm bg-amber-400 shadow-[0_0_8px_#fbbf24]"></span>质量不良</div>
+    <div class="flex items-center gap-1.5 whitespace-nowrap"><span class="w-2.5 h-2.5 rounded-sm bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span>异常停线</div>
+    <div class="flex items-center gap-1.5 whitespace-nowrap"><span class="w-2.5 h-2.5 rounded-sm bg-slate-500"></span>待料/空闲</div>
+    <span class="text-slate-700">|</span>
+    <div class="flex items-center gap-1 whitespace-nowrap">
+      <button type="button" data-fly-zone="1" class="fly-zone-btn px-2 py-0.5 rounded-full bg-slate-800/90 hover:bg-sky-500/30 text-slate-300 hover:text-sky-200 transition">总装1区</button>
+      <button type="button" data-fly-zone="2" class="fly-zone-btn px-2 py-0.5 rounded-full bg-slate-800/90 hover:bg-sky-500/30 text-slate-300 hover:text-sky-200 transition">总装2区</button>
+      <button type="button" data-fly-zone="3" class="fly-zone-btn px-2 py-0.5 rounded-full bg-slate-800/90 hover:bg-sky-500/30 text-slate-300 hover:text-sky-200 transition">总装3区</button>
+      <button type="button" data-fly-zone="4" class="fly-zone-btn px-2 py-0.5 rounded-full bg-slate-800/90 hover:bg-sky-500/30 text-slate-300 hover:text-sky-200 transition">总装4区</button>
+    </div>
+  </footer>
+
+  <!-- Anomaly / Defect Report Modal -->
+  <div id="report-modal" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+    <div class="hud-panel corner-accent rounded-xl w-full max-w-md p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-400"></i>AIDC 集装箱不良 / 异常实时反馈上报
+        </h2>
+        <button type="button" id="btn-close-modal" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <form id="report-form" class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">选择工位 / 集装箱</label>
+            <select id="rep-bay" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-sky-400"></select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">反馈类型</label>
+            <select id="rep-type" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-sky-400">
+              <option value="anomaly">异常停线 (安灯告警)</option>
+              <option value="defect">质量不良 (返工/隔离)</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">问题分类</label>
+          <select id="rep-category" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-slate-100 focus:outline-none focus:border-sky-400">
+            <option value="液冷管路保压微漏">液冷管路保压微漏</option>
+            <option value="母线槽绝缘耐压异常">母线槽绝缘耐压异常</option>
+            <option value="CDU液冷单元通讯故障">CDU液冷单元通讯故障</option>
+            <option value="箱体焊缝/气密性不良">箱体焊缝/气密性不良</option>
+            <option value="机柜导轨装配公差超差">机柜导轨装配公差超差</option>
+            <option value="防腐漆面磕碰划伤">防腐漆面磕碰划伤</option>
+            <option value="核心供配电模块缺料">核心供配电模块缺料</option>
+            <option value="跨运车转运阻滞">跨运车转运阻滞</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">异常描述与现场反馈</label>
+          <textarea id="rep-desc" rows="3" placeholder="输入具体现象、不良部位或需支援部门..." required
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-400"></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" id="btn-cancel-modal" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">取消</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold shadow-lg shadow-rose-900/40">确认上报并联动3D</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg hud-panel text-xs font-medium text-sky-200 opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <script>
+    // =========================================================================
+    // 1. AIDC CONTAINER DOMAIN DATA (3# Factory Layout: 12 + 17 + 12 + 45 = 86)
+    // =========================================================================
+    const PROCESS_STEPS = [
+      '箱体结构就位',
+      '液冷管路/风道预装',
+      '供配电与母线安装',
+      '机柜与动环集成',
+      '满载联调与保压测试',
+      '终检封箱出厂'
+    ];
+
+    const MODELS = [
+      'AIDC-2MW 液冷算力集装箱',
+      'AIDC-1.6MW 风液融合集装箱',
+      'AIDC-HVDC 高压直流电源箱',
+      'AIDC-CDU 液冷分配模块箱',
+      'AIDC-BESS 智算备电储能箱'
+    ];
+
+    const TEAMS = ['结构总装一组', '液冷集成二组', '强电母线三组', '动环调试四组', '终检保压五组'];
+
+    const STATUS_META = {
+      producing: { label: '生产中',   color: 0x0ea5e9, emissive: 0x033959, led: 0x38bdf8, badge: 'bg-sky-500/20 text-sky-300 border border-sky-400/40', hex: '#38bdf8' },
+      completed: { label: '已完工',   color: 0x10b981, emissive: 0x064e3b, led: 0x34d399, badge: 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40', hex: '#34d399' },
+      defect:    { label: '质量不良', color: 0xf59e0b, emissive: 0x78350f, led: 0xfbbf24, badge: 'bg-amber-500/25 text-amber-300 border border-amber-400/50', hex: '#fbbf24' },
+      anomaly:   { label: '异常停线', color: 0xef4444, emissive: 0x7f1d1d, led: 0xf87171, badge: 'bg-rose-500/25 text-rose-300 border border-rose-400/60', hex: '#f43f5e' },
+      idle:      { label: '待料/空闲', color: 0x475569, emissive: 0x1e293b, led: 0x94a3b8, badge: 'bg-slate-700/60 text-slate-300 border border-slate-600', hex: '#94a3b8' }
+    };
+
+    const ZONE_META = {
+      1: { name: '总装区1', capacity: 12 },
+      2: { name: '总装区2', capacity: 17 },
+      3: { name: '总装区3', capacity: 12 },
+      4: { name: '总装区4', capacity: 45 }
+    };
+
+    const INITIAL_ISSUES = {
+      'Z1-03': { type: 'anomaly', category: '液冷管路保压微漏', desc: '二次侧快插接头 0.6MPa 保压跌落，液冷工艺排查中', time: '09:42' },
+      'Z1-09': { type: 'defect',  category: '防腐漆面磕碰划伤', desc: '集装箱右侧波纹板转运刮痕，需补漆返修', time: '10:15' },
+      'Z2-04': { type: 'anomaly', category: '核心供配电模块缺料', desc: '800A 直流列头柜模块未齐套，产线暂停等待配送', time: '11:08' },
+      'Z2-11': { type: 'defect',  category: '箱体焊缝/气密性不良', desc: '顶部冷热通道隔断压条密封缝隙超差', time: '13:20' },
+      'Z2-15': { type: 'defect',  category: '机柜导轨装配公差超差', desc: '高密液冷机柜安装孔距偏差 2.1mm，已标黄返工', time: '14:05' },
+      'Z3-06': { type: 'anomaly', category: '跨运车转运阻滞', desc: '3区通道安全光幕触发，跨运车安全锁止', time: '14:38' },
+      'Z4-08': { type: 'defect',  category: '箱体焊缝/气密性不良', desc: '并箱端面防雨胶条贴合不平整，需返工修正', time: '15:11' },
+      'Z4-19': { type: 'anomaly', category: '母线槽绝缘耐压异常', desc: 'HVDC 主母线槽耐压测试告警，强电组停线检修', time: '15:46' },
+      'Z4-31': { type: 'defect',  category: '防腐漆面磕碰划伤', desc: '箱顶空调底座周边面漆起泡，判定不良隔离', time: '16:02' },
+      'Z4-39': { type: 'anomaly', category: 'CDU液冷单元通讯故障', desc: '动环监控 Modbus 通讯丢包，暂停满载联调', time: '16:25' }
+    };
+
+    const products = [];
+    let alertFeed = [];
+
+    function initProducts() {
+      let serialCounter = 30101;
+      const specs = [
+        { zone: 1, count: 12, modelIdx: 0 },
+        { zone: 2, count: 17, modelIdx: 1 },
+        { zone: 3, count: 12, modelIdx: 3 },
+        { zone: 4, count: 45, modelIdx: 2 }
+      ];
+      specs.forEach(sp => {
+        for (let i = 1; i <= sp.count; i++) {
+          const bayId = `Z${sp.zone}-${String(i).padStart(2, '0')}`;
+          const sn = `AIDC-${serialCounter++}`;
+          const seed = (sp.zone * 37 + i * 19) % 100;
+          let status = 'producing';
+          let stepIdx = Math.min(4, Math.floor(seed % 5));
+          let progress = 18 + (stepIdx * 17) + (seed % 14);
+
+          if (INITIAL_ISSUES[bayId]) {
+            status = INITIAL_ISSUES[bayId].type;
+            stepIdx = Math.max(1, Math.min(4, stepIdx));
+            progress = Math.min(82, Math.max(25, progress));
+          } else if (seed > 74) {
+            status = 'completed';
+            stepIdx = 5;
+            progress = 100;
+          } else if (seed < 10) {
+            status = 'idle';
+            stepIdx = 0;
+            progress = 0;
+          }
+
+          const issue = INITIAL_ISSUES[bayId] ? { ...INITIAL_ISSUES[bayId], id: 'ISS-' + bayId } : null;
+          const prod = {
+            id: bayId,
+            zone: sp.zone,
+            index: i,
+            sn,
+            model: MODELS[(sp.modelIdx + (i % 2)) % MODELS.length],
+            status,
+            stepIdx,
+            progress,
+            team: TEAMS[(sp.zone + i) % TEAMS.length],
+            takt: `${35 + (seed % 28)}m`,
+            issue,
+            meshGroup: null,
+            bodyMat: null,
+            ledMat: null,
+            progressFillMesh: null,
+            progressMaxW: 1,
+            beaconMesh: null,
+            beaconMat: null,
+            beamMesh: null,
+            beamMat: null,
+            ringMesh: null,
+            worldPos: new THREE.Vector3()
+          };
+          products.push(prod);
+          if (issue) {
+            alertFeed.push({
+              id: issue.id,
+              bayId,
+              sn,
+              zone: sp.zone,
+              type: issue.type,
+              category: issue.category,
+              desc: issue.desc,
+              time: issue.time
+            });
+          }
+        }
+      });
+    }
+
+    // =========================================================================
+    // 2. THREE.JS 3D SCENE — HIGH-DETAIL AIDC CONTAINERS & CINEMATIC LIGHTING
+    // =========================================================================
+    let scene, camera, renderer, raycaster, mouse;
+    let pickableMeshes = [];
+    let agvs = [];
+    let arrowStrips = [];
+    let ngAreaMats = [];
+    let craneGroup = null;
+    let craneTrolley = null;
+    let anomalyLights = [];
+    let selectedId = null;
+    let hoveredId = null;
+    let activeZoneFilter = null;
+    let activeStatusFilter = 'all';
+    let activeAlertFilter = 'all';
+    let searchQuery = '';
+    let autoOrbit = false;
+
+    // Second-layer drawer visibility (both hidden by default on main screen!)
+    let leftDrawerOpen = false;
+    let rightDrawerOpen = false;
+
+    const camState = {
+      target: new THREE.Vector3(0, 0, 2),
+      desiredTarget: new THREE.Vector3(0, 0, 2),
+      spherical: new THREE.Spherical(92, Math.PI / 3.05, 0.24),
+      desiredSpherical: new THREE.Spherical(92, Math.PI / 3.05, 0.24),
+      isDragging: false,
+      isPanning: false,
+      prevX: 0,
+      prevY: 0
+    };
+
+    const zone3DMarkers = [];
+
+    // Shared procedural textures for AIDC containers & epoxy floor
+    let texContainerSide, texContainerBump, texContainerRoof, texEpoxyFloor;
+
+    function buildProceduralTextures() {
+      // 1. Corrugated ISO AIDC Container Side Wall Texture
+      const cSide = document.createElement('canvas');
+      cSide.width = 512; cSide.height = 256;
+      const ctx = cSide.getContext('2d');
+      ctx.fillStyle = '#d8e4f0';
+      ctx.fillRect(0, 0, 512, 256);
+
+      // Vertical corrugated steel ribs
+      for (let x = 22; x < 490; x += 14) {
+        const g = ctx.createLinearGradient(x, 0, x + 14, 0);
+        g.addColorStop(0, '#9fb3c8');
+        g.addColorStop(0.35, '#eaf2fa');
+        g.addColorStop(0.7, '#c2d3e3');
+        g.addColorStop(1, '#7c93aa');
+        ctx.fillStyle = g;
+        ctx.fillRect(x, 22, 14, 212);
+      }
+      // Top & bottom ISO structural rails
+      ctx.fillStyle = '#5f7388';
+      ctx.fillRect(0, 0, 512, 22);
+      ctx.fillRect(0, 234, 512, 22);
+      // Corner posts
+      ctx.fillRect(0, 0, 22, 256);
+      ctx.fillRect(490, 0, 22, 256);
+
+      // AIDC Cooling Louver Grilles (left & right recessed vents)
+      const drawLouver = (lx, ly, lw, lh) => {
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(lx, ly, lw, lh);
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(lx, ly, lw, lh);
+        ctx.fillStyle = '#334155';
+        for (let y = ly + 5; y < ly + lh - 4; y += 7) {
+          ctx.fillRect(lx + 4, y, lw - 8, 3);
+        }
+      };
+      drawLouver(46, 52, 86, 118);
+      drawLouver(378, 52, 86, 118);
+
+      // Mid tech accent stripe
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.fillRect(22, 198, 468, 6);
+
+      texContainerSide = new THREE.CanvasTexture(cSide);
+      texContainerSide.anisotropy = 4;
+
+      // Bump map for steel corrugation depth
+      const cBump = document.createElement('canvas');
+      cBump.width = 512; cBump.height = 64;
+      const bCtx = cBump.getContext('2d');
+      bCtx.fillStyle = '#808080';
+      bCtx.fillRect(0, 0, 512, 64);
+      for (let x = 22; x < 490; x += 14) {
+        bCtx.fillStyle = '#ffffff';
+        bCtx.fillRect(x + 2, 0, 6, 64);
+        bCtx.fillStyle = '#303030';
+        bCtx.fillRect(x + 9, 0, 4, 64);
+      }
+      texContainerBump = new THREE.CanvasTexture(cBump);
+
+      // 2. Container Roof Texture
+      const cRoof = document.createElement('canvas');
+      cRoof.width = 256; cRoof.height = 128;
+      const rCtx = cRoof.getContext('2d');
+      rCtx.fillStyle = '#b8c9da';
+      rCtx.fillRect(0, 0, 256, 128);
+      for (let x = 12; x < 244; x += 16) {
+        rCtx.fillStyle = '#97acc2';
+        rCtx.fillRect(x, 8, 6, 112);
+      }
+      rCtx.strokeStyle = '#64748b';
+      rCtx.lineWidth = 6;
+      rCtx.strokeRect(3, 3, 250, 122);
+      texContainerRoof = new THREE.CanvasTexture(cRoof);
+
+      // 3. Industrial Epoxy Floor Texture (subtle concrete/epoxy micro-grain + tile joints)
+      const cFloor = document.createElement('canvas');
+      cFloor.width = 512; cFloor.height = 512;
+      const fCtx = cFloor.getContext('2d');
+      fCtx.fillStyle = '#121e31';
+      fCtx.fillRect(0, 0, 512, 512);
+      fCtx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+      fCtx.lineWidth = 2;
+      for (let i = 0; i <= 512; i += 64) {
+        fCtx.beginPath(); fCtx.moveTo(i, 0); fCtx.lineTo(i, 512); fCtx.stroke();
+        fCtx.beginPath(); fCtx.moveTo(0, i); fCtx.lineTo(512, i); fCtx.stroke();
+      }
+      // Subtle specular sheen speckles
+      for (let i = 0; i < 600; i++) {
+        const rx = (i * 73) % 512;
+        const ry = (i * 137) % 512;
+        fCtx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.06)';
+        fCtx.fillRect(rx, ry, 3, 3);
+      }
+      texEpoxyFloor = new THREE.CanvasTexture(cFloor);
+      texEpoxyFloor.wrapS = texEpoxyFloor.wrapT = THREE.RepeatWrapping;
+      texEpoxyFloor.repeat.set(10, 5);
+    }
+
+    function init3D() {
+      const container = document.getElementById('canvas-container');
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x050a14);
+      scene.fog = new THREE.FogExp2(0x050a14, 0.0032);
+
+      camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.5, 480);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.18;
+      container.appendChild(renderer.domElement);
+
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2(-99, -99);
+
+      buildProceduralTextures();
+
+      // --- RICH CINEMATIC WORKSHOP LIGHTING ---
+      const hemi = new THREE.HemisphereLight(0xbae6fd, 0x0b1324, 0.78);
+      scene.add(hemi);
+
+      // Main cool-white key light casting crisp container shadows
+      const keyLight = new THREE.DirectionalLight(0xf0f9ff, 1.15);
+      keyLight.position.set(52, 78, 44);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.width = 2048;
+      keyLight.shadow.mapSize.height = 2048;
+      keyLight.shadow.camera.near = 12;
+      keyLight.shadow.camera.far = 230;
+      keyLight.shadow.bias = -0.0005;
+      const d = 78;
+      keyLight.shadow.camera.left = -d;
+      keyLight.shadow.camera.right = d;
+      keyLight.shadow.camera.top = d;
+      keyLight.shadow.camera.bottom = -d;
+      scene.add(keyLight);
+
+      // Cyan industrial rim light from northwest
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.52);
+      rimLight.position.set(-68, 36, -54);
+      scene.add(rimLight);
+
+      // Subtle warm industrial bounce from east office / kitting bays
+      const warmFill = new THREE.PointLight(0xfbbf24, 0.65, 90);
+      warmFill.position.set(56, 14, 0);
+      scene.add(warmFill);
+
+      // Overhead high-bay cool light pools
+      const poolCoords = [[-36, -12], [0, -12], [32, -12], [-36, 16], [0, 16], [32, 16]];
+      poolCoords.forEach(([px, pz]) => {
+        const pl = new THREE.PointLight(0x7dd3fc, 0.42, 46);
+        pl.position.set(px, 13.5, pz);
+        scene.add(pl);
+      });
+
+      buildFactoryFloorAndStructure();
+      buildOverheadSteelAndCrane();
+      buildAllAIDCContainers();
+      buildMaterialPalletsAndBollards();
+      buildAGVs();
+      setupPointerControls(container);
+      updateCameraImmediate();
+
+      window.addEventListener('resize', onResize);
+    }
+
+    function createStripeTexture(colorA, colorB, angle = 45) {
+      const c = document.createElement('canvas');
+      c.width = 128; c.height = 128;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = colorA;
+      ctx.fillRect(0, 0, 128, 128);
+      ctx.strokeStyle = colorB;
+      ctx.lineWidth = 18;
+      ctx.beginPath();
+      for (let i = -128; i < 256; i += 36) {
+        if (angle === 45) { ctx.moveTo(i, 0); ctx.lineTo(i + 128, 128); }
+        else { ctx.moveTo(0, i); ctx.lineTo(128, i); }
+      }
+      ctx.stroke();
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    function createArrowTexture(dirLeft = true) {
+      const c = document.createElement('canvas');
+      c.width = 256; c.height = 64;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#0c3178';
+      ctx.fillRect(0, 0, 256, 64);
+      // Glowing cyan edge lines
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.65)';
+      ctx.fillRect(0, 0, 256, 3);
+      ctx.fillRect(0, 61, 256, 3);
+      // Sleek chevrons
+      ctx.fillStyle = 'rgba(125, 211, 252, 0.72)';
+      for (let x = 24; x < 256; x += 128) {
+        ctx.beginPath();
+        if (dirLeft) {
+          ctx.moveTo(x + 34, 16); ctx.lineTo(x + 12, 32); ctx.lineTo(x + 34, 48);
+          ctx.lineTo(x + 22, 48); ctx.lineTo(x, 32); ctx.lineTo(x + 22, 16);
+        } else {
+          ctx.moveTo(x, 16); ctx.lineTo(x + 22, 32); ctx.lineTo(x, 48);
+          ctx.lineTo(x + 12, 48); ctx.lineTo(x + 34, 32); ctx.lineTo(x + 12, 16);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(8, 1);
+      return tex;
+    }
+
+    function createZebraTexture() {
+      const c = document.createElement('canvas');
+      c.width = 64; c.height = 128;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#0c3178';
+      ctx.fillRect(0, 0, 64, 128);
+      ctx.fillStyle = 'rgba(226, 232, 240, 0.75)';
+      for (let y = 6; y < 128; y += 22) {
+        ctx.fillRect(4, y, 56, 11);
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    function addFloorStrip(x, z, w, d, color, y = 0.04, opacity = 1, map = null, emissive = 0x000000, emissiveIntensity = 0) {
+      const geo = new THREE.PlaneGeometry(w, d);
+      const mat = new THREE.MeshStandardMaterial({
+        color: map ? 0xffffff : color,
+        map: map || null,
+        emissive,
+        emissiveIntensity,
+        roughness: 0.45,
+        metalness: 0.18,
+        transparent: opacity < 1,
+        opacity
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(x, y, z);
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+      return mesh;
+    }
+
+    function buildFactoryFloorAndStructure() {
+      // Infinite subtle outer grid
+      const grid = new THREE.GridHelper(300, 60, 0x1e3a5f, 0x0c1628);
+      grid.position.y = -0.08;
+      scene.add(grid);
+
+      // Main 3# Factory epoxy slab
+      const slabGeo = new THREE.BoxGeometry(138, 0.6, 70);
+      const slabMat = new THREE.MeshStandardMaterial({
+        map: texEpoxyFloor,
+        roughness: 0.36,
+        metalness: 0.25
+      });
+      const slab = new THREE.Mesh(slabGeo, slabMat);
+      slab.position.set(2, -0.3, 0);
+      slab.receiveShadow = true;
+      scene.add(slab);
+
+      // Perimeter glowing neon edge trim
+      const borderEdges = new THREE.EdgesGeometry(new THREE.BoxGeometry(138.3, 0.7, 70.3));
+      const borderLine = new THREE.LineSegments(borderEdges, new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.65 }));
+      borderLine.position.set(2, -0.18, 0);
+      scene.add(borderLine);
+
+      // --- BLUE LOGISTICS LANES ---
+      const arrowTexLeft = createArrowTexture(true);
+      arrowStrips.push({ tex: arrowTexLeft, speed: 0.28 });
+
+      addFloorStrip(-8, -31.8, 108, 2.4, 0x1d4ed8, 0.05, 0.94, arrowTexLeft);
+      addFloorStrip(-8, -19.2, 108, 4.4, 0x1d4ed8, 0.05, 0.94, arrowTexLeft);
+      addFloorStrip(-8, 0.8,   108, 2.2, 0x1d4ed8, 0.05, 0.94, arrowTexLeft);
+      addFloorStrip(-8, 13.8,  108, 4.4, 0x1d4ed8, 0.05, 0.94, arrowTexLeft);
+
+      addFloorStrip(-63.5, 0, 3.2, 66, 0x0c3178, 0.045, 0.92);
+      addFloorStrip(48.5,  0, 5.2, 66, 0x0c3178, 0.045, 0.92);
+      addFloorStrip(58, -14.5, 16, 7.2, 0x0c3178, 0.045, 0.92);
+      addFloorStrip(58,  16.5, 16, 7.2, 0x0c3178, 0.045, 0.92);
+
+      // Zebra pedestrian crosswalks on East corridor (from blueprint)
+      const zebraTex = createZebraTexture();
+      addFloorStrip(48.5, -16.1, 5.0, 2.2, 0xffffff, 0.06, 0.92, zebraTex);
+      addFloorStrip(48.5,  10.7, 5.0, 2.2, 0xffffff, 0.06, 0.92, zebraTex);
+
+      // --- GREEN VISITOR WALKWAYS (参观通道) ---
+      addFloorStrip(-8, -16.1, 108, 1.5, 0x15803d, 0.06, 0.96, null, 0x16a34a, 0.22);
+      addFloorStrip(-8,  10.7, 108, 1.5, 0x15803d, 0.06, 0.96, null, 0x16a34a, 0.22);
+      addFloorStrip(-8,  32.5, 108, 1.4, 0x15803d, 0.06, 0.96, null, 0x16a34a, 0.22);
+
+      // --- YELLOW MATERIAL STAGING STRIPS ---
+      addFloorStrip(-12, -29.2, 98,  1.8, 0xd97706, 0.055, 0.72);
+      addFloorStrip(-8,  -1.2,  106, 1.6, 0xd97706, 0.055, 0.72);
+      addFloorStrip(-8,   3.0,  106, 1.6, 0xd97706, 0.055, 0.72);
+      addFloorStrip(-8,  17.0,  106, 1.6, 0xd97706, 0.055, 0.72);
+
+      // --- DEFECT HOLDING AREAS (不良品放置区) ---
+      const ngTex = createStripeTexture('#451a03', '#f59e0b', 45);
+      ngTex.repeat.set(2, 2);
+      const ngMat1 = new THREE.MeshStandardMaterial({ map: ngTex, roughness: 0.45, emissive: 0x92400e, emissiveIntensity: 0.42 });
+      const ngMesh1 = new THREE.Mesh(new THREE.PlaneGeometry(8.2, 6.2), ngMat1);
+      ngMesh1.rotation.x = -Math.PI / 2;
+      ngMesh1.position.set(41.2, 0.07, -25.8);
+      scene.add(ngMesh1);
+      ngAreaMats.push(ngMat1);
+
+      const ngMesh2 = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.8), ngMat1);
+      ngMesh2.rotation.x = -Math.PI / 2;
+      ngMesh2.position.set(52.2, 0.07, 31.0);
+      scene.add(ngMesh2);
+
+      // --- MATERIAL KITTING AREAS (物料齐套区) ---
+      const kitTex = createStripeTexture('#1e293b', '#eab308', 0);
+      kitTex.repeat.set(3, 1);
+      addFloorStrip(55.5, -6.5, 9.5, 7.2, 0xeab308, 0.06, 0.88, kitTex);
+      addFloorStrip(55.5,  6.5, 9.5, 6.8, 0xeab308, 0.06, 0.88, kitTex);
+
+      // --- EAST AUXILIARY ARCHITECTURAL ROOMS (Glass + Interior Warm Glow) ---
+      const glassMat = new THREE.MeshStandardMaterial({
+        color: 0x1e3a5f, transparent: true, opacity: 0.36, roughness: 0.15, metalness: 0.65
+      });
+      const roomEdgeMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 });
+      const floorGlowMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.14 });
+
+      function addRoomBlock(x, z, w, h, d) {
+        const g = new THREE.BoxGeometry(w, h, d);
+        const m = new THREE.Mesh(g, glassMat);
+        m.position.set(x, h / 2, z);
+        scene.add(m);
+        const e = new THREE.LineSegments(new THREE.EdgesGeometry(g), roomEdgeMat);
+        e.position.copy(m.position);
+        scene.add(e);
+        // Interior warm lit ceiling slab
+        const lit = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.9, d * 0.9), floorGlowMat);
+        lit.rotation.x = -Math.PI / 2;
+        lit.position.set(x, 0.12, z);
+        scene.add(lit);
+      }
+      addRoomBlock(60, -26.5, 16, 4.4, 11.5);
+      addRoomBlock(61.5, 26.8, 13, 4.0, 10.5);
+
+      zone3DMarkers.push(
+        { label: '总装区1 (12台)', pos: new THREE.Vector3(-56, 5.2, -25.6), cls: '' },
+        { label: '总装区2 (17台)', pos: new THREE.Vector3(-56, 5.2, -8.5),  cls: '' },
+        { label: '总装区3 (12台)', pos: new THREE.Vector3(-56, 5.2, 6.8),   cls: '' },
+        { label: '总装区4 (45台)', pos: new THREE.Vector3(-56, 5.2, 24.5),  cls: '' },
+        { label: '不良品放置区',    pos: new THREE.Vector3(41.2, 2.5, -25.8), cls: 'ng-tag' },
+        { label: '物料齐套区',      pos: new THREE.Vector3(55.5, 2.5, -6.5),  cls: 'kit-tag' },
+        { label: '物料齐套区',      pos: new THREE.Vector3(55.5, 2.5, 6.5),   cls: 'kit-tag' }
+      );
+    }
+
+    function buildOverheadSteelAndCrane() {
+      // Steel structural columns & crane runway rails
+      const colGeo = new THREE.BoxGeometry(0.85, 13.5, 0.85);
+      const colMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.65, roughness: 0.35, transparent: true, opacity: 0.72 });
+      const trussMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.14 });
+      const lightFixtureMat = new THREE.MeshBasicMaterial({ color: 0xe0f2fe });
+
+      for (let x = -60; x <= 44; x += 13) {
+        const cN = new THREE.Mesh(colGeo, colMat); cN.position.set(x, 6.75, -34.2); scene.add(cN);
+        const cS = new THREE.Mesh(colGeo, colMat); cS.position.set(x, 6.75,  34.2); scene.add(cS);
+
+        // Subtle overhead roof truss wireframe line spanning N-S
+        const pts = [new THREE.Vector3(x, 13.5, -34.2), new THREE.Vector3(x, 14.8, 0), new THREE.Vector3(x, 13.5, 34.2)];
+        const trussLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), trussMat);
+        scene.add(trussLine);
+
+        // Suspended high-bay LED linear light bars
+        [-18, 0, 18].forEach(z => {
+          const ledBar = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.16, 0.32), lightFixtureMat);
+          ledBar.position.set(x, 13.4, z);
+          scene.add(ledBar);
+        });
+      }
+
+      // Longitudinal overhead crane runway beams
+      const railMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7, roughness: 0.3, transparent: true, opacity: 0.55 });
+      const railN = new THREE.Mesh(new THREE.BoxGeometry(114, 0.55, 0.45), railMat);
+      railN.position.set(-8, 10.6, -33.6); scene.add(railN);
+      const railS = new THREE.Mesh(new THREE.BoxGeometry(114, 0.55, 0.45), railMat);
+      railS.position.set(-8, 10.6,  33.6); scene.add(railS);
+
+      // Animated Overhead Bridge Crane (工业双梁行车)
+      craneGroup = new THREE.Group();
+      const girderMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.45, roughness: 0.35, emissive: 0x422006, emissiveIntensity: 0.25 });
+      const g1 = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.9, 67.2), girderMat);
+      g1.position.set(-0.8, 11.3, 0); craneGroup.add(g1);
+      const g2 = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.9, 67.2), girderMat);
+      g2.position.set(0.8, 11.3, 0); craneGroup.add(g2);
+
+      // Crane hoist trolley
+      craneTrolley = new THREE.Mesh(
+        new THREE.BoxGeometry(2.2, 0.75, 2.6),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.6, roughness: 0.3 })
+      );
+      craneTrolley.position.set(0, 11.8, -8);
+      craneGroup.add(craneTrolley);
+      craneGroup.position.x = -12;
+      scene.add(craneGroup);
+    }
+
+    function buildMaterialPalletsAndBollards() {
+      // Miniature material pallets / cooling pipe racks along yellow staging strips
+      const palletGeo = new THREE.BoxGeometry(1.8, 0.22, 1.1);
+      const palletMat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.85 });
+      const crateGeo = new THREE.BoxGeometry(1.4, 0.65, 0.85);
+      const crateMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.55, metalness: 0.35 });
+
+      const strips = [
+        { z: -29.2, count: 12, startX: 32.5, step: 8.1 },
+        { z:  -1.2, count: 14, startX: 38.0, step: 7.2 },
+        { z:   3.0, count: 12, startX: 39.0, step: 8.7 },
+        { z:  17.0, count: 15, startX: 40.0, step: 6.8 }
+      ];
+      strips.forEach(s => {
+        for (let i = 0; i < s.count; i++) {
+          const x = s.startX - i * s.step;
+          const p = new THREE.Mesh(palletGeo, palletMat);
+          p.position.set(x, 0.16, s.z);
+          scene.add(p);
+          if (i % 3 !== 0) {
+            const c = new THREE.Mesh(crateGeo, crateMat);
+            c.position.set(x, 0.58, s.z);
+            c.castShadow = true;
+            scene.add(c);
+          }
+        }
+      });
+
+      // Green walkway safety bollards
+      const bollardGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.72, 6);
+      const bollardMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x14532d, emissiveIntensity: 0.5, roughness: 0.4 });
+      [-15.35, -16.85, 9.95, 11.45].forEach(z => {
+        for (let x = -58; x <= 44; x += 12) {
+          const b = new THREE.Mesh(bollardGeo, bollardMat);
+          b.position.set(x, 0.38, z);
+          scene.add(b);
+        }
+      });
+    }
+
+    function createAIDCContainer(prod, x, z, w, h, d, rotY = 0) {
+      const group = new THREE.Group();
+      group.position.set(x, 0, z);
+      group.rotation.y = rotY;
+
+      const meta = STATUS_META[prod.status];
+
+      // 1. Concrete / Steel foundation plinth
+      const base = new THREE.Mesh(
+        new THREE.BoxGeometry(w * 1.03, 0.24, d * 1.03),
+        new THREE.MeshStandardMaterial({ color: 0x0b1320, roughness: 0.75, metalness: 0.5 })
+      );
+      base.position.y = 0.12;
+      base.receiveShadow = true;
+      group.add(base);
+
+      // 2. Main AIDC Corrugated Container Hull (multi-material: textured sides + roof)
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: meta.color,
+        map: texContainerSide,
+        bumpMap: texContainerBump,
+        bumpScale: 0.08,
+        emissive: meta.emissive,
+        emissiveIntensity: 0.38,
+        roughness: 0.34,
+        metalness: 0.52
+      });
+      const roofMat = new THREE.MeshStandardMaterial({
+        color: meta.color,
+        map: texContainerRoof,
+        emissive: meta.emissive,
+        emissiveIntensity: 0.32,
+        roughness: 0.42,
+        metalness: 0.48
+      });
+
+      const bodyGeo = new THREE.BoxGeometry(w, h, d);
+      const body = new THREE.Mesh(bodyGeo, [bodyMat, bodyMat, roofMat, bodyMat, bodyMat, bodyMat]);
+      body.position.y = 0.24 + h / 2;
+      body.castShadow = true;
+      body.receiveShadow = true;
+      body.userData = { productId: prod.id };
+      group.add(body);
+      pickableMeshes.push(body);
+
+      // 3. ISO Container Corner Castings & Structural Frame Trim
+      const cornerMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.75, roughness: 0.3 });
+      const cs = Math.min(0.28, Math.min(w, d) * 0.15);
+      const corners = [
+        [-w / 2, -d / 2], [w / 2, -d / 2], [-w / 2, d / 2], [w / 2, d / 2]
+      ];
+      corners.forEach(([cx, cz]) => {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(cs, h + 0.08, cs), cornerMat);
+        post.position.set(cx * 0.98, 0.24 + h / 2, cz * 0.98);
+        group.add(post);
+      });
+
+      // 4. Rooftop AIDC Liquid-Cooling CDU / HVAC Module & Cooling Fans
+      const isLongX = w >= d;
+      const hvacW = isLongX ? w * 0.34 : w * 0.72;
+      const hvacD = isLongX ? d * 0.68 : d * 0.28;
+      const hvacH = 0.44;
+      const hvac = new THREE.Mesh(
+        new THREE.BoxGeometry(hvacW, hvacH, hvacD),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.65 })
+      );
+      hvac.position.set(isLongX ? -w * 0.22 : 0, 0.24 + h + hvacH / 2, isLongX ? 0 : -d * 0.24);
+      hvac.castShadow = true;
+      group.add(hvac);
+
+      // Cooling fan rings on top of HVAC/CDU
+      const fanR = Math.min(hvacW, hvacD) * 0.26;
+      const fanGeo = new THREE.CylinderGeometry(fanR, fanR, 0.08, 12);
+      const fanMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.2 });
+      [-0.25, 0.25].forEach(off => {
+        const fan = new THREE.Mesh(fanGeo, fanMat);
+        fan.position.set(
+          hvac.position.x + (isLongX ? off * hvacW : 0),
+          0.24 + h + hvacH + 0.04,
+          hvac.position.z + (isLongX ? 0 : off * hvacD)
+        );
+        group.add(fan);
+      });
+
+      // 5. Glowing Roofline Status LED Strip & Real Progress Fill Bar
+      const ledMat = new THREE.MeshBasicMaterial({ color: meta.led });
+      const stripW = isLongX ? w * 0.92 : w * 0.14;
+      const stripD = isLongX ? d * 0.12 : d * 0.92;
+      const ledStrip = new THREE.Mesh(new THREE.BoxGeometry(stripW, 0.08, stripD), ledMat);
+      ledStrip.position.set(isLongX ? 0 : w * 0.38, 0.27 + h, isLongX ? d * 0.42 : 0);
+      group.add(ledStrip);
+
+      // Rooftop progress bar
+      const pTrackLen = isLongX ? w * 0.42 : d * 0.42;
+      const pTrackThick = Math.min(0.28, (isLongX ? d : w) * 0.18);
+      const trackBg = new THREE.Mesh(
+        new THREE.BoxGeometry(isLongX ? pTrackLen : pTrackThick, 0.07, isLongX ? pTrackThick : pTrackLen),
+        new THREE.MeshBasicMaterial({ color: 0x09111f })
+      );
+      trackBg.position.set(isLongX ? w * 0.20 : 0, 0.28 + h, isLongX ? 0 : d * 0.20);
+      group.add(trackBg);
+
+      const fillGeo = new THREE.BoxGeometry(isLongX ? pTrackLen : pTrackThick * 0.82, 0.10, isLongX ? pTrackThick * 0.82 : pTrackLen);
+      const fillMesh = new THREE.Mesh(fillGeo, ledMat);
+      fillMesh.position.copy(trackBg.position);
+      fillMesh.position.y += 0.02;
+      const pctScale = Math.max(0.05, prod.progress / 100);
+      if (isLongX) fillMesh.scale.x = pctScale;
+      else fillMesh.scale.z = pctScale;
+      group.add(fillMesh);
+
+      // 6. Andon Status Light Tower
+      const beaconMat = new THREE.MeshBasicMaterial({ color: meta.led });
+      const beacon = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.55, 10), beaconMat);
+      beacon.position.set(isLongX ? w * 0.42 : 0, 0.52 + h, isLongX ? -d * 0.32 : d * 0.42);
+      group.add(beacon);
+
+      // 7. Translucent Vertical Light Beam for Anomaly / Defect (Cinematic Spotlight Beacon)
+      const beamMat = new THREE.MeshBasicMaterial({
+        color: meta.led,
+        transparent: true,
+        opacity: 0.26,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      });
+      const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.85, 7.5, 12, 1, true), beamMat);
+      beam.position.set(0, 0.24 + h + 3.75, 0);
+      beam.visible = (prod.status === 'anomaly' || prod.status === 'defect');
+      group.add(beam);
+
+      // 8. Pulsing Floor Halo Ring
+      const ringGeo = new THREE.RingGeometry(Math.max(w, d) * 0.46, Math.max(w, d) * 0.60, 28);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: meta.led, side: THREE.DoubleSide, transparent: true, opacity: 0.88
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.09;
+      ring.visible = (prod.status === 'anomaly' || prod.status === 'defect');
+      group.add(ring);
+
+      scene.add(group);
+
+      prod.meshGroup = group;
+      prod.bodyMat = bodyMat;
+      prod.roofMat = roofMat;
+      prod.ledMat = ledMat;
+      prod.progressFillMesh = fillMesh;
+      prod.isLongX = isLongX;
+      prod.beaconMesh = beacon;
+      prod.beaconMat = beaconMat;
+      prod.beamMesh = beam;
+      prod.beamMat = beamMat;
+      prod.ringMesh = ring;
+      prod.worldPos.set(x, h + 1.8, z);
+    }
+
+    function buildAllAIDCContainers() {
+      // Zone 1: 12 horizontal AIDC containers
+      products.filter(p => p.zone === 1).forEach((p, idx) => {
+        createAIDCContainer(p, 32.5 - idx * 8.1, -25.4, 6.4, 2.9, 3.1, 0);
+      });
+      // Zone 2: 17 diagonal 45-degree AIDC containers
+      products.filter(p => p.zone === 2).forEach((p, idx) => {
+        createAIDCContainer(p, 40.0 - idx * 6.0, -8.6, 8.8, 2.9, 2.55, Math.PI / 4);
+      });
+      // Zone 3: 12 horizontal AIDC containers
+      products.filter(p => p.zone === 3).forEach((p, idx) => {
+        createAIDCContainer(p, 39.0 - idx * 8.7, 6.9, 6.9, 2.9, 3.1, 0);
+      });
+      // Zone 4: 45 vertical/narrow AIDC containers side-by-side
+      products.filter(p => p.zone === 4).forEach((p, idx) => {
+        createAIDCContainer(p, 42.4 - idx * 2.32, 25.0, 1.78, 2.95, 10.6, 0);
+      });
+
+      // Add a couple of subtle localized red point lights at active anomaly clusters for real floor glow
+      const anomSamples = products.filter(p => p.status === 'anomaly').slice(0, 3);
+      anomSamples.forEach(p => {
+        const pl = new THREE.PointLight(0xef4444, 1.4, 16);
+        pl.position.set(p.worldPos.x, 4.2, p.worldPos.z);
+        scene.add(pl);
+        anomalyLights.push({ light: pl, prod: p });
+      });
+    }
+
+    function buildAGVs() {
+      const lanes = [
+        { z: -19.2, minX: -58, maxX: 44, speed: 5.5, dir: -1, x: 25 },
+        { z: -19.2, minX: -58, maxX: 44, speed: 5.5, dir: -1, x: -30 },
+        { z:  13.8, minX: -58, maxX: 44, speed: 4.8, dir: -1, x: 10 },
+        { z:   0.8, minX: -58, maxX: 44, speed: 4.2, dir: -1, x: -12 }
+      ];
+      lanes.forEach(l => {
+        const g = new THREE.Group();
+        const chassis = new THREE.Mesh(
+          new THREE.BoxGeometry(4.0, 0.55, 2.1),
+          new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.35, metalness: 0.55 })
+        );
+        chassis.position.y = 0.35;
+        chassis.castShadow = true;
+        g.add(chassis);
+        // Headlight glow
+        const light = new THREE.Mesh(
+          new THREE.BoxGeometry(0.25, 0.25, 1.5),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+        );
+        light.position.set(-2.05, 0.42, 0);
+        g.add(light);
+        g.position.set(l.x, 0, l.z);
+        scene.add(g);
+        agvs.push({ group: g, ...l });
+      });
+    }
+
+    // =========================================================================
+    // 3. CAMERA CONTROLS & RAYCASTING INTERACTION
+    // =========================================================================
+    function setupPointerControls(dom) {
+      let downX = 0, downY = 0;
+
+      dom.addEventListener('pointerdown', e => {
+        autoOrbit = false;
+        updateAutoOrbitBtn();
+        downX = e.clientX; downY = e.clientY;
+        camState.prevX = e.clientX; camState.prevY = e.clientY;
+        if (e.button === 2 || e.shiftKey) camState.isPanning = true;
+        else camState.isDragging = true;
+      });
+
+      window.addEventListener('pointermove', e => {
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+        if (camState.isDragging) {
+          const dx = e.clientX - camState.prevX;
+          const dy = e.clientY - camState.prevY;
+          camState.prevX = e.clientX; camState.prevY = e.clientY;
+          camState.desiredSpherical.theta -= dx * 0.0065;
+          camState.desiredSpherical.phi = Math.max(0.18, Math.min(Math.PI / 2.15, camState.desiredSpherical.phi - dy * 0.0065));
+        } else if (camState.isPanning) {
+          const dx = e.clientX - camState.prevX;
+          const dy = e.clientY - camState.prevY;
+          camState.prevX = e.clientX; camState.prevY = e.clientY;
+          const panSpeed = camState.desiredSpherical.radius * 0.0014;
+          const forward = new THREE.Vector3();
+          camera.getWorldDirection(forward);
+          forward.y = 0; forward.normalize();
+          const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+          camState.desiredTarget.addScaledVector(right, -dx * panSpeed);
+          camState.desiredTarget.addScaledVector(forward, dy * panSpeed);
+          camState.desiredTarget.x = Math.max(-70, Math.min(70, camState.desiredTarget.x));
+          camState.desiredTarget.z = Math.max(-42, Math.min(42, camState.desiredTarget.z));
+        } else {
+          handleHover(e.clientX, e.clientY);
+        }
+      });
+
+      window.addEventListener('pointerup', e => {
+        const moved = Math.hypot(e.clientX - downX, e.clientY - downY);
+        camState.isDragging = false;
+        camState.isPanning = false;
+        if (moved < 5 && e.target === renderer.domElement) {
+          handleClickPick();
+        }
+      });
+
+      dom.addEventListener('wheel', e => {
+        e.preventDefault();
+        const factor = e.deltaY > 0 ? 1.09 : 0.91;
+        camState.desiredSpherical.radius = Math.max(15, Math.min(175, camState.desiredSpherical.radius * factor));
+      }, { passive: false });
+
+      dom.addEventListener('contextmenu', e => e.preventDefault());
+    }
+
+    function flyCameraTo(targetVec, radius, phi, theta) {
+      camState.desiredTarget.copy(targetVec);
+      camState.desiredSpherical.radius = radius;
+      camState.desiredSpherical.phi = phi;
+      camState.desiredSpherical.theta = theta;
+    }
+
+    function updateCameraImmediate() {
+      camState.target.copy(camState.desiredTarget);
+      camState.spherical.copy(camState.desiredSpherical);
+      const offset = new THREE.Vector3().setFromSpherical(camState.spherical);
+      camera.position.copy(camState.target).add(offset);
+      camera.lookAt(camState.target);
+    }
+
+    function handleHover(clientX, clientY) {
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(pickableMeshes, false);
+      const tt = document.getElementById('hover-tooltip');
+      if (hits.length > 0) {
+        const pid = hits[0].object.userData.productId;
+        hoveredId = pid;
+        document.getElementById('canvas-container').style.cursor = 'pointer';
+        const p = products.find(x => x.id === pid);
+        if (p) {
+          const meta = STATUS_META[p.status];
+          document.getElementById('tt-bay').textContent = `${ZONE_META[p.zone].name} · ${p.id}`;
+          const stEl = document.getElementById('tt-status');
+          stEl.textContent = meta.label;
+          stEl.className = `px-1.5 py-0.5 rounded text-[10px] font-semibold ${meta.badge}`;
+          document.getElementById('tt-sn').textContent = `${p.sn} · ${p.model}`;
+          document.getElementById('tt-step').textContent = PROCESS_STEPS[p.stepIdx];
+          document.getElementById('tt-pct').textContent = `${p.progress}%`;
+          const bar = document.getElementById('tt-bar');
+          bar.style.width = `${p.progress}%`;
+          bar.style.backgroundColor = meta.hex;
+          const issEl = document.getElementById('tt-issue');
+          if (p.issue) {
+            issEl.textContent = `⚠ ${p.issue.category}`;
+            issEl.classList.remove('hidden');
+          } else {
+            issEl.classList.add('hidden');
+          }
+          const left = Math.min(window.innerWidth - 230, clientX + 16);
+          const top = Math.min(window.innerHeight - 125, clientY + 14);
+          tt.style.left = `${left}px`;
+          tt.style.top = `${top}px`;
+          tt.style.opacity = '1';
+        }
+      } else {
+        hoveredId = null;
+        document.getElementById('canvas-container').style.cursor = camState.isDragging ? 'grabbing' : 'grab';
+        tt.style.opacity = '0';
+      }
+    }
+
+    function handleClickPick() {
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(pickableMeshes, false);
+      if (hits.length > 0) {
+        selectProduct(hits[0].object.userData.productId, true);
+      }
+    }
+
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // =========================================================================
+    // 4. SECOND-LAYER DRAWER CONTROL & 3D VISUAL SYNC
+    // =========================================================================
+    function setLeftDrawer(open) {
+      leftDrawerOpen = open;
+      document.getElementById('left-panel').classList.toggle('panel-hidden-left', !open);
+      document.getElementById('btn-open-left').classList.toggle('opacity-0', open);
+      document.getElementById('btn-open-left').classList.toggle('pointer-events-none', open);
+    }
+
+    function setRightDrawer(open) {
+      rightDrawerOpen = open;
+      document.getElementById('right-panel').classList.toggle('panel-hidden-right', !open);
+      document.getElementById('btn-open-right').classList.toggle('opacity-0', open);
+      document.getElementById('btn-open-right').classList.toggle('pointer-events-none', open);
+    }
+
+    function refresh3DMaterials() {
+      products.forEach(p => {
+        const meta = STATUS_META[p.status];
+        const matchesZone = !activeZoneFilter || p.zone === activeZoneFilter;
+        const matchesStatus = activeStatusFilter === 'all' || p.status === activeStatusFilter;
+        const matchesSearch = !searchQuery ||
+          p.id.toLowerCase().includes(searchQuery) ||
+          p.sn.toLowerCase().includes(searchQuery) ||
+          p.model.toLowerCase().includes(searchQuery);
+        const visibleMatch = matchesZone && matchesStatus && matchesSearch;
+
+        p.bodyMat.color.setHex(meta.color);
+        p.bodyMat.emissive.setHex(meta.emissive);
+        p.bodyMat.transparent = !visibleMatch;
+        p.bodyMat.opacity = visibleMatch ? 1.0 : 0.14;
+        p.bodyMat.emissiveIntensity = (p.id === selectedId) ? 0.95 : (visibleMatch ? 0.38 : 0.06);
+
+        p.roofMat.color.setHex(meta.color);
+        p.roofMat.emissive.setHex(meta.emissive);
+        p.roofMat.transparent = !visibleMatch;
+        p.roofMat.opacity = visibleMatch ? 1.0 : 0.14;
+
+        p.ledMat.color.setHex(meta.led);
+        p.beaconMat.color.setHex(meta.led);
+        p.beaconMesh.visible = visibleMatch;
+
+        // Sync rooftop 3D progress bar
+        const pctScale = Math.max(0.05, p.progress / 100);
+        if (p.isLongX) p.progressFillMesh.scale.x = pctScale;
+        else p.progressFillMesh.scale.z = pctScale;
+
+        const isAlert = (p.status === 'anomaly' || p.status === 'defect');
+        p.beamMat.color.setHex(meta.led);
+        p.beamMesh.visible = visibleMatch && isAlert;
+        p.ringMesh.material.color.setHex(meta.led);
+        p.ringMesh.visible = visibleMatch && (isAlert || p.id === selectedId);
+      });
+      rebuild3DAlertPins();
+    }
+
+    let labelNodes = [];
+    let alertPinNodes = [];
+
+    function init3DZoneLabels() {
+      const layer = document.getElementById('labels-layer');
+      zone3DMarkers.forEach(m => {
+        const el = document.createElement('div');
+        el.className = `zone-3d-tag ${m.cls}`;
+        el.textContent = m.label;
+        layer.appendChild(el);
+        labelNodes.push({ el, pos: m.pos });
+      });
+    }
+
+    function rebuild3DAlertPins() {
+      const layer = document.getElementById('labels-layer');
+      alertPinNodes.forEach(n => n.el.remove());
+      alertPinNodes = [];
+      products.forEach(p => {
+        if (p.status === 'anomaly' || p.status === 'defect') {
+          const matchesZone = !activeZoneFilter || p.zone === activeZoneFilter;
+          const matchesStatus = activeStatusFilter === 'all' || activeStatusFilter === p.status;
+          if (!matchesZone || !matchesStatus) return;
+
+          const el = document.createElement('div');
+          el.className = `alert-3d-pin ${p.status}`;
+          el.innerHTML = `<span>${p.status === 'anomaly' ? '!' : '▲'}</span><span>${p.id}</span>`;
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectProduct(p.id, true);
+          });
+          layer.appendChild(el);
+          alertPinNodes.push({ el, pos: p.worldPos });
+        }
+      });
+    }
+
+    function projectLabels() {
+      const w = window.innerWidth, h = window.innerHeight;
+      const v = new THREE.Vector3();
+      const updateList = (list) => {
+        list.forEach(item => {
+          v.copy(item.pos).project(camera);
+          if (v.z > 1) {
+            item.el.style.display = 'none';
+          } else {
+            item.el.style.display = 'flex';
+            item.el.style.left = `${(v.x * 0.5 + 0.5) * w}px`;
+            item.el.style.top = `${(-v.y * 0.5 + 0.5) * h}px`;
+          }
+        });
+      };
+      updateList(labelNodes);
+      updateList(alertPinNodes);
+    }
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const t = clock.elapsedTime;
+
+      if (autoOrbit) camState.desiredSpherical.theta += dt * 0.15;
+
+      const damp = 1 - Math.exp(-7.5 * dt);
+      camState.target.lerp(camState.desiredTarget, damp);
+      camState.spherical.radius += (camState.desiredSpherical.radius - camState.spherical.radius) * damp;
+      camState.spherical.phi += (camState.desiredSpherical.phi - camState.spherical.phi) * damp;
+      camState.spherical.theta += (camState.desiredSpherical.theta - camState.spherical.theta) * damp;
+
+      const offset = new THREE.Vector3().setFromSpherical(camState.spherical);
+      camera.position.copy(camState.target).add(offset);
+      camera.lookAt(camState.target);
+
+      // Animate logistics arrows & AGVs
+      arrowStrips.forEach(a => { a.tex.offset.x += dt * a.speed; });
+      agvs.forEach(a => {
+        a.group.position.x += a.dir * a.speed * dt;
+        if (a.group.position.x < a.minX) a.group.position.x = a.maxX;
+      });
+
+      // Animate overhead bridge crane gently patrolling
+      if (craneGroup) {
+        craneGroup.position.x = -8 + Math.sin(t * 0.14) * 34;
+        if (craneTrolley) craneTrolley.position.z = Math.cos(t * 0.22) * 22;
+      }
+
+      // Pulse anomaly / defect beacons, light beams & floor lights
+      const fastPulse = 0.5 + 0.5 * Math.sin(t * 7.2);
+      const slowPulse = 0.5 + 0.5 * Math.sin(t * 3.4);
+
+      products.forEach(p => {
+        if (p.status === 'anomaly') {
+          p.bodyMat.emissiveIntensity = 0.42 + fastPulse * 0.78;
+          p.beamMat.opacity = 0.14 + fastPulse * 0.28;
+          const s = 1 + fastPulse * 0.24;
+          p.ringMesh.scale.set(s, s, 1);
+        } else if (p.status === 'defect') {
+          p.bodyMat.emissiveIntensity = 0.32 + slowPulse * 0.50;
+          p.beamMat.opacity = 0.10 + slowPulse * 0.18;
+          const s = 1 + slowPulse * 0.15;
+          p.ringMesh.scale.set(s, s, 1);
+        } else if (p.id === selectedId) {
+          p.bodyMat.emissiveIntensity = 0.72 + slowPulse * 0.40;
+          p.ringMesh.scale.set(1.12, 1.12, 1);
+        } else if (p.id === hoveredId) {
+          p.bodyMat.emissiveIntensity = 0.80;
+        }
+      });
+
+      anomalyLights.forEach(al => {
+        al.light.intensity = al.prod.status === 'anomaly' ? (0.8 + fastPulse * 1.4) : 0;
+      });
+
+      const hasDefects = products.some(p => p.status === 'defect');
+      ngAreaMats.forEach(m => { m.emissiveIntensity = hasDefects ? 0.25 + slowPulse * 0.45 : 0.12; });
+
+      renderer.render(scene, camera);
+      projectLabels();
+    }
+
+    // =========================================================================
+    // 5. UI RENDERING & STATE MUTATIONS
+    // =========================================================================
+    function renderAllUI() {
+      renderKPIs();
+      renderZoneCards();
+      renderProductList();
+      renderAlertsFeed();
+      renderInspector();
+      refresh3DMaterials();
+      lucide.createIcons();
+    }
+
+    function renderKPIs() {
+      const total = products.length;
+      const producing = products.filter(p => p.status === 'producing').length;
+      const completed = products.filter(p => p.status === 'completed').length;
+      const defect = products.filter(p => p.status === 'defect').length;
+      const anomaly = products.filter(p => p.status === 'anomaly').length;
+      const avg = Math.round(products.reduce((s, p) => s + p.progress, 0) / Math.max(1, total));
+      const issueSum = defect + anomaly;
+
+      document.getElementById('kpi-total').textContent = total;
+      document.getElementById('kpi-producing').textContent = producing;
+      document.getElementById('kpi-completed').textContent = completed;
+      document.getElementById('kpi-defect').textContent = defect;
+      document.getElementById('kpi-anomaly').textContent = anomaly;
+      document.getElementById('kpi-avg-progress').textContent = `${avg}%`;
+      document.getElementById('alert-badge-count').textContent = issueSum;
+      document.getElementById('edge-alert-count').textContent = issueSum;
+      document.getElementById('ng-zone-count').textContent = `不良品: ${defect} 台`;
+    }
+
+    function renderZoneCards() {
+      const container = document.getElementById('zone-cards');
+      container.innerHTML = '';
+      [1, 2, 3, 4].forEach(z => {
+        const list = products.filter(p => p.zone === z);
+        const avg = Math.round(list.reduce((s, p) => s + p.progress, 0) / list.length);
+        const ngCount = list.filter(p => p.status === 'defect').length;
+        const abCount = list.filter(p => p.status === 'anomaly').length;
+        const isActive = activeZoneFilter === z;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2 rounded-lg border transition ${
+          isActive
+            ? 'bg-sky-500/20 border-sky-400/70'
+            : 'bg-slate-900/75 border-slate-800 hover:border-sky-500/40'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between text-xs mb-1">
+            <span class="font-semibold text-slate-100">${ZONE_META[z].name} <span class="text-[10px] text-slate-400 font-normal">(${list.length}台)</span></span>
+            <div class="flex items-center gap-1.5">
+              ${abCount ? `<span class="px-1.5 py-0.2 rounded bg-rose-500/25 text-rose-300 text-[10px] font-mono">异 ${abCount}</span>` : ''}
+              ${ngCount ? `<span class="px-1.5 py-0.2 rounded bg-amber-500/25 text-amber-300 text-[10px] font-mono">不 ${ngCount}</span>` : ''}
+              <span class="font-mono text-sky-300 font-semibold">${avg}%</span>
+            </div>
+          </div>
+          <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-full rounded-full bg-gradient-to-r from-sky-500 to-cyan-300" style="width:${avg}%"></div>
+          </div>
+        `;
+        btn.addEventListener('click', () => {
+          activeZoneFilter = (activeZoneFilter === z) ? null : z;
+          if (activeZoneFilter) flyToZone(z);
+          else flyToOverview();
+          renderAllUI();
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function renderProductList() {
+      const container = document.getElementById('product-list');
+      const filtered = products.filter(p => {
+        if (activeZoneFilter && p.zone !== activeZoneFilter) return false;
+        if (activeStatusFilter !== 'all' && p.status !== activeStatusFilter) return false;
+        if (searchQuery && !(p.id.toLowerCase().includes(searchQuery) || p.sn.toLowerCase().includes(searchQuery) || p.model.toLowerCase().includes(searchQuery))) return false;
+        return true;
+      });
+
+      document.getElementById('list-count').textContent = `${filtered.length} 台`;
+      container.innerHTML = '';
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="text-center text-xs text-slate-500 py-8">无匹配 AIDC 集装箱工位</div>`;
+        return;
+      }
+
+      filtered.forEach(p => {
+        const meta = STATUS_META[p.status];
+        const isSel = p.id === selectedId;
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = `w-full text-left px-2.5 py-2 rounded-lg border transition flex flex-col gap-1 ${
+          isSel
+            ? 'bg-sky-500/20 border-sky-400/70'
+            : 'bg-slate-900/65 border-slate-800/80 hover:bg-slate-800/70'
+        }`;
+        row.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono text-xs font-bold text-white">${p.id}</span>
+              <span class="text-[10px] text-slate-400 font-mono">${p.sn}</span>
+            </div>
+            <span class="px-1.5 py-0.2 rounded text-[10px] font-medium ${meta.badge}">${meta.label}</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-400">
+            <span class="truncate max-w-[170px]">${PROCESS_STEPS[p.stepIdx]}</span>
+            <span class="font-mono text-slate-200">${p.progress}%</span>
+          </div>
+          <div class="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-full rounded-full" style="width:${p.progress}%;background:${meta.hex}"></div>
+          </div>
+        `;
+        row.addEventListener('click', () => selectProduct(p.id, true));
+        container.appendChild(row);
+      });
+    }
+
+    function renderAlertsFeed() {
+      const container = document.getElementById('alerts-feed');
+      const items = alertFeed.filter(a => activeAlertFilter === 'all' || a.type === activeAlertFilter);
+      container.innerHTML = '';
+
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 text-slate-400">
+            <div class="text-emerald-400 text-xs font-semibold">当前产线运行平稳</div>
+            <div class="text-[11px] text-slate-500 mt-1">无待处理的不良或异常记录</div>
+          </div>`;
+        return;
+      }
+
+      items.forEach(a => {
+        const isAnom = a.type === 'anomaly';
+        const card = document.createElement('div');
+        card.className = `p-2.5 rounded-lg border transition cursor-pointer ${
+          isAnom
+            ? 'bg-rose-950/35 border-rose-500/40 hover:border-rose-400'
+            : 'bg-amber-950/35 border-amber-500/40 hover:border-amber-400'
+        }`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full ${isAnom ? 'bg-rose-500 pulse-red' : 'bg-amber-400 pulse-amber'}"></span>
+              <span class="font-mono text-xs font-bold text-white">${a.bayId}</span>
+              <span class="text-[10px] text-slate-400">${ZONE_META[a.zone].name}</span>
+            </div>
+            <span class="text-[10px] font-mono text-slate-400">${a.time}</span>
+          </div>
+          <div class="text-xs font-semibold ${isAnom ? 'text-rose-300' : 'text-amber-300'}">${a.category}</div>
+          <div class="text-[11px] text-slate-300 mt-0.5 leading-snug">${a.desc}</div>
+          <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-800/70">
+            <span class="text-[10px] font-mono text-slate-400">${a.sn}</span>
+            <span class="text-[11px] text-sky-300 font-medium">定位查看 →</span>
+          </div>
+        `;
+        card.addEventListener('click', () => selectProduct(a.bayId, true));
+        container.appendChild(card);
+      });
+    }
+
+    function renderInspector() {
+      const emptyEl = document.getElementById('inspector-empty');
+      const contentEl = document.getElementById('inspector-content');
+      const p = products.find(x => x.id === selectedId);
+      if (!p) {
+        emptyEl.classList.remove('hidden');
+        contentEl.classList.add('hidden');
+        return;
+      }
+      emptyEl.classList.add('hidden');
+      contentEl.classList.remove('hidden');
+
+      const meta = STATUS_META[p.status];
+      document.getElementById('ins-bay').textContent = `${ZONE_META[p.zone].name} · ${p.id}`;
+      const badge = document.getElementById('ins-status-badge');
+      badge.textContent = meta.label;
+      badge.className = `px-2 py-0.5 rounded-full text-[10px] font-semibold ${meta.badge}`;
+      document.getElementById('ins-sn').textContent = p.sn;
+      document.getElementById('ins-model').textContent = `型号: ${p.model}`;
+      document.getElementById('ins-progress-text').textContent = `${p.progress}%`;
+      const pBar = document.getElementById('ins-progress-bar');
+      pBar.style.width = `${p.progress}%`;
+      pBar.style.background = meta.hex;
+      document.getElementById('ins-team').textContent = p.team;
+      document.getElementById('ins-takt').textContent = p.takt;
+
+      const stepsEl = document.getElementById('ins-steps');
+      stepsEl.innerHTML = '';
+      PROCESS_STEPS.forEach((name, idx) => {
+        const done = idx < p.stepIdx || p.progress === 100;
+        const curr = idx === p.stepIdx && p.progress < 100;
+        const row = document.createElement('div');
+        row.className = `flex items-center justify-between px-2 py-1 rounded text-[11px] ${
+          curr ? 'bg-sky-500/15 border border-sky-400/35 text-sky-200 font-medium' :
+          done ? 'text-emerald-300/90' : 'text-slate-500'
+        }`;
+        row.innerHTML = `
+          <span class="flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-mono ${
+              done ? 'bg-emerald-500/25 text-emerald-300' :
+              curr ? 'bg-sky-500/30 text-sky-200' : 'bg-slate-800 text-slate-500'
+            }">${done ? '✓' : idx + 1}</span>
+            ${name}
+          </span>
+          <span class="text-[10px]">${done ? '已完成' : curr ? '进行中' : '待流转'}</span>
+        `;
+        stepsEl.appendChild(row);
+      });
+
+      const issueBox = document.getElementById('ins-issue-box');
+      const resolveBtn = document.getElementById('btn-resolve-issue');
+      if (p.issue) {
+        issueBox.classList.remove('hidden');
+        resolveBtn.classList.remove('hidden');
+        document.getElementById('ins-issue-type').textContent = p.issue.type === 'anomaly' ? `异常停线 · ${p.issue.category}` : `质量不良 · ${p.issue.category}`;
+        document.getElementById('ins-issue-time').textContent = p.issue.time;
+        document.getElementById('ins-issue-desc').textContent = p.issue.desc;
+      } else {
+        issueBox.classList.add('hidden');
+        resolveBtn.classList.add('hidden');
+      }
+    }
+
+    function selectProduct(bayId, fly = true) {
+      selectedId = bayId;
+      setRightDrawer(true);
+      switchRightTab('inspector');
+      const p = products.find(x => x.id === bayId);
+      if (p && fly) {
+        flyCameraTo(new THREE.Vector3(p.worldPos.x, 1.6, p.worldPos.z), 22, Math.PI / 3.3, 0.34);
+      }
+      renderAllUI();
+    }
+
+    function switchRightTab(tab) {
+      const btnA = document.getElementById('tab-alerts');
+      const btnI = document.getElementById('tab-inspector');
+      const viewA = document.getElementById('view-alerts');
+      const viewI = document.getElementById('view-inspector');
+      if (tab === 'alerts') {
+        btnA.className = 'flex-1 py-2.5 text-xs font-semibold text-sky-300 border-b-2 border-sky-400 bg-sky-500/10 flex items-center justify-center gap-1.5';
+        btnI.className = 'flex-1 py-2.5 text-xs font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex items-center justify-center gap-1.5';
+        viewA.classList.remove('hidden'); viewA.classList.add('flex');
+        viewI.classList.add('hidden'); viewI.classList.remove('flex');
+      } else {
+        btnI.className = 'flex-1 py-2.5 text-xs font-semibold text-sky-300 border-b-2 border-sky-400 bg-sky-500/10 flex items-center justify-center gap-1.5';
+        btnA.className = 'flex-1 py-2.5 text-xs font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-200 flex items-center justify-center gap-1.5';
+        viewI.classList.remove('hidden'); viewI.classList.add('flex');
+        viewA.classList.add('hidden'); viewA.classList.remove('flex');
+      }
+    }
+
+    function flyToOverview() {
+      flyCameraTo(new THREE.Vector3(0, 0, 2), 92, Math.PI / 3.05, 0.24);
+    }
+
+    function flyToTop() {
+      flyCameraTo(new THREE.Vector3(0, 0, 0), 108, 0.19, 0.001);
+    }
+
+    function flyToZone(z) {
+      const zMap = {
+        1: { target: new THREE.Vector3(-6, 0, -25), r: 54, phi: 0.95, theta: 0.08 },
+        2: { target: new THREE.Vector3(-4, 0, -8),  r: 58, phi: 0.92, theta: 0.14 },
+        3: { target: new THREE.Vector3(-4, 0, 7),   r: 54, phi: 0.95, theta: 0.08 },
+        4: { target: new THREE.Vector3(-4, 0, 24),  r: 58, phi: 0.92, theta: 0.06 }
+      }[z];
+      if (zMap) flyCameraTo(zMap.target, zMap.r, zMap.phi, zMap.theta);
+    }
+
+    function updateAutoOrbitBtn() {
+      const btn = document.getElementById('btn-auto-orbit');
+      btn.classList.toggle('bg-sky-500/30', autoOrbit);
+      btn.classList.toggle('text-sky-200', autoOrbit);
+      btn.classList.toggle('border-sky-400', autoOrbit);
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.style.opacity = '1';
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => { el.style.opacity = '0'; }, 2400);
+    }
+
+    function getCurrentTimeStr() {
+      const now = new Date();
+      return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    }
+
+    function recordIssue(bayId, type, category, desc) {
+      const p = products.find(x => x.id === bayId);
+      if (!p) return;
+      const time = getCurrentTimeStr();
+      p.status = type;
+      p.issue = { id: 'ISS-' + bayId + '-' + Date.now(), type, category, desc, time };
+      alertFeed = alertFeed.filter(a => a.bayId !== bayId);
+      alertFeed.unshift({ id: p.issue.id, bayId: p.id, sn: p.sn, zone: p.zone, type, category, desc, time });
+      selectProduct(bayId, true);
+      showToast(`${bayId} 已登记${type === 'anomaly' ? '异常停线' : '质量不良'}并联动3D光影告警`);
+    }
+
+    function resolveIssue(bayId) {
+      const p = products.find(x => x.id === bayId);
+      if (!p) return;
+      p.issue = null;
+      p.status = p.progress >= 100 ? 'completed' : 'producing';
+      alertFeed = alertFeed.filter(a => a.bayId !== bayId);
+      renderAllUI();
+      showToast(`${bayId} 异常已解除，恢复正常总装`);
+    }
+
+    function openReportModal(presetBayId = null, presetType = 'anomaly') {
+      const sel = document.getElementById('rep-bay');
+      sel.innerHTML = products.map(p => `<option value="${p.id}">${ZONE_META[p.zone].name} · ${p.id} (${p.sn})</option>`).join('');
+      if (presetBayId) sel.value = presetBayId;
+      else if (selectedId) sel.value = selectedId;
+      document.getElementById('rep-type').value = presetType;
+      document.getElementById('rep-desc').value = '';
+      const modal = document.getElementById('report-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeReportModal() {
+      const modal = document.getElementById('report-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // =========================================================================
+    // 6. EVENT WIRING & BOOTSTRAP
+    // =========================================================================
+    function bindEvents() {
+      document.getElementById('btn-cam-overview').addEventListener('click', () => {
+        activeZoneFilter = null; flyToOverview(); renderAllUI();
+      });
+      document.getElementById('btn-cam-top').addEventListener('click', flyToTop);
+      document.getElementById('btn-auto-orbit').addEventListener('click', () => {
+        autoOrbit = !autoOrbit;
+        updateAutoOrbitBtn();
+      });
+
+      // Second-layer drawer triggers & close buttons
+      document.getElementById('btn-open-left').addEventListener('click', () => setLeftDrawer(true));
+      document.getElementById('btn-close-left').addEventListener('click', () => setLeftDrawer(false));
+      document.getElementById('btn-open-right').addEventListener('click', () => setRightDrawer(true));
+      document.getElementById('btn-close-right').addEventListener('click', () => setRightDrawer(false));
+
+      document.getElementById('btn-toggle-hud').addEventListener('click', () => {
+        const shouldOpen = !(leftDrawerOpen || rightDrawerOpen);
+        setLeftDrawer(shouldOpen);
+        setRightDrawer(shouldOpen);
+      });
+
+      document.getElementById('btn-zone-all').addEventListener('click', () => {
+        activeZoneFilter = null; flyToOverview(); renderAllUI();
+      });
+
+      document.querySelectorAll('.fly-zone-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const z = Number(btn.dataset.flyZone);
+          activeZoneFilter = z;
+          flyToZone(z);
+          renderAllUI();
+        });
+      });
+
+      document.querySelectorAll('.kpi-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          activeStatusFilter = btn.dataset.filterKpi;
+          syncStatusChips();
+          renderAllUI();
+          if (activeStatusFilter === 'anomaly' || activeStatusFilter === 'defect') {
+            activeAlertFilter = activeStatusFilter;
+            syncAlertFilterBtns();
+            setRightDrawer(true);
+            switchRightTab('alerts');
+            renderAlertsFeed();
+          }
+        });
+      });
+
+      document.querySelectorAll('.status-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          activeStatusFilter = btn.dataset.status;
+          syncStatusChips();
+          renderAllUI();
+        });
+      });
+
+      document.querySelectorAll('.alert-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          activeAlertFilter = btn.dataset.alertType;
+          syncAlertFilterBtns();
+          renderAlertsFeed();
+        });
+      });
+
+      document.getElementById('search-input').addEventListener('input', e => {
+        searchQuery = e.target.value.trim().toLowerCase();
+        renderProductList();
+        refresh3DMaterials();
+      });
+
+      document.getElementById('tab-alerts').addEventListener('click', () => switchRightTab('alerts'));
+      document.getElementById('tab-inspector').addEventListener('click', () => switchRightTab('inspector'));
+
+      document.getElementById('btn-focus-selected').addEventListener('click', () => {
+        if (selectedId) selectProduct(selectedId, true);
+      });
+
+      document.getElementById('btn-advance-step').addEventListener('click', () => {
+        const p = products.find(x => x.id === selectedId);
+        if (!p) return;
+        if (p.status === 'anomaly' || p.status === 'defect') {
+          showToast('请先解除当前不良或异常后再推进工序');
+          return;
+        }
+        if (p.stepIdx < PROCESS_STEPS.length - 1) {
+          p.stepIdx += 1;
+          p.progress = p.stepIdx === PROCESS_STEPS.length - 1 ? 100 : Math.min(95, p.stepIdx * 18 + 10);
+          p.status = p.progress === 100 ? 'completed' : 'producing';
+          renderAllUI();
+          showToast(`${p.id} 已流转至「${PROCESS_STEPS[p.stepIdx]}」(${p.progress}%)`);
+        } else {
+          p.progress = 100;
+          p.status = 'completed';
+          renderAllUI();
+          showToast(`${p.id} 已完成全部总装工序`);
+        }
+      });
+
+      document.getElementById('btn-mark-defect').addEventListener('click', () => openReportModal(selectedId, 'defect'));
+      document.getElementById('btn-mark-anomaly').addEventListener('click', () => openReportModal(selectedId, 'anomaly'));
+      document.getElementById('btn-resolve-issue').addEventListener('click', () => {
+        if (selectedId) resolveIssue(selectedId);
+      });
+
+      document.getElementById('btn-open-report').addEventListener('click', () => openReportModal(selectedId, 'anomaly'));
+      document.getElementById('btn-close-modal').addEventListener('click', closeReportModal);
+      document.getElementById('btn-cancel-modal').addEventListener('click', closeReportModal);
+      document.getElementById('report-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const bayId = document.getElementById('rep-bay').value;
+        const type = document.getElementById('rep-type').value;
+        const cat = document.getElementById('rep-category').value;
+        const desc = document.getElementById('rep-desc').value.trim();
+        if (!desc) return;
+        recordIssue(bayId, type, cat, desc);
+        closeReportModal();
+      });
+    }
+
+    function syncStatusChips() {
+      document.querySelectorAll('.status-chip').forEach(c => {
+        const active = c.dataset.status === activeStatusFilter;
+        c.classList.toggle('bg-sky-500/25', active);
+        c.classList.toggle('border-sky-400/50', active);
+        c.classList.toggle('bg-slate-800/80', !active);
+        c.classList.toggle('border-slate-700', !active);
+      });
+    }
+
+    function syncAlertFilterBtns() {
+      document.querySelectorAll('.alert-filter-btn').forEach(b => {
+        const active = b.dataset.alertType === activeAlertFilter;
+        b.classList.toggle('bg-sky-500/20', active);
+        b.classList.toggle('border-sky-400/40', active);
+        b.classList.toggle('bg-slate-800', !active);
+        b.classList.toggle('border-slate-700', !active);
+      });
+    }
+
+    function startClock() {
+      const el = document.getElementById('live-clock');
+      const tick = () => {
+        const d = new Date();
+        el.textContent = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+      };
+      tick();
+      setInterval(tick, 1000);
+    }
+
+    window.addEventListener('load', () => {
+      initProducts();
+      init3D();
+      init3DZoneLabels();
+      bindEvents();
+      startClock();
+      renderAllUI();
+      animate();
+    });
+  </script>
+</body>
+</html>

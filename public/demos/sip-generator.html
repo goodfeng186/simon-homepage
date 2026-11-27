@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIP 检验计划智能生成工具 (正式版 · DeepSeek)</title>
+    <!-- Tailwind CSS -->
+    <script src="../vendor/tailwind.min.js"></script>
+    <!-- SheetJS (用于读取和导出 Excel) -->
+    <script src="../vendor/xlsx.full.min.js"></script>
+    <!-- PDF.js (用于解析 PDF 检验指导书) -->
+    <script src="../vendor/pdf.min.js"></script>
+
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .drop-zone { transition: all 0.3s ease; }
+        .drop-zone.dragover { background-color: #eff6ff; border-color: #3b82f6; transform: scale(1.01); }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 表格样式美化 */
+        .sip-table th { background-color: #f8fafc; font-weight: 600; color: #334155; }
+        .sip-table td, .sip-table th { border: 1px solid #e2e8f0; padding: 12px 16px; text-align: left; }
+        .sip-table tr:hover { background-color: #f1f5f9; }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* 设置弹窗 */
+        .modal-overlay { background: rgba(15,23,42,.45); backdrop-filter: blur(2px); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col text-gray-800">
+
+    <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-2 rounded-lg text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                </div>
+                <h1 class="text-xl font-bold text-gray-800">
+                    SIP 智能生成器
+                    <span class="text-sm bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-1 font-normal border border-green-200">正式版 · DeepSeek</span>
+                </h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <div id="keyStatus" class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500 font-medium border border-gray-200">未配置 API Key</div>
+                <button id="settingsBtn" class="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors" title="设置">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    设置
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full flex flex-col gap-6">
+
+        <!-- 消息提示框 -->
+        <div id="messageBox" class="hidden rounded-lg p-4 mb-4 text-sm" role="alert">
+            <div class="flex items-center gap-2">
+                <svg id="messageIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"></svg>
+                <span id="messageText" class="font-medium"></span>
+            </div>
+        </div>
+
+        <!-- 步骤提示 -->
+        <div id="stepIndicator" class="flex items-center text-sm font-medium text-gray-500 mb-2">
+            <span class="text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">1. 上传 / 粘贴文件</span>
+            <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            <span id="step2">2. DeepSeek 智能提取</span>
+            <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            <span id="step3">3. 导出记录表</span>
+        </div>
+
+        <div id="dropZone" class="drop-zone border-2 border-dashed border-gray-300 rounded-2xl bg-white p-10 text-center shadow-sm transition-all">
+            <input type="file" id="fileInput" class="hidden" accept=".xlsx,.xls,.csv,.pdf,.txt">
+            <div class="flex flex-col items-center justify-center">
+                <div class="bg-blue-50 p-4 rounded-full mb-4 text-blue-500">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                </div>
+                <h2 class="text-2xl font-semibold text-gray-800 mb-2">点击或拖拽检验指导书到此处</h2>
+                <p class="text-gray-500 mb-6">支持 <span class="font-mono bg-gray-100 px-1 rounded text-gray-600">.xlsx .xls .csv .pdf .txt</span></p>
+
+                <div class="flex gap-4">
+                    <button id="uploadBtn" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors shadow-sm cursor-pointer">
+                        上传文件
+                    </button>
+                    <button id="demoBtn" class="bg-orange-100 text-orange-700 border border-orange-200 px-6 py-2.5 rounded-lg font-medium text-sm hover:bg-orange-200 transition-colors shadow-sm cursor-pointer flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        载入示例(免 Key)
+                    </button>
+                </div>
+            </div>
+
+            <!-- 粘贴文本入口 -->
+            <div class="mt-8 pt-6 border-t border-gray-100">
+                <p class="text-sm text-gray-500 mb-2 text-left font-medium">或从 Word / PDF / 图片 OCR 中复制文本直接粘贴：</p>
+                <textarea id="pasteInput" rows="4" placeholder="在此粘贴检验指导书 / SIP 的文本内容，DeepSeek 将自动提取结构化检验项..." class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-y shadow-inner"></textarea>
+                <div class="flex justify-end mt-2">
+                    <button id="parsePasteBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm">
+                        解析粘贴文本
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingStatus" class="hidden flex-col items-center justify-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
+            <div class="loader mb-6"></div>
+            <h3 id="statusTitle" class="text-xl font-semibold text-gray-800 mb-2">正在解析文件</h3>
+            <p id="statusText" class="text-gray-500 text-sm mb-6">正在提取文字内容...</p>
+
+            <div class="w-80 h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                <div id="progressBar" class="h-full bg-blue-500 transition-all duration-300 ease-out" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div id="resultArea" class="hidden flex-col gap-6">
+            <!-- 表单基础追溯信息栏 -->
+            <div class="flex flex-wrap gap-6 bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-sm">
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-500 font-medium">检验员:</span>
+                    <input type="text" id="autoInspector" class="font-bold text-gray-800 bg-gray-100 px-3 py-1 rounded-md border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" value="质检员">
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-500 font-medium">检验时间戳:</span>
+                    <span id="autoTime" class="font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-md">自动生成</span>
+                </div>
+                <div class="flex items-center gap-2 flex-grow">
+                    <span class="text-gray-500 font-medium">生产批次 / 条码:</span>
+                    <input type="text" id="batchNumber" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm flex-grow focus:ring-2 focus:ring-blue-500 outline-none" placeholder="请扫描或手动输入条码 (例如：LOT-20260828)" value="LOT-20260828">
+                </div>
+            </div>
+
+            <div class="flex justify-between items-end bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span id="sourceTag">智能提取完成</span>
+                    </h3>
+                    <p class="text-gray-500 text-sm">已为您自动补充“检验记录”空白列，可直接导出供检验员使用。</p>
+                </div>
+                <div class="flex gap-3">
+                    <button id="resetBtn" class="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        返回首页
+                    </button>
+                    <button id="downloadExcelBtn" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-medium transition-colors shadow-md shadow-green-600/20">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        导出标准 Excel 表格
+                    </button>
+                </div>
+            </div>
+
+            <!-- 表格预览区 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                <div class="bg-gray-50 px-6 py-3 border-b border-gray-200 flex justify-between items-center">
+                    <span class="font-semibold text-gray-700" id="previewTitle">数据预览区</span>
+                    <span id="rowCountLabel" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">共 0 个检验项</span>
+                </div>
+                <div class="overflow-x-auto p-0">
+                    <table class="w-full text-sm text-left sip-table" id="previewTable">
+                        <thead id="tableHead"></thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- 底部总体判定与备注区域 -->
+                <div class="bg-gray-50 border-t border-gray-200 p-6 flex flex-col gap-5">
+                    <div class="flex items-center gap-4">
+                        <span class="font-semibold text-gray-700 text-base">总体判断结论:</span>
+                        <span id="overallJudgment" class="px-5 py-1.5 rounded-lg font-bold bg-gray-200 text-gray-600 shadow-inner">等待检验...</span>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <span class="font-semibold text-gray-700">检验备注 / 异常样品追溯:</span>
+                        <textarea id="inspectRemarks" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none shadow-inner" rows="3" placeholder="填写说明：如遇不良品，请在此备注对应样品编号及条码（例如：#2 样品条码为 xxxxx，表面存在划伤，已做报废隔离处理）。"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 设置弹窗 -->
+    <div id="settingsModal" class="hidden fixed inset-0 z-30 flex items-center justify-center p-4 modal-overlay">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    设置 (DeepSeek)
+                </h3>
+                <button id="closeSettingsBtn" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <div class="px-6 py-5 flex flex-col gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">DeepSeek API Key</label>
+                    <div class="flex gap-2">
+                        <input type="password" id="apiKeyInput" placeholder="sk-..." class="flex-grow border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <button id="toggleKeyBtn" type="button" class="px-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-600">显示</button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">Key 仅保存在本浏览器(localStorage)，不会上传到任何第三方服务器。</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">模型</label>
+                    <select id="modelSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                        <option value="deepseek-chat">deepseek-chat (推荐 · 快)</option>
+                        <option value="deepseek-reasoner">deepseek-reasoner (深度推理 · 慢)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">默认检验员姓名</label>
+                    <input type="text" id="inspectorInput" placeholder="例如：张三 / 李艳" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <div id="settingsMsg" class="text-xs hidden"></div>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <button id="saveSettingsBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium text-sm transition-colors">保存设置</button>
+                    <button id="testConnBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium text-sm transition-colors">测试连接</button>
+                </div>
+
+                <div class="text-xs text-gray-400 leading-relaxed bg-gray-50 rounded-lg p-3 border border-gray-100">
+                    <p class="font-medium text-gray-500 mb-1">提示</p>
+                    若点击「测试连接」或提取时提示网络/CORS 错误，通常是浏览器跨域限制所致，可改用「本地 Node 代理」方式调用，或将该 HTML 放在支持转发的环境中打开。API Key 可在 <span class="font-mono">platform.deepseek.com</span> 获取。
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ DOM 引用 ============
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const demoBtn = document.getElementById('demoBtn');
+        const parsePasteBtn = document.getElementById('parsePasteBtn');
+        const pasteInput = document.getElementById('pasteInput');
+        const loadingStatus = document.getElementById('loadingStatus');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusText = document.getElementById('statusText');
+        const progressBar = document.getElementById('progressBar');
+        const resultArea = document.getElementById('resultArea');
+        const resetBtn = document.getElementById('resetBtn');
+        const downloadExcelBtn = document.getElementById('downloadExcelBtn');
+        const tableBody = document.getElementById('tableBody');
+        const rowCountLabel = document.getElementById('rowCountLabel');
+        const previewTitle = document.getElementById('previewTitle');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const messageIcon = document.getElementById('messageIcon');
+        const sourceTag = document.getElementById('sourceTag');
+
+        const autoInspector = document.getElementById('autoInspector');
+        const autoTime = document.getElementById('autoTime');
+        const overallJudgment = document.getElementById('overallJudgment');
+        const inspectRemarks = document.getElementById('inspectRemarks');
+        const batchNumber = document.getElementById('batchNumber');
+
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+
+        const keyStatus = document.getElementById('keyStatus');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const toggleKeyBtn = document.getElementById('toggleKeyBtn');
+        const modelSelect = document.getElementById('modelSelect');
+        const inspectorInput = document.getElementById('inspectorInput');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const testConnBtn = document.getElementById('testConnBtn');
+        const settingsMsg = document.getElementById('settingsMsg');
+
+        // PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = '../vendor/pdf.worker.min.js';
+        }
+
+        // ============ 全局数据 ============
+        let currentSipData = [];
+        let currentFileName = "SIP检验记录";
+        let globalMaxSamples = 1;
+
+        // ============ 工具函数 ============
+        function $(id){ return document.getElementById(id); }
+
+        function getSampleCount(str) {
+            if (!str) return 1;
+            const match = str.match(/\d+/);
+            if (match) {
+                let num = parseInt(match[0], 10);
+                return (num > 0 && num <= 20) ? num : 1;
+            }
+            return 1;
+        }
+
+        function getInspector() {
+            return (autoInspector.value || '').trim() || '质检员';
+        }
+
+        function showMessage(type, text) {
+            messageBox.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'border-red-200', 'bg-blue-50', 'text-blue-700', 'border-blue-200');
+            messageBox.classList.add('border');
+            if (type === 'error') {
+                messageBox.classList.add('bg-red-50', 'text-red-700', 'border-red-200');
+                messageIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
+            } else {
+                messageBox.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
+                messageIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
+            }
+            messageText.innerText = text;
+            clearTimeout(showMessage._t);
+            showMessage._t = setTimeout(() => { messageBox.classList.add('hidden'); }, 8000);
+        }
+
+        function updateProgress(percent, title, text) {
+            progressBar.style.width = `${percent}%`;
+            statusTitle.innerText = title;
+            statusText.innerText = text;
+        }
+
+        function startLoading() {
+            dropZone.classList.add('hidden');
+            resultArea.classList.add('hidden');
+            messageBox.classList.add('hidden');
+            loadingStatus.classList.remove('hidden');
+            loadingStatus.classList.add('flex');
+        }
+
+        function resetToHome() {
+            loadingStatus.classList.add('hidden');
+            loadingStatus.classList.remove('flex');
+            resultArea.classList.add('hidden');
+            resultArea.classList.remove('flex');
+            dropZone.classList.remove('hidden');
+            fileInput.value = '';
+            currentSipData = [];
+            step2.className = "text-gray-500";
+            step3.className = "text-gray-500";
+        }
+
+        // ============ 示例数据 (免 Key 体验) ============
+        const DEMO_DATA = [
+            { "检验项目": "1. 尺寸检验 (注塑材料)", "检验方法": "目视", "检验设备": "复核供应商报告", "抽样数": "1次", "抽样频次": "季度", "判定标准": "注塑材料：尼龙66\n(报告有效期内一年)" },
+            { "检验项目": "2. 尺寸检验 (图纸尺寸 - 长度①)", "检验方法": "测量", "检验设备": "卡尺/2.5次元", "抽样数": "5PCS", "抽样频次": "每批", "判定标准": "50.5+/-0.3mm" },
+            { "检验项目": "3. 尺寸检验 (图纸尺寸 - 宽度②)", "检验方法": "测量", "检验设备": "卡尺/2.5次元", "抽样数": "5PCS", "抽样频次": "每批", "判定标准": "35.5+/-0.3mm" },
+            { "检验项目": "4. 性能检验 (阻燃等级)", "检验方法": "目视", "检验设备": "复核供应商测试报告", "抽样数": "1次", "抽样频次": "每批", "判定标准": "E/UK1端部固定件阻燃等级：V0" },
+            { "检验项目": "5. 外观检验 (披锋)", "检验方法": "目视", "检验设备": "无", "抽样数": "3PCS", "抽样频次": "每批", "判定标准": "产品表面不可有披锋缺陷" },
+            { "检验项目": "6. 外观检验 (缩水)", "检验方法": "目视", "检验设备": "无", "抽样数": "3PCS", "抽样频次": "每批", "判定标准": "产品表面不可有缩水缺陷" },
+            { "检验项目": "7. 外观检验 (脏污)", "检验方法": "目视", "检验设备": "无", "抽样数": "3PCS", "抽样频次": "每批", "判定标准": "产品表面不可有脏污缺陷" },
+            { "检验项目": "8. 外观检验 (变形)", "检验方法": "目视", "检验设备": "无", "抽样数": "3PCS", "抽样频次": "每批", "判定标准": "产品表面不可有变形缺陷" }
+        ];
+
+        function loadDemo() {
+            currentFileName = "21100087端子座检验指导书SIP";
+            previewTitle.innerText = `数据预览区 (${currentFileName}.xlsx)`;
+            sourceTag.innerText = "示例数据 (免 Key)";
+            startLoading();
+            const now = new Date();
+            autoTime.innerText = now.toLocaleString();
+            // 演示模式下不覆盖检验员
+            overallJudgment.innerText = '检验中...';
+            overallJudgment.className = 'px-5 py-1.5 rounded-lg font-bold bg-blue-100 text-blue-700 shadow-inner';
+            step2.className = "text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200";
+            updateProgress(60, '载入示例...', '正在生成结构化表格...');
+            setTimeout(() => {
+                currentSipData = DEMO_DATA;
+                updateProgress(100, '提取完毕', '正在生成结构化表格');
+                setTimeout(() => {
+                    renderTable(currentSipData);
+                    step3.className = "text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200";
+                    loadingStatus.classList.add('hidden');
+                    loadingStatus.classList.remove('flex');
+                    resultArea.classList.remove('hidden');
+                    resultArea.classList.add('flex');
+                }, 500);
+            }, 700);
+        }
+
+        // ============ 文件 / 文本 提取 ============
+        function extractTextFromExcel(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    try {
+                        const wb = XLSX.read(e.target.result, { type: 'array' });
+                        let txt = '';
+                        wb.SheetNames.forEach(name => {
+                            const ws = wb.Sheets[name];
+                            txt += `【Sheet: ${name}】\n` + XLSX.utils.sheet_to_csv(ws) + '\n';
+                        });
+                        resolve(txt.trim());
+                    } catch (err) { reject(err); }
+                };
+                reader.onerror = () => reject(new Error('读取 Excel 文件失败'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        async function extractTextFromPDF(file) {
+            if (typeof pdfjsLib === 'undefined') throw new Error('PDF 解析库未加载，请检查网络后刷新页面');
+            const buf = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+            let text = '';
+            for (let p = 1; p <= pdf.numPages; p++) {
+                const page = await pdf.getPage(p);
+                const content = await page.getTextContent();
+                text += content.items.map(it => it.str).join(' ') + '\n';
+            }
+            return text.trim();
+        }
+
+        function extractTextFromTxt(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve((reader.result || '').trim());
+                reader.onerror = () => reject(new Error('读取 TXT 文件失败'));
+                reader.readAsText(file);
+            });
+        }
+
+        async function handleFile(file) {
+            currentFileName = file.name.replace(/\.[^/.]+$/, "");
+            previewTitle.innerText = `数据预览区 (${file.name})`;
+            sourceTag.innerText = "智能提取完成";
+            startLoading();
+            try {
+                updateProgress(15, '解析文件...', '正在读取文件内容');
+                const ext = (file.name.split('.').pop() || '').toLowerCase();
+                let text = '';
+                if (['xlsx', 'xls', 'csv'].includes(ext)) text = await extractTextFromExcel(file);
+                else if (ext === 'pdf') text = await extractTextFromPDF(file);
+                else if (ext === 'txt') text = await extractTextFromTxt(file);
+                else { showMessage('error', '不支持的文件类型：.' + ext); resetToHome(); return; }
+
+                if (!text || text.trim().length < 10) {
+                    showMessage('error', '未能从文件中提取到有效文本，请确认文件内容，或改用「粘贴文本」。');
+                    resetToHome();
+                    return;
+                }
+                await callDeepSeekAI(text, file.name);
+            } catch (err) {
+                showMessage('error', '解析失败：' + err.message);
+                resetToHome();
+            }
+        }
+
+        async function handlePaste() {
+            const text = (pasteInput.value || '').trim();
+            if (text.length < 10) { showMessage('error', '请先粘贴至少一段检验指导书文本。'); return; }
+            currentFileName = "粘贴文本_SIP";
+            previewTitle.innerText = "数据预览区 (粘贴文本)";
+            sourceTag.innerText = "智能提取完成";
+            startLoading();
+            try {
+                await callDeepSeekAI(text, '粘贴文本');
+            } catch (err) {
+                showMessage('error', '解析失败：' + err.message);
+                resetToHome();
+            }
+        }
+
+        // ============ DeepSeek 调用 ============
+        const SYSTEM_PROMPT = `你是一名资深质量工程师（QE），精通 IPC-A-610、ISO 9001 及制造业来料/过程检验（IQC/IPQC）规范。你的任务是把一份「非结构化的检验指导书 / SIP（Standard Inspection Procedure）」原始文本，转化为结构化、可直接用于检验记录的表格数据。
+
+请严格按以下 JSON 结构输出（不要输出多余解释，只输出一个合法 JSON 对象）：
+{
+  "产品名称": "从文本中推断的产品或零件名称",
+  "物料编号": "从文本中推断的物料/料号（若没有则留空字符串）",
+  "检验项目列表": [
+    {
+      "检验项目": "例如：尺寸检验-长度① / 外观检验-披锋 / 性能检验-阻燃等级",
+      "检验方法": "目视 / 测量 / 功能测试 / 复核报告 等",
+      "检验设备": "卡尺 / 2.5次元 / 无 / 供应商报告 等",
+      "抽样数": "如 5PCS / 1次 / 3PCS（保留原文表述，含数字以便抽样列自动展开）",
+      "抽样频次": "每批 / 季度 / 每日 等",
+      "判定标准": "如 50.5±0.3mm / 表面不可有披锋 / V0（保留公差数字与单位）"
+    }
+  ]
+}
+
+要求：
+1. 逐条提取文本中出现的每一个独立检验项，不要合并、不要遗漏。
+2. 判定标准务必保留原始公差数字与单位（如 ±0.3mm），这对后续自动判定至关重要。
+3. 抽样数保留原文（例如「抽样5PCS/每批」提取为抽样数=5PCS、抽样频次=每批）。
+4. 若某项无法判断，用空字符串占位，不要编造。
+5. 必须输出合法 JSON，可被 JSON.parse 直接解析。`;
+
+        function extractJSON(text) {
+            if (!text) throw new Error('AI 返回为空');
+            text = text.trim();
+            const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+            if (fence) text = fence[1].trim();
+            try { return JSON.parse(text); } catch (e) {}
+            const start = text.indexOf('{');
+            const end = text.lastIndexOf('}');
+            if (start > -1 && end > -1) {
+                try { return JSON.parse(text.slice(start, end + 1)); } catch (e) {}
+            }
+            throw new Error('无法解析 AI 返回的 JSON');
+        }
+
+        function normalizeItem(it) {
+            if (!it || typeof it !== 'object') return null;
+            const pick = (...keys) => {
+                for (const k of keys) {
+                    const v = it[k];
+                    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+                }
+                return '';
+            };
+            const obj = {
+                检验项目: pick('检验项目', '检验项', '项目', 'item', 'Item'),
+                检验方法: pick('检验方法', '方法', 'method', 'Method'),
+                检验设备: pick('检验设备', '设备', 'equipment', 'Equipment'),
+                抽样数: pick('抽样数', '抽样', 'sample', 'Sample', 'SampleSize'),
+                抽样频次: pick('抽样频次', '频次', '频率', 'frequency', 'Frequency'),
+                判定标准: pick('判定标准', '标准', 'criteria', 'Criteria', '判定')
+            };
+            if (!obj.检验项目 && !obj.判定标准) return null;
+            return obj;
+        }
+
+        async function callDeepSeekAI(rawText, sourceName) {
+            const apiKey = localStorage.getItem('sip_deepseek_key');
+            if (!apiKey) {
+                showMessage('error', '请先在右上角「设置」中填入 DeepSeek API Key。');
+                openSettings();
+                resetToHome();
+                return;
+            }
+            const model = localStorage.getItem('sip_deepseek_model') || 'deepseek-chat';
+
+            const now = new Date();
+            autoTime.innerText = now.toLocaleString();
+            overallJudgment.innerText = 'AI 提取中...';
+            overallJudgment.className = 'px-5 py-1.5 rounded-lg font-bold bg-blue-100 text-blue-700 shadow-inner';
+            step2.className = "text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200";
+
+            updateProgress(45, 'AI 智能提取中...', '正在调用 DeepSeek 分析检验项目...');
+
+            let resp;
+            try {
+                resp = await fetch('https://api.deepseek.com/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + apiKey
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            { role: 'system', content: SYSTEM_PROMPT },
+                            { role: 'user', content: `以下是检验指导书 / SIP 的原始文本内容，请从中提取所有检验项目并输出 JSON：\n\n${rawText}` }
+                        ],
+                        response_format: { type: 'json_object' },
+                        temperature: 0.1,
+                        stream: false
+                    })
+                });
+            } catch (netErr) {
+                throw new Error('网络请求失败（可能是跨域 CORS 限制）：' + netErr.message + '。建议在设置中查看代理方案。');
+            }
+
+            if (!resp.ok) {
+                let detail = '';
+                try { detail = await resp.text(); } catch (e) {}
+                throw new Error(`HTTP ${resp.status} ${resp.statusText} ${detail}`.trim());
+            }
+
+            const data = await resp.json();
+            const content = data?.choices?.[0]?.message?.content || '';
+            updateProgress(80, '解析结果...', '正在生成结构化表格...');
+
+            const parsed = extractJSON(content);
+            const rawList = parsed['检验项目列表'] || parsed.items || parsed.data || parsed.list || [];
+            if (!Array.isArray(rawList) || rawList.length === 0) {
+                throw new Error('AI 未返回有效的检验项，请检查原文内容或调整提示词。');
+            }
+
+            const list = rawList.map(normalizeItem).filter(Boolean);
+            if (list.length === 0) throw new Error('解析出的检验项为空，请确认原文格式。');
+
+            currentSipData = list;
+            if (parsed['产品名称']) currentFileName = String(parsed['产品名称']).replace(/[\\/:*?"<>|]/g, '_');
+            else if (parsed['物料编号']) currentFileName = String(parsed['物料编号']).replace(/[\\/:*?"<>|]/g, '_');
+            else currentFileName = (sourceName || 'SIP检验记录').replace(/\.[^/.]+$/, '');
+
+            updateProgress(100, '提取完毕', '正在生成结构化表格');
+            setTimeout(() => {
+                renderTable(currentSipData);
+                step3.className = "text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200";
+                loadingStatus.classList.add('hidden');
+                loadingStatus.classList.remove('flex');
+                resultArea.classList.remove('hidden');
+                resultArea.classList.add('flex');
+                showMessage('', `提取成功：共 ${list.length} 个检验项。`);
+            }, 500);
+        }
+
+        // ============ 表格渲染 ============
+        function renderTable(dataArray) {
+            tableBody.innerHTML = '';
+            rowCountLabel.innerText = `共提取 ${dataArray.length} 个检验项目`;
+
+            globalMaxSamples = 1;
+            dataArray.forEach(item => {
+                const count = getSampleCount(item['抽样数']);
+                if (count > globalMaxSamples) globalMaxSamples = count;
+            });
+
+            const thead = document.querySelector('#previewTable thead');
+            let theadHtml = `
+                <tr>
+                    <th class="w-12 text-center" rowspan="2">序号</th>
+                    <th class="w-48" rowspan="2">检验项目</th>
+                    <th class="w-24" rowspan="2">检验方法</th>
+                    <th class="w-24" rowspan="2">检验设备</th>
+                    <th class="w-16" rowspan="2">抽样数</th>
+                    <th class="w-20" rowspan="2">抽样频次</th>
+                    <th class="w-48" rowspan="2">判定标准</th>
+                    <th class="text-center text-blue-600 bg-blue-50/80 border-b-0 py-2" colspan="${globalMaxSamples}">检验记录 (请在对应区域填写或勾选)</th>
+                    <th class="w-20 text-center bg-gray-100 border-b-0" rowspan="2">单项判定</th>
+                </tr>
+                <tr>
+            `;
+            for (let i = 1; i <= globalMaxSamples; i++) {
+                theadHtml += `<th class="text-center text-blue-700 bg-blue-100/50 text-xs py-1 border-t-0 font-semibold min-w-[5rem]">样品 ${i}</th>`;
+            }
+            theadHtml += `</tr>`;
+            thead.innerHTML = theadHtml;
+
+            function getSmartPlaceholder(item, rowIndex) {
+                const method = item['检验方法'] || '';
+                const equip = item['检验设备'] || '';
+                const criteria = item['判定标准'] || '';
+
+                if (equip.includes('报告') || method.includes('报告') || criteria.includes('报告')) {
+                    return `
+                        <label class="cursor-pointer flex items-center justify-center gap-1 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 px-2 py-1.5 rounded text-xs transition-colors w-full font-medium">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                            上传附件
+                            <input type="file" class="hidden eval-item" onchange="evaluateRow(${rowIndex})" />
+                        </label>`;
+                } else if (method.includes('目视') || criteria.includes('披锋') || criteria.includes('缩水') || criteria.includes('脏污') || criteria.includes('变形') || criteria.includes('外观')) {
+                    return `
+                        <select class="eval-item w-full bg-white border border-gray-300 text-gray-700 py-1.5 px-1 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none cursor-pointer text-center appearance-none" onchange="evaluateRow(${rowIndex})">
+                            <option value="" disabled selected>-</option>
+                            <option value="OK" class="text-green-600 font-bold">OK</option>
+                            <option value="NG" class="text-red-600 font-bold">NG</option>
+                        </select>`;
+                } else {
+                    return `
+                        <input type="text" inputmode="decimal" class="eval-item w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-xs text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none placeholder-gray-300 text-center" placeholder="填测量值" oninput="evaluateRow(${rowIndex})" />
+                    `;
+                }
+            }
+
+            dataArray.forEach((item, index) => {
+                const sampleCount = getSampleCount(item['抽样数']);
+                const tr = document.createElement('tr');
+                tr.id = `row-${index}`;
+
+                let trHtml = `
+                    <td class="text-center text-gray-500">${index + 1}</td>
+                    <td class="font-medium text-gray-800">${item['检验项目'] || '-'}</td>
+                    <td class="text-gray-600">${item['检验方法'] || '-'}</td>
+                    <td class="text-gray-600">${item['检验设备'] || '-'}</td>
+                    <td class="text-gray-600 font-medium text-blue-600">${item['抽样数'] || '-'}</td>
+                    <td class="text-gray-600">${item['抽样频次'] || '-'}</td>
+                    <td class="text-gray-600 whitespace-pre-wrap">${item['判定标准'] || '-'}</td>
+                `;
+
+                for (let i = 1; i <= globalMaxSamples; i++) {
+                    if (i <= sampleCount) {
+                        const placeholder = getSmartPlaceholder(item, index);
+                        trHtml += `<td class="bg-blue-50/20 border-x border-blue-100/60 align-middle">${placeholder}</td>`;
+                    } else {
+                        trHtml += `<td class="bg-gray-100/60 border-x border-gray-200 text-center text-gray-300 align-middle text-lg">/</td>`;
+                    }
+                }
+
+                trHtml += `<td id="judge-${index}" class="text-center font-bold text-gray-400 bg-gray-50 border-l border-gray-300 align-middle">-</td>`;
+
+                tr.innerHTML = trHtml;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // ============ 自动判定逻辑 ============
+        window.evaluateRow = function(rowIndex) {
+            const item = currentSipData[rowIndex];
+            const row = document.getElementById(`row-${rowIndex}`);
+            if (!row) return;
+            const inputs = row.querySelectorAll('.eval-item');
+            const judgeCell = document.getElementById(`judge-${rowIndex}`);
+
+            let hasData = false;
+            let isNg = false;
+            let allFilled = true;
+
+            const criteria = item['判定标准'] || '';
+            let min = -Infinity, max = Infinity;
+            const match = criteria.match(/([\d.]+)\s*\+\/-\s*([\d.]+)/);
+            if (match) {
+                const center = parseFloat(match[1]);
+                const tol = parseFloat(match[2]);
+                min = center - tol;
+                max = center + tol;
+            }
+
+            inputs.forEach(input => {
+                let val;
+                if (input.tagName === 'INPUT' && input.type === 'file') {
+                    if (input.files.length > 0) { hasData = true; val = 'OK'; }
+                    else { allFilled = false; }
+                } else {
+                    val = input.value.trim();
+                    if (val !== '') { hasData = true; }
+                    else { allFilled = false; }
+                }
+
+                if (val !== '') {
+                    if (input.tagName === 'SELECT') {
+                        if (val === 'NG') isNg = true;
+                    } else if (input.type === 'text') {
+                        if (match) {
+                            const numVal = parseFloat(val);
+                            if (isNaN(numVal) || numVal < min || numVal > max) {
+                                isNg = true;
+                                input.classList.add('text-red-600', 'font-bold');
+                                input.classList.remove('text-green-600');
+                            } else {
+                                input.classList.remove('text-red-600', 'font-bold');
+                                input.classList.add('text-green-600', 'font-bold');
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (!hasData) {
+                judgeCell.innerHTML = '-';
+                judgeCell.className = 'text-center font-bold text-gray-400 bg-gray-50 border-l border-gray-300 align-middle transition-colors';
+            } else if (isNg) {
+                judgeCell.innerHTML = 'NG';
+                judgeCell.className = 'text-center font-bold text-red-600 bg-red-100 border-l border-red-300 align-middle transition-colors';
+            } else if (allFilled) {
+                judgeCell.innerHTML = 'OK';
+                judgeCell.className = 'text-center font-bold text-green-600 bg-green-100 border-l border-green-300 align-middle transition-colors';
+            } else {
+                judgeCell.innerHTML = '测定中';
+                judgeCell.className = 'text-center font-bold text-blue-500 bg-blue-50 border-l border-blue-200 align-middle transition-colors text-xs';
+            }
+
+            updateOverallStatus();
+        };
+
+        function updateOverallStatus() {
+            const judgeCells = Array.from(document.querySelectorAll('[id^="judge-"]')).map(el => el.innerText);
+            if (judgeCells.length === 0) return;
+            if (judgeCells.includes('NG')) {
+                overallJudgment.innerText = '批次不合格 (存在 NG 项)';
+                overallJudgment.className = 'px-5 py-1.5 rounded-lg font-bold bg-red-600 text-white shadow-md animate-pulse';
+            } else if (judgeCells.every(j => j === 'OK')) {
+                overallJudgment.innerText = '批次合格 (ALL OK)';
+                overallJudgment.className = 'px-5 py-1.5 rounded-lg font-bold bg-green-600 text-white shadow-md';
+            } else {
+                overallJudgment.innerText = '检验进行中...';
+                overallJudgment.className = 'px-5 py-1.5 rounded-lg font-bold bg-blue-100 text-blue-700 shadow-inner';
+            }
+        }
+
+        // ============ 导出 Excel ============
+        downloadExcelBtn.addEventListener('click', () => {
+            if (!currentSipData || currentSipData.length === 0) return;
+
+            function getSmartPlaceholderExcel(item) {
+                const method = item['检验方法'] || '';
+                const equip = item['检验设备'] || '';
+                const criteria = item['判定标准'] || '';
+                if (equip.includes('报告') || method.includes('报告') || criteria.includes('报告')) return "[在此插入附件]";
+                if (method.includes('目视') || criteria.includes('披锋') || criteria.includes('缩水') || criteria.includes('脏污') || criteria.includes('变形') || criteria.includes('外观')) return "[填写 OK / NG]";
+                return " ";
+            }
+
+            const exportData = currentSipData.map((item, index) => {
+                const sampleCount = getSampleCount(item['抽样数']);
+                let rowObj = {
+                    "序号": index + 1,
+                    "检验项目": item['检验项目'] || '',
+                    "检验方法": item['检验方法'] || '',
+                    "检验设备": item['检验设备'] || '',
+                    "抽样数": item['抽样数'] || '',
+                    "抽样频次": item['抽样频次'] || '',
+                    "判定标准": item['判定标准'] || ''
+                };
+
+                for (let i = 1; i <= globalMaxSamples; i++) {
+                    if (i <= sampleCount) rowObj[`样品 ${i}`] = getSmartPlaceholderExcel(item);
+                    else rowObj[`样品 ${i}`] = "/";
+                }
+
+                const judgeText = document.getElementById(`judge-${index}`).innerText;
+                rowObj['单项判定'] = (judgeText === '-' || judgeText === '测定中') ? '' : judgeText;
+                return rowObj;
+            });
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+
+            const wscols = [ {wch: 6}, {wch: 28}, {wch: 12}, {wch: 18}, {wch: 10}, {wch: 10}, {wch: 35} ];
+            for (let i = 0; i < globalMaxSamples; i++) wscols.push({wch: 14});
+            wscols.push({wch: 12});
+            ws['!cols'] = wscols;
+
+            XLSX.utils.sheet_add_aoa(ws, [
+                [],
+                ["追溯基础信息", "检验员:", getInspector(), "时间:", autoTime.innerText, "批次/条码:", batchNumber.value],
+                ["检验结果总结", "总体判定:", overallJudgment.innerText.replace('(ALL OK)', '').replace('(存在 NG 项)', '')],
+                ["备注说明", inspectRemarks.value]
+            ], { origin: -1 });
+
+            XLSX.utils.book_append_sheet(wb, ws, "检验记录表");
+            XLSX.writeFile(wb, `${currentFileName}_${batchNumber.value}_记录.xlsx`);
+        });
+
+        // ============ 设置面板 ============
+        function refreshKeyStatus() {
+            const k = localStorage.getItem('sip_deepseek_key');
+            if (k) {
+                keyStatus.innerText = '已配置 API Key';
+                keyStatus.className = 'text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium border border-green-200';
+            } else {
+                keyStatus.innerText = '未配置 API Key';
+                keyStatus.className = 'text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500 font-medium border border-gray-200';
+            }
+        }
+
+        function openSettings() {
+            apiKeyInput.value = localStorage.getItem('sip_deepseek_key') || '';
+            modelSelect.value = localStorage.getItem('sip_deepseek_model') || 'deepseek-chat';
+            inspectorInput.value = localStorage.getItem('sip_inspector') || '';
+            settingsModal.classList.remove('hidden');
+        }
+        function closeSettings() { settingsModal.classList.add('hidden'); }
+
+        function saveSettings() {
+            const key = apiKeyInput.value.trim();
+            const model = modelSelect.value;
+            const insp = inspectorInput.value.trim();
+            if (key) localStorage.setItem('sip_deepseek_key', key);
+            else localStorage.removeItem('sip_deepseek_key');
+            localStorage.setItem('sip_deepseek_model', model);
+            if (insp) {
+                localStorage.setItem('sip_inspector', insp);
+                autoInspector.value = insp;
+            }
+            refreshKeyStatus();
+            settingsMsg.classList.remove('hidden', 'text-green-600', 'text-red-600');
+            settingsMsg.classList.add('text-green-600');
+            settingsMsg.innerText = '✓ 设置已保存。';
+            setTimeout(() => settingsMsg.classList.add('hidden'), 2500);
+        }
+
+        async function testConnection() {
+            const key = apiKeyInput.value.trim() || localStorage.getItem('sip_deepseek_key');
+            if (!key) { showMessage('error', '请先填入 API Key 再测试。'); return; }
+            const model = modelSelect.value;
+            testConnBtn.disabled = true;
+            testConnBtn.innerText = '测试中...';
+            try {
+                const resp = await fetch('https://api.deepseek.com/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [{ role: 'user', content: '只回复两个字：正常' }],
+                        stream: false
+                    })
+                });
+                if (!resp.ok) {
+                    let detail = '';
+                    try { detail = await resp.text(); } catch (e) {}
+                    throw new Error(`HTTP ${resp.status} ${detail}`.trim());
+                }
+                const data = await resp.json();
+                settingsMsg.classList.remove('hidden', 'text-red-600', 'text-green-600');
+                settingsMsg.classList.add('text-green-600');
+                settingsMsg.innerText = '✓ 连接成功：' + (data?.choices?.[0]?.message?.content || 'OK');
+            } catch (err) {
+                settingsMsg.classList.remove('hidden', 'text-green-600', 'text-red-600');
+                settingsMsg.classList.add('text-red-600');
+                settingsMsg.innerText = '✗ 连接失败：' + err.message;
+            } finally {
+                testConnBtn.disabled = false;
+                testConnBtn.innerText = '测试连接';
+            }
+        }
+
+        // ============ 事件绑定 ============
+        uploadBtn.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => { if (e.target.files.length) handleFile(e.target.files[0]); });
+        demoBtn.addEventListener('click', loadDemo);
+        parsePasteBtn.addEventListener('click', handlePaste);
+
+        resetBtn.addEventListener('click', () => {
+            resetToHome();
+            pasteInput.value = '';
+        });
+
+        settingsBtn.addEventListener('click', openSettings);
+        closeSettingsBtn.addEventListener('click', closeSettings);
+        settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettings(); });
+        saveSettingsBtn.addEventListener('click', saveSettings);
+        testConnBtn.addEventListener('click', testConnection);
+        toggleKeyBtn.addEventListener('click', () => {
+            if (apiKeyInput.type === 'password') { apiKeyInput.type = 'text'; toggleKeyBtn.innerText = '隐藏'; }
+            else { apiKeyInput.type = 'password'; toggleKeyBtn.innerText = '显示'; }
+        });
+
+        // ============ 初始化 ============
+        (function init() {
+            refreshKeyStatus();
+            const insp = localStorage.getItem('sip_inspector');
+            if (insp) autoInspector.value = insp;
+        })();
+    </script>
+</body>
+</html>

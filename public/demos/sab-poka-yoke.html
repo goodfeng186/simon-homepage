@@ -1,0 +1,1804 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>“355”框架下的NPI核心专项重构执行规划</title>
+<style>
+  :root{
+    --bg-0:#04101f;
+    --bg-1:#071a33;
+    --bg-2:#0a2347;
+    --panel:rgba(12,38,72,0.62);
+    --panel-2:rgba(9,28,55,0.72);
+    --panel-border:rgba(56,189,248,0.22);
+    --panel-border-strong:rgba(56,189,248,0.45);
+    --accent:#38bdf8;      /* cyan-400 */
+    --accent-2:#3b82f6;    /* blue-500 */
+    --accent-3:#22d3ee;    /* cyan */
+    --accent-soft:rgba(56,189,248,0.12);
+    --text:#e3f0ff;
+    --text-dim:#a9cdf2;
+    --text-mute:#7ba7d4;
+    --glow:rgba(56,189,248,0.35);
+    --danger:#f87171;
+    --danger-soft:rgba(248,113,113,0.12);
+    --warn:#fbbf24;
+    --ok:#34d399;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,-apple-system,sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(circle at 15% 10%, rgba(56,189,248,0.16), transparent 42%),
+      radial-gradient(circle at 85% 0%, rgba(59,130,246,0.14), transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(34,211,238,0.10), transparent 50%),
+      linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 45%, var(--bg-2) 100%);
+    background-attachment:fixed;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* subtle tech grid */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      linear-gradient(rgba(56,189,248,0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(56,189,248,0.045) 1px, transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(circle at 50% 30%, #000 30%, transparent 80%);
+  }
+
+  .wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 22px 80px;}
+
+  /* ---------- Header ---------- */
+  header.hero{
+    position:relative;z-index:1;
+    padding:46px 22px 30px;
+    background:linear-gradient(135deg, rgba(8,28,56,0.92), rgba(10,40,80,0.78));
+    border-bottom:1px solid var(--panel-border-strong);
+    box-shadow:0 8px 40px rgba(0,0,0,0.45), inset 0 -1px 0 rgba(56,189,248,0.25);
+    overflow:hidden;
+  }
+  header.hero::after{
+    content:"";position:absolute;right:-60px;top:-60px;width:340px;height:340px;border-radius:50%;
+    background:radial-gradient(circle, rgba(56,189,248,0.25), transparent 65%);filter:blur(8px);
+  }
+  .hero-inner{max-width:1180px;margin:0 auto;position:relative;}
+  .brand-tag{
+    display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:2px;
+    color:var(--accent);border:1px solid var(--panel-border-strong);
+    padding:5px 12px;border-radius:999px;background:var(--accent-soft);margin-bottom:16px;
+  }
+  h1.title{
+    margin:0;font-size:30px;line-height:1.3;font-weight:800;letter-spacing:.5px;
+    background:linear-gradient(92deg,#e3f0ff 0%, #7dd3fc 55%, #38bdf8 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .meta{display:flex;flex-wrap:wrap;gap:18px;margin-top:18px;font-size:13px;color:var(--text-dim);}
+  .meta span{display:inline-flex;align-items:center;gap:6px;}
+  .meta .pill{background:rgba(59,130,246,0.22);color:#bfe0ff;border:1px solid var(--panel-border);padding:3px 10px;border-radius:8px;}
+
+  /* ---------- Tabs ---------- */
+  nav.tabs{
+    position:sticky;top:0;z-index:20;
+    background:rgba(6,20,40,0.82);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--panel-border);
+    margin-top:0;
+  }
+  .tabs-inner{max-width:1180px;margin:0 auto;display:flex;gap:6px;padding:0 22px;overflow-x:auto;}
+  .tab-btn{
+    appearance:none;border:none;background:transparent;cursor:pointer;
+    color:var(--text-mute);font-size:14px;font-weight:600;white-space:nowrap;
+    padding:16px 18px;border-bottom:2px solid transparent;transition:all .2s;
+    display:flex;align-items:center;gap:8px;
+  }
+  .tab-btn:hover{color:var(--text-dim);}
+  .tab-btn.active{color:#eaf6ff;border-bottom-color:var(--accent);text-shadow:0 0 12px var(--glow);}
+  .tab-btn .dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.6;}
+
+  /* ---------- Sections ---------- */
+  .panel{
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:16px;
+    padding:26px;margin-top:26px;box-shadow:0 10px 30px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.04);
+    backdrop-filter:blur(6px);
+  }
+  .panel h2.sec{
+    margin:0 0 22px;font-size:20px;font-weight:800;color:#fff;
+    display:flex;align-items:center;gap:10px;
+  }
+  .sec-ico{
+    width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--accent-2),var(--accent));color:#04101f;
+    box-shadow:0 0 16px var(--glow);
+  }
+  .sec-ico svg{width:19px;height:19px;}
+  .lead{color:var(--text-dim);font-size:14px;line-height:1.8;margin:0 0 20px;}
+
+  /* ---------- Circle (running logic) ---------- */
+  .circle-stage{display:flex;flex-wrap:wrap;gap:30px;align-items:center;}
+  .circle-svg{flex:1 1 420px;min-width:320px;}
+  .circle-side{flex:1 1 300px;min-width:280px;}
+  .ai-layer{
+    border:1px dashed var(--panel-border-strong);border-radius:12px;padding:16px 18px;
+    background:linear-gradient(135deg, rgba(56,189,248,0.10), rgba(59,130,246,0.05));
+  }
+  .ai-layer h4{margin:0 0 8px;color:var(--accent);font-size:14px;letter-spacing:1px;}
+  .ai-layer p{margin:0;font-size:13px;color:var(--text-dim);line-height:1.8;}
+  .tag-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;}
+  .tag{font-size:12px;padding:4px 10px;border-radius:8px;background:var(--accent-soft);border:1px solid var(--panel-border);color:#cfeaff;}
+
+  /* ---------- Structured 355 framework (NOT cards) ---------- */
+  .rail{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    margin-bottom:18px;font-size:13px;color:var(--text-dim);
+  }
+  .rail .chip{
+    background:var(--accent-soft);border:1px solid var(--panel-border);color:#d6f0ff;
+    padding:5px 12px;border-radius:8px;font-weight:700;
+  }
+  .rail .arrow{color:var(--accent);font-weight:800;}
+  .fw-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:0;}
+  .fw-col{padding:4px 22px;position:relative;}
+  .fw-col:not(:last-child){border-right:1px dashed rgba(56,189,248,0.25);}
+  .fw-head{font-weight:800;color:#eaf6ff;font-size:15px;padding-left:13px;border-left:4px solid var(--accent);margin-bottom:14px;line-height:1.4;}
+  .fw-head small{display:block;font-weight:500;color:var(--text-mute);font-size:12px;margin-top:3px;}
+  .fw-list{list-style:none;margin:0;padding:0;}
+  .fw-list li{position:relative;padding:9px 0 9px 20px;margin-left:5px;border-left:1px solid rgba(56,189,248,0.22);font-size:13.5px;line-height:1.55;}
+  .fw-list li::before{content:"";position:absolute;left:-1px;top:17px;width:13px;height:1px;background:rgba(56,189,248,0.45);}
+  .fw-list li b{color:#d6f0ff;display:block;margin-bottom:2px;}
+  .fw-list li span{color:var(--text-dim);}
+
+  /* ---------- NPI main line (structured vertical) ---------- */
+  .mainline{position:relative;padding-left:34px;}
+  .mainline::before{content:"";position:absolute;left:15px;top:8px;bottom:8px;width:2px;
+    background:linear-gradient(180deg,var(--accent),rgba(56,189,248,0.15));}
+  .ml-item{position:relative;padding:0 0 22px 0;}
+  .ml-node{
+    position:absolute;left:-34px;top:0;width:32px;height:32px;border-radius:50%;
+    display:grid;place-items:center;font-weight:800;font-size:14px;color:#04101f;
+    background:linear-gradient(135deg,var(--accent-2),var(--accent));box-shadow:0 0 14px var(--glow);
+    border:2px solid rgba(255,255,255,0.35);
+  }
+  .ml-content{background:var(--panel-2);border:1px solid var(--panel-border);border-left:3px solid var(--accent);
+    border-radius:12px;padding:13px 16px;}
+  .ml-content h4{margin:0 0 4px;font-size:15px;color:#eaf6ff;}
+  .ml-content p{margin:0;font-size:13px;color:var(--text-dim);line-height:1.6;}
+
+  /* ---------- Tables ---------- */
+  table.tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:760px;}
+  .tbl-scroll{overflow-x:auto;border-radius:12px;border:1px solid var(--panel-border);}
+  .tbl thead th{background:rgba(8,28,56,0.85);color:#bfe0ff;text-align:left;padding:12px 14px;font-weight:700;border-bottom:1px solid var(--panel-border-strong);white-space:nowrap;}
+  .tbl tbody td{padding:12px 14px;border-bottom:1px solid rgba(56,189,248,0.10);color:var(--text-dim);vertical-align:top;}
+  .tbl tbody tr:hover{background:rgba(56,189,248,0.06);}
+  .tbl tbody tr:last-child td{border-bottom:none;}
+  .tbl .stage{color:#7dd3fc;font-weight:800;white-space:nowrap;}
+  .tbl .gate{color:var(--text-mute);font-size:12px;}
+  .badge{display:inline-block;background:var(--accent-soft);border:1px solid var(--panel-border);color:#cfeaff;padding:3px 9px;border-radius:7px;font-size:12px;white-space:nowrap;}
+
+  /* ---------- Two-column grid ---------- */
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;}
+  .mini-head{font-size:16px;font-weight:800;color:#eaf6ff;display:flex;align-items:center;gap:9px;margin:0 0 16px;}
+  .mini-head .ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);}
+  .branch{border-left:4px solid #64748b;padding:6px 0 6px 14px;margin-bottom:12px;}
+  .branch.s{border-color:#64748b;}
+  .branch.m{border-color:var(--accent-2);}
+  .branch.c{border-color:var(--danger);}
+  .branch h4{margin:0 0 3px;font-size:14px;color:#eaf6ff;}
+  .branch p{margin:0;font-size:13px;color:var(--text-dim);line-height:1.6;}
+  .rule-box{background:rgba(251,191,36,0.10);border:1px solid rgba(251,191,36,0.35);border-radius:10px;padding:12px 14px;font-size:12.5px;color:#fde68a;margin-top:6px;}
+
+  .risk-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .risk{font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px;}
+  .r0{background:rgba(100,116,139,0.2);color:#cbd5e1;}
+  .r1{background:rgba(251,191,36,0.16);color:#fcd34d;}
+  .r2{background:rgba(249,115,22,0.18);color:#fdba74;}
+  .r3{background:rgba(244,63,94,0.18);color:#fda4af;}
+  .r4{background:#e11d48;color:#fff;}
+  .r5{background:#991b1b;color:#fff;}
+  .def-list{list-style:none;margin:0;padding:0;}
+  .def-list li{display:flex;gap:10px;padding:7px 0;font-size:13px;color:var(--text-dim);border-bottom:1px dashed rgba(56,189,248,0.12);}
+  .def-list li:last-child{border-bottom:none;}
+  .def-list .lv{font-weight:800;width:34px;flex-shrink:0;}
+
+  /* ---------- Milestones (roadmap) ---------- */
+  .ms-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;}
+  .ms{
+    position:relative;overflow:hidden;border-radius:16px;padding:26px;color:#eaf6ff;
+    border:1px solid var(--panel-border);
+    background:linear-gradient(135deg, rgba(10,40,80,0.9), rgba(6,20,40,0.9));
+    box-shadow:0 12px 34px rgba(0,0,0,0.4);
+  }
+  .ms::after{content:"";position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(56,189,248,0.22),transparent 65%);}
+  .ms .kicker{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-weight:700;}
+  .ms .date{font-size:24px;font-weight:800;margin:6px 0 4px;}
+  .ms .goal{font-size:13px;color:var(--text-dim);margin-bottom:14px;}
+  .ms ul{list-style:none;margin:0;padding:0;}
+  .ms li{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--text-dim);padding:4px 0;}
+  .ms li svg{width:15px;height:15px;color:var(--ok);flex-shrink:0;margin-top:3px;}
+
+  /* ---------- Three-step timeline ---------- */
+  .timeline{position:relative;padding-left:36px;}
+  .timeline::before{content:"";position:absolute;left:15px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,var(--accent-2),rgba(56,189,248,0.15));}
+  .tl-item{position:relative;padding-bottom:26px;}
+  .tl-num{position:absolute;left:-36px;top:0;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#04101f;background:linear-gradient(135deg,var(--accent-2),var(--accent));box-shadow:0 0 14px var(--glow);border:2px solid rgba(255,255,255,0.35);}
+  .tl-body{background:var(--panel-2);border:1px solid var(--panel-border);border-radius:12px;padding:16px 18px;}
+  .tl-body h3{margin:0 0 4px;font-size:16px;color:#eaf6ff;}
+  .tl-body .when{font-size:12px;color:var(--accent);margin-bottom:10px;}
+  .tl-body p{margin:0 0 6px;font-size:13px;color:var(--text-dim);line-height:1.6;}
+
+  /* ---------- Governance ---------- */
+  .redline{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.35);border-radius:14px;padding:22px;}
+  .redline h2{color:#fecaca;margin:0 0 16px;display:flex;align-items:center;gap:9px;font-size:18px;}
+  .rl-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .rl-item{display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,0.04);border:1px solid rgba(248,113,113,0.18);border-radius:10px;padding:11px 13px;font-size:13px;color:#fecaca;line-height:1.5;}
+  .rl-item .x{color:#f87171;font-weight:800;flex-shrink:0;}
+
+  .org-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .org{background:var(--panel-2);border:1px solid var(--panel-border);border-radius:11px;padding:14px;}
+  .org .role{font-weight:800;color:#eaf6ff;font-size:14px;margin-bottom:4px;}
+  .org .resp{font-size:12px;color:var(--text-mute);}
+
+  .ten-grid{overflow-x:auto;border-radius:12px;border:1px solid var(--panel-border);}
+  .ten-grid table{min-width:720px;}
+  .num-cell{color:var(--text-mute);font-weight:700;}
+
+  /* ---------- Hub-and-spoke (NPI center) ---------- */
+  .hub-wrap{display:flex;justify-content:center;margin-top:6px;}
+  .hub-svg{width:100%;max-width:680px;height:auto;}
+  @media (max-width:560px){ .hub-svg{max-width:100%;} }
+
+  /* ---------- S/A/B grading & NPI nodes ---------- */
+  .sab-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:18px;border:1px solid var(--panel-border);border-radius:10px;overflow:hidden;}
+  .sab-table th{background:rgba(8,28,56,0.85);color:#bfe0ff;padding:11px 14px;text-align:left;font-weight:700;border-bottom:1px solid var(--panel-border-strong);}
+  .sab-table td{padding:11px 14px;border-bottom:1px solid rgba(56,189,248,0.12);color:var(--text-dim);vertical-align:top;border-right:1px solid rgba(56,189,248,0.08);line-height:1.65;}
+  .sab-table tr:last-child td{border-bottom:none;}
+  .sab-table .lvl{font-weight:800;color:#7dd3fc;white-space:nowrap;}
+  .sab-note{background:var(--accent-soft);border:1px solid var(--panel-border);border-radius:10px;padding:14px 16px;margin-bottom:20px;}
+  .sab-note h4{margin:0 0 8px;color:#7dd3fc;font-size:13px;}
+  .sab-note ul{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-dim);line-height:1.8;}
+  .sab-note ul li{margin:3px 0;}
+  .ex-title{font-size:14px;font-weight:800;color:#eaf6ff;margin:6px 0 14px;display:flex;align-items:center;gap:8px;}
+  .ex-title .tag{font-size:11px;padding:3px 9px;border-radius:7px;background:var(--accent-soft);color:#cfeaff;border:1px solid var(--panel-border);}
+  .lvl-block{margin-bottom:14px;border:1px solid var(--panel-border);border-radius:12px;overflow:hidden;background:var(--panel-2);}
+  .lvl-head{padding:9px 14px;font-weight:800;font-size:14px;color:#04101f;}
+  .lvl-head.b{background:linear-gradient(90deg,#64748b,#94a3b8);}
+  .lvl-head.a{background:linear-gradient(90deg,#3b82f6,#60a5fa);}
+  .lvl-head.s{background:linear-gradient(90deg,#22d3ee,#34d399);}
+  .lvl-list{list-style:none;margin:0;padding:10px 16px 12px;}
+  .lvl-list li{position:relative;padding:4px 0 4px 18px;font-size:13px;color:var(--text-dim);line-height:1.65;}
+  .lvl-list li::before{content:"•";position:absolute;left:4px;color:#7dd3fc;}
+
+  .node{border:1px solid var(--panel-border);border-radius:14px;margin-bottom:18px;overflow:hidden;background:var(--panel-2);}
+  .node-head{padding:13px 18px;display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,rgba(59,130,246,0.18),rgba(34,211,238,0.06));border-bottom:1px solid var(--panel-border);}
+  .node-num{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-weight:800;color:#04101f;background:linear-gradient(135deg,var(--accent-2),var(--accent));flex-shrink:0;}
+  .node-head h3{margin:0;font-size:16px;color:#eaf6ff;}
+  .node-head .sub{font-size:12px;color:var(--text-mute);}
+  .node-body{padding:4px 18px 16px;}
+  .node-row{display:grid;grid-template-columns:84px 1fr;gap:10px;padding:9px 0;border-bottom:1px dashed rgba(56,189,248,0.12);}
+  .node-row:last-child{border-bottom:none;}
+  .node-row .k{font-weight:700;color:#7dd3fc;font-size:13px;}
+  .node-row .v{font-size:13px;color:var(--text-dim);line-height:1.65;}
+
+  .footnote{margin-top:40px;text-align:center;font-size:12px;color:var(--text-mute);}
+
+  @media (max-width:860px){
+    .fw-cols{grid-template-columns:1fr;}
+    .fw-col{border-right:none !important;border-bottom:1px dashed rgba(56,189,248,0.25);padding:14px 6px;}
+    .grid-2,.ms-grid,.rl-grid,.org-grid{grid-template-columns:1fr;}
+    h1.title{font-size:23px;}
+  }
+
+  /* 355 专项组织与职责 role cards */
+  .role-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:8px;}
+  .role-card{background:var(--panel-2);border:1px solid var(--panel-border);border-radius:12px;padding:14px 16px;box-shadow:0 6px 18px rgba(0,0,0,0.22);}
+  .role-card .rc-head{font-weight:700;color:#7dd3fc;font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .role-card .rc-head .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--glow);}
+  .role-card ul{list-style:none;margin:0;padding:0;}
+  .role-card li{margin:0 0 10px;padding:0;font-size:13px;color:var(--text-dim);line-height:1.62;}
+  .role-card li:last-child{margin-bottom:0;}
+  .role-card li b{color:var(--text);font-weight:700;margin-right:5px;}
+  .role-card li .file{color:#fcd34d;}
+
+  /* ===== SIP 演示实例内联样式（源自 sip.html，原文复制） ===== */
+  .sip-embed{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;}
+  .sip-embed .drop-zone{transition:all 0.3s ease;}
+  .sip-embed .drop-zone.dragover{background-color:#eff6ff;border-color:#3b82f6;transform:scale(1.01);}
+  .sip-embed .loader{border:4px solid #f3f3f3;border-top:4px solid #3b82f6;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;}
+  @keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+  .sip-embed .sip-table th{background-color:#f8fafc;font-weight:600;color:#334155;}
+  .sip-embed .sip-table td,.sip-embed .sip-table th{border:1px solid #e2e8f0;padding:12px 16px;text-align:left;}
+  .sip-embed .sip-table tr:hover{background-color:#f1f5f9;}
+</style>
+
+<!-- SIP 演示实例依赖：Tailwind（禁用 preflight 避免影响本页样式）与 SheetJS -->
+<script src="../vendor/tailwind.min.js"></script>
+<script>if(window.tailwind){tailwind.config={corePlugins:{preflight:false}};}</script>
+<script src="../vendor/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="brand-tag">NPI · 核心专项重构执行规划</div>
+    <h1 class="title">“355”框架下的NPI核心专项重构执行规划</h1>
+    <div class="meta">
+      
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tabs-inner">
+    <button class="tab-btn active" data-tab="overview"><span class="dot"></span>结论与355架构</button>
+    <button class="tab-btn" data-tab="npi"><span class="dot"></span>NPI主线管控 (G0-G7)</button>
+    <button class="tab-btn" data-tab="roadmap"><span class="dot"></span>实施路径与里程碑</button>
+    <button class="tab-btn" data-tab="governance"><span class="dot"></span>管控底线与立即行动</button>
+    <button class="tab-btn" data-tab="sip"><span class="dot"></span>SIP 演示实例</button>
+    <button class="tab-btn" data-tab="evolve"><span class="dot"></span>演进路径与履历</button>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- ===================== TAB 1: OVERVIEW ===================== -->
+  <section id="tab-overview">
+
+    <!-- Running logic → CIRCLE -->
+    <div class="panel">
+      <h2 class="sec"><span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg></span>“355”系统运行逻辑（闭环）</h2>
+      <p class="lead">“355”是一套从基础治理到业务流程、再到智能化落地的完整方法体系。现阶段的重点是：<strong style="color:#7dd3fc">先把“3”做实，再选择一个真实NPI项目，对五个流程运行第一轮“五步循环”</strong>。结果回写“3”，驱动下一轮循环——整体构成一个持续运转的圆。</p>
+
+      <div class="circle-stage">
+        <div class="circle-svg">
+          <svg viewBox="0 0 640 640" width="100%" role="img" aria-label="355运行逻辑闭环">
+            <defs>
+              <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#3b82f6"/>
+                <stop offset="50%" stop-color="#22d3ee"/>
+                <stop offset="100%" stop-color="#38bdf8"/>
+              </linearGradient>
+              <radialGradient id="coreGrad" cx="50%" cy="40%" r="70%">
+                <stop offset="0%" stop-color="#0ea5e9"/>
+                <stop offset="100%" stop-color="#0b3a6b"/>
+              </radialGradient>
+              <marker id="arrow" markerWidth="13" markerHeight="13" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#7dd3fc"/>
+              </marker>
+              <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+                <feGaussianBlur stdDeviation="3.5" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+
+            <!-- decorative rotating dashed ring -->
+            <circle cx="320" cy="320" r="250" fill="none" stroke="rgba(56,189,248,0.18)" stroke-width="1.5" stroke-dasharray="4 10">
+              <animateTransform attributeName="transform" type="rotate" from="0 320 320" to="360 320 320" dur="60s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- main ring arcs with directional arrows -->
+            <path d="M496.8,143.2 A250,250 0 0 1 496.8,496.8" fill="none" stroke="url(#ringGrad)" stroke-width="13" stroke-linecap="round" marker-end="url(#arrow)"/>
+            <path d="M496.8,496.8 A250,250 0 0 1 143.2,496.8" fill="none" stroke="url(#ringGrad)" stroke-width="13" stroke-linecap="round" marker-end="url(#arrow)"/>
+            <path d="M143.2,496.8 A250,250 0 0 1 143.2,143.2" fill="none" stroke="url(#ringGrad)" stroke-width="13" stroke-linecap="round" marker-end="url(#arrow)"/>
+            <path d="M143.2,143.2 A250,250 0 0 1 496.8,143.2" fill="none" stroke="url(#ringGrad)" stroke-width="13" stroke-linecap="round" marker-end="url(#arrow)"/>
+
+            <!-- flowing energy overlay (moves along the ring in arrow direction) -->
+            <g fill="none" stroke="#a5f3fc" stroke-width="3.6" stroke-linecap="round" stroke-dasharray="2 24" opacity="0.95" filter="url(#glow)">
+              <path d="M496.8,143.2 A250,250 0 0 1 496.8,496.8"><animate attributeName="stroke-dashoffset" from="52" to="0" dur="1.3s" repeatCount="indefinite"/></path>
+              <path d="M496.8,496.8 A250,250 0 0 1 143.2,496.8"><animate attributeName="stroke-dashoffset" from="52" to="0" dur="1.3s" repeatCount="indefinite"/></path>
+              <path d="M143.2,496.8 A250,250 0 0 1 143.2,143.2"><animate attributeName="stroke-dashoffset" from="52" to="0" dur="1.3s" repeatCount="indefinite"/></path>
+              <path d="M143.2,143.2 A250,250 0 0 1 496.8,143.2"><animate attributeName="stroke-dashoffset" from="52" to="0" dur="1.3s" repeatCount="indefinite"/></path>
+            </g>
+
+            <!-- pulsing halos behind the four stage nodes -->
+            <g fill="none" stroke="#38bdf8" stroke-width="2">
+              <circle cx="320" cy="70" r="56"><animate attributeName="r" values="56;70;56" dur="3.2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.55;0;0.55" dur="3.2s" repeatCount="indefinite"/></circle>
+              <circle cx="570" cy="320" r="56"><animate attributeName="r" values="56;70;56" dur="3.2s" begin="0.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.55;0;0.55" dur="3.2s" begin="0.4s" repeatCount="indefinite"/></circle>
+              <circle cx="320" cy="570" r="56"><animate attributeName="r" values="56;70;56" dur="3.2s" begin="0.8s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.55;0;0.55" dur="3.2s" begin="0.8s" repeatCount="indefinite"/></circle>
+              <circle cx="70" cy="320" r="56"><animate attributeName="r" values="56;70;56" dur="3.2s" begin="1.2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.55;0;0.55" dur="3.2s" begin="1.2s" repeatCount="indefinite"/></circle>
+            </g>
+
+            <!-- center core -->
+            <circle cx="320" cy="320" r="78" fill="url(#coreGrad)" stroke="rgba(125,211,252,0.6)" stroke-width="2"/>
+            <text x="320" y="312" text-anchor="middle" font-size="38" font-weight="800" fill="#eaf6ff">355</text>
+            <text x="320" y="340" text-anchor="middle" font-size="12" fill="#bfe6ff" letter-spacing="1">NPI 系统运行逻辑</text>
+
+            <!-- node: 3 基础控制模型 (top) -->
+            <circle cx="320" cy="70" r="56" fill="rgba(8,28,56,0.95)" stroke="#38bdf8" stroke-width="2.5"/>
+            <text x="320" y="58" text-anchor="middle" font-size="24" font-weight="800" fill="#7dd3fc">3</text>
+            <text x="320" y="78" text-anchor="middle" font-size="12.5" font-weight="700" fill="#eaf6ff">基础控制模型</text>
+            <text x="320" y="95" text-anchor="middle" font-size="9.5" fill="#a9cdf2">3 个机制 · 控制底座</text>
+
+            <!-- node: 5 业务端到端流程 (right) -->
+            <circle cx="570" cy="320" r="56" fill="rgba(8,28,56,0.95)" stroke="#38bdf8" stroke-width="2.5"/>
+            <text x="570" y="308" text-anchor="middle" font-size="24" font-weight="800" fill="#7dd3fc">5</text>
+            <text x="570" y="328" text-anchor="middle" font-size="12.5" font-weight="700" fill="#eaf6ff">业务端到端流程</text>
+            <text x="570" y="345" text-anchor="middle" font-size="9.5" fill="#a9cdf2">5 个流程 · 业务对象</text>
+
+            <!-- node: 5 五步循环方法 (bottom) -->
+            <circle cx="320" cy="570" r="56" fill="rgba(8,28,56,0.95)" stroke="#38bdf8" stroke-width="2.5"/>
+            <text x="320" y="558" text-anchor="middle" font-size="24" font-weight="800" fill="#7dd3fc">5</text>
+            <text x="320" y="578" text-anchor="middle" font-size="12.5" font-weight="700" fill="#eaf6ff">五步循环方法</text>
+            <text x="320" y="595" text-anchor="middle" font-size="9.5" fill="#a9cdf2">5 个循环 · 改造验证</text>
+
+            <!-- node: 结果回写 3 (left) -->
+            <circle cx="70" cy="320" r="56" fill="rgba(8,28,56,0.95)" stroke="#22d3ee" stroke-width="2.5"/>
+            <text x="70" y="310" text-anchor="middle" font-size="22" font-weight="800" fill="#67e8f9">↺</text>
+            <text x="70" y="330" text-anchor="middle" font-size="11.5" font-weight="700" fill="#eaf6ff">结果回写「3」</text>
+            <text x="70" y="346" text-anchor="middle" font-size="9" fill="#a9cdf2">更新节点·目标·履历</text>
+          </svg>
+        </div>
+
+        <div class="circle-side">
+          <div class="ai-layer">
+            <h4>横向赋能层</h4>
+            <p><strong style="color:#7dd3fc">AI 与智能体</strong>贯穿全局，提供：持续感知、内容生成、风险判断、任务编排、受控执行、结果验证、知识沉淀。</p>
+            <div class="tag-row">
+              <span class="tag">持续感知</span><span class="tag">内容生成</span><span class="tag">风险判断</span>
+              <span class="tag">任务编排</span><span class="tag">受控执行</span><span class="tag">结果验证</span><span class="tag">知识沉淀</span>
+            </div>
+          </div>
+          <p class="lead" style="margin-top:18px">闭环顺序：<strong style="color:#7dd3fc">3 提供共同语言和控制底座 → 5 个流程明确 NPI 端到端业务对象 → 5 步循环逐模块反复改造和验证 → 结果回写「3」</strong>，更新节点 / 目标 / 履历，进入下一轮循环。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 355 structured breakdown (NOT cards) -->
+    <div class="panel">
+      <h2 class="sec"><span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>“355”框架结构拆解</h2>
+
+      <div class="rail">
+        <span class="chip">第一个「3」</span><span class="arrow">→</span>
+        <span class="chip">第一个「5」</span><span class="arrow">→</span>
+        <span class="chip">第二个「5」</span><span class="arrow">→</span>
+        <span class="chip">回写「3」</span><span class="arrow">↻</span>
+      </div>
+
+      <div class="fw-cols">
+        <!-- 第一个 3 -->
+        <div class="fw-col">
+          <div class="fw-head">第一个「3」<small>三个基础控制模型</small></div>
+          <ul class="fw-list">
+            <li><b>3-1 节点与状态模型</b><span>明确控制对象、前后状态、输入输出、完成证据等。《NPI节点与状态主数据表》。</span></li>
+            <li><b>3-2 目标与指标模型</b><span>覆盖QCD与S/C，拆解多时间尺度(TT/CT/QT/DT/SLA等)。《目标树与多时间尺度矩阵》。</span></li>
+            <li><b>3-3 证据与变化模型</b><span>建立贯穿项目的数字证据链，记录变化（旧值/新值/原因/影响），失败可回退；明确由谁（变更委员会/体系文控）在什么情况下（节点评审、异常升级、EC 触发）讨论并更新了哪些内容（标准、参数、流程），形成可追溯的版本记录。</span></li>
+          </ul>
+        </div>
+        <!-- 第一个 5 -->
+        <div class="fw-col">
+          <div class="fw-head">第一个「5」<small>五个业务端到端流程</small></div>
+          <ul class="fw-list">
+            <li><b>1 · NPI主编排</b><span>控制塔，统筹成熟度与风险。</span></li>
+            <li><b>2 · 新物料认证</b><span>需求出现即触发，提前认证。</span></li>
+            <li><b>3 · IQC来料质量</b><span>以物料画像驱动个性化检验方案。</span></li>
+            <li><b>4 · 制造风险停复线</b><span>贯穿试制到量产，R0-R5风险控制。</span></li>
+            <li><b>5 · 文件流程控制</b><span>将前四者纳入正式受控文控体系。</span></li>
+          </ul>
+        </div>
+        <!-- 第二个 5 -->
+        <div class="fw-col">
+          <div class="fw-head">第二个「5」<small>五步循环方法</small></div>
+          <ul class="fw-list">
+            <li><b>① 校准指标</b><span>校准已有FTY，补齐DT/TT等指标。</span></li>
+            <li><b>② 结合目标</b><span>结合防呆节点的QCD目标 (S/A/B级)。</span></li>
+            <li><b>③ 定义链路</b><span>定义指标公式、数据来源与计算链路。</span></li>
+            <li><b>④ 拆解动作</b><span>拆解采集感知与物理动作。</span></li>
+            <li><b>⑤ AI 应用</b><span>AI从逆向(溯源)到正向(预测)应用。</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 355 专项组织与职责（与智能体/AI+ 口径对齐） -->
+    <div class="panel">
+      <h2 class="sec"><span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M3 21v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1M16 4a3 3 0 0 1 0 6M21 21v-1a5 5 0 0 0-3-4.6"/></svg></span>专项组织与职责</h2>
+      <div class="role-cards">
+
+        <div class="role-card">
+          <div class="rc-head"><span class="dot"></span>组长 · 统筹决策</div>
+          <ul>
+            <li><b>李锋</b><span>项目组长，统筹整体推进、资源协调与关键决策。</span></li>
+          </ul>
+        </div>
+
+        <div class="role-card">
+          <div class="rc-head"><span class="dot"></span>架构师 · 顶层设计与程序架构</div>
+          <ul>
+            <li><b>肖玉丰</b><span>架构设计，负责整体方案与技术路线规划与计划；承载智能体运行环（感知→规划→工具→记忆→反思）与五能力分级框架设计。</span></li>
+            <li><b>黎奇</b><span>架构设计，主责<span class="file">《NPI作业流控制程序》</span>的架构搭建与落地；承载智能体运行环与五能力分级框架设计。</span></li>
+          </ul>
+        </div>
+
+        <div class="role-card">
+          <div class="rc-head"><span class="dot"></span>IT与智能体落地（兼数据Owner）</div>
+          <ul>
+            <li><b>郑小君</b><span>IT与智能体落地——系统/工具/智能体接口打通、权限与回退；兼数据Owner，负责时间戳、主键、公式与质量。</span></li>
+          </ul>
+        </div>
+
+        <div class="role-card">
+          <div class="rc-head"><span class="dot"></span>项目负责人 · 五大文件/流程（兼品质/安全角色）</div>
+          <ul>
+            <li><b>陈晓天</b><span>主责<span class="file">《QPP2009 进料检验控制程序》</span>（IQC 进料检验），并负责该流程的 AI+ 重构与 S/A/B 防呆落地。</span></li>
+            <li><b>林兰芽</b><span>主责<span class="file">《新物料认证流程》</span>，并负责该流程的 AI+ 重构与 S/A/B 防呆落地。</span></li>
+            <li><b>郑军</b><span>协同主责<span class="file">《新物料认证流程》</span>（与林兰芽共同承接），并负责 AI+ 重构与防呆落地。</span></li>
+            <li><b>林文良</b><span>主责<span class="file">《WIP2005 制造停线管理规范》</span>（制造停复线），并负责该流程的 AI+ 重构与 S/A/B 防呆落地。</span></li>
+            <li><b>黄金兰</b><span>主责<span class="file">《文件控制程序》</span>，并负责该流程的 AI+ 重构与文件版本与控制，文件与落地一致性确认（说写做）。</span></li>
+          </ul>
+        </div>
+
+        <div class="role-card">
+          <div class="rc-head"><span class="dot"></span>设备支持</div>
+          <ul>
+            <li><b>周顺波</b><span>提供设备/硬件相关支持与保障。</span></li>
+          </ul>
+        </div>
+
+        <div class="role-card">
+          <div class="rc-head"><span class="dot"></span>会议沟通与团队文书</div>
+          <ul>
+            <li><b>陈登姣</b><span>会议内容落地与进度管理，版本整理。</span></li>
+            <li><b>阮恒芳</b><span>负责会议沟通、纪要整理与团队文书。</span></li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ===================== TAB 2: NPI ===================== -->
+  <section id="tab-npi" style="display:none">
+
+    <!-- NPI main line: five flows (structured) -->
+    <div class="panel">
+      <h2 class="sec"><span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="4" r="2"/><circle cx="19" cy="9" r="2"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/><circle cx="5" cy="9" r="2"/><path d="M12 6v3M14 10l3 2M16 16l-1 1M8 16l1 1M8 10 5 11"/></svg></span>NPI 主线：五个端到端流程（逻辑关系）</h2>
+      <p class="lead">以 NPI 为主线置于<strong style="color:#7dd3fc">中心</strong>，走访确认存在<strong style="color:#7dd3fc">三条逻辑链路</strong>：① <strong style="color:#67e8f9">物料链</strong> —— 新物料经认证、IQC 检验、贯穿制造风险停复线；② <strong style="color:#fcd34d">文控链</strong> —— 四个流程均涉及文件修改、迭代更新、版本受控；③ <strong style="color:#c084fc">信息流链</strong> —— NPI 设计决策决定后续三方面（新物料、IQC、制造停线）。虚线箭头表达触发与流转方向。</p>
+      <div class="hub-wrap">
+        <svg viewBox="0 0 720 560" class="hub-svg" role="img" aria-label="NPI 主线与三条逻辑链路关系图">
+          <defs>
+            <radialGradient id="hubCore" cx="50%" cy="40%" r="72%">
+              <stop offset="0%" stop-color="#22d3ee"/>
+              <stop offset="100%" stop-color="#0b3a6b"/>
+            </radialGradient>
+            <!-- arrow markers per chain -->
+            <marker id="c1Arr" markerWidth="12" markerHeight="12" refX="7" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8Z" fill="#67e8f9"/></marker>
+            <marker id="c2Arr" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#fcd34d"/></marker>
+            <marker id="c3Arr" markerWidth="12" markerHeight="12" refX="7" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8Z" fill="#c084fc"/></marker>
+          </defs>
+
+          <!-- ============================================================ -->
+          <!-- CHAIN 1 · 物料链 (cyan) — 串联: 新物料 → IQC → 制造停复线 -->
+          <!-- ============================================================ -->
+          <g fill="none" stroke="#67e8f9" stroke-width="2.6" stroke-linecap="round" marker-end="url(#c1Arr)">
+            <!-- NPI → 新物料认证 -->
+            <path d="M310,216 Q300,140 320,120" stroke-dasharray="7 9">
+              <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1.2s" repeatCount="indefinite"/>
+            </path>
+            <!-- 新物料认证 → IQC -->
+            <path d="M376,64 Q464,92 500,154" stroke-dasharray="7 9">
+              <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1.2s" begin="0.18s" repeatCount="indefinite"/>
+            </path>
+            <!-- IQC → 制造风险停复线 -->
+            <path d="M542,250 Q520,340 488,382" stroke-dasharray="7 9">
+              <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1.2s" begin="0.36s" repeatCount="indefinite"/>
+            </path>
+          </g>
+          <!-- chain-1 label -->
+          <rect x="428" y="114" width="80" height="24" rx="12" fill="rgba(34,211,238,0.14)" stroke="rgba(103,232,249,0.38)" stroke-width="1"/>
+          <text x="468" y="130" text-anchor="middle" font-size="11" font-weight="700" fill="#a5f3fc">① 物料链</text>
+
+          <!-- ============================================================ -->
+          <!-- CHAIN 2 · 文控链 (amber) — 从中心辐射到全部四个流程节点 -->
+          <!-- ============================================================ -->
+          <g fill="none" stroke="#fcd34d" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="3 6" opacity="0.85" marker-end="url(#c2Arr)">
+            <!-- center → 新物料认证 (inner arc) -->
+            <path d="M300,208 Q280,130 316,116">
+              <animate attributeName="stroke-dashoffset" from="18" to="0" dur="1.4s" begin="0.55s" repeatCount="indefinite"/>
+            </path>
+            <!-- center → IQC (inner arc) -->
+            <path d="M384,240 Q460,180 498,172">
+              <animate attributeName="stroke-dashoffset" from="18" to="0" dur="1.4s" begin="0.65s" repeatCount="indefinite"/>
+            </path>
+            <!-- center → 制造风险停复线 (inner arc) -->
+            <path d="M360,332 Q420,400 444,380">
+              <animate attributeName="stroke-dashoffset" from="18" to="0" dur="1.4s" begin="0.75s" repeatCount="indefinite"/>
+            </path>
+            <!-- center → 文件流程控制 (inner arc) -->
+            <path d="M256,312 Q190,380 196,398">
+              <animate attributeName="stroke-dashoffset" from="18" to="0" dur="1.4s" begin="0.85s" repeatCount="indefinite"/>
+            </path>
+          </g>
+          <!-- chain-2 label -->
+          <rect x="100" y="276" width="80" height="24" rx="12" fill="rgba(252,211,77,0.13)" stroke="rgba(252,211,77,0.34)" stroke-width="1"/>
+          <text x="140" y="292" text-anchor="middle" font-size="11" font-weight="700" fill="#fde68a">② 文控链</text>
+
+          <!-- ============================================================ -->
+          <!-- CHAIN 3 · 信息流链 (violet) — NPI 决策驱动三方面 -->
+          <!-- ============================================================ -->
+          <g fill="none" stroke="#c084fc" stroke-width="2.2" stroke-linecap="round" marker-end="url(#c3Arr)">
+            <!-- NPI → 新物料认证 (outer, decision) -->
+            <path d="M290,204 Q260,120 308,116" stroke-dasharray="5 10">
+              <animate attributeName="stroke-dashoffset" from="30" to="0" dur="1.3s" begin="0.05s" repeatCount="indefinite"/>
+            </path>
+            <!-- NPI → IQC (outer, decision) -->
+            <path d="M392,228 Q480,160 502,168" stroke-dasharray="5 10">
+              <animate attributeName="stroke-dashoffset" from="30" to="0" dur="1.3s" begin="0.20s" repeatCount="indefinite"/>
+            </path>
+            <!-- NPI → 制造风险停复线 (outer, decision) -->
+            <path d="M370,328 Q440,400 452,378" stroke-dasharray="5 10">
+              <animate attributeName="stroke-dashoffset" from="30" to="0" dur="1.3s" begin="0.35s" repeatCount="indefinite"/>
+            </path>
+          </g>
+          <!-- chain-3 label -->
+          <rect x="536" y="304" width="96" height="24" rx="12" fill="rgba(192,132,252,0.13)" stroke="rgba(192,132,252,0.34)" stroke-width="1"/>
+          <text x="584" y="320" text-anchor="middle" font-size="11" font-weight="700" fill="#ddd6fe">③ 信息流链</text>
+
+          <!-- rotating halo around center -->
+          <circle cx="320" cy="270" r="94" fill="none" stroke="rgba(56,189,248,0.20)" stroke-width="1.8" stroke-dasharray="3 9">
+            <animateTransform attributeName="transform" type="rotate" from="0 320 270" to="360 320 270" dur="20s" repeatCount="indefinite"/>
+          </circle>
+
+          <!-- ====== SATELLITES ====== -->
+
+          <!-- satellite: 新物料认证 (top) -->
+          <circle cx="320" cy="62" r="60" fill="rgba(8,28,56,0.97)" stroke="#38bdf8" stroke-width="2.5"/>
+          <text x="320" y="57" text-anchor="middle" font-size="14" font-weight="800" fill="#eaf6ff">新物料认证</text>
+          <text x="320" y="76" text-anchor="middle" font-size="9.5" fill="#a9cdf2">需求触发·提前认证</text>
+
+          <!-- satellite: IQC来料质量 (right) -->
+          <circle cx="542" cy="198" r="60" fill="rgba(8,28,56,0.97)" stroke="#38bdf8" stroke-width="2.5"/>
+          <text x="542" y="194" text-anchor="middle" font-size="14" font-weight="800" fill="#eaf6ff">IQC来料质量</text>
+          <text x="542" y="213" text-anchor="middle" font-size="9.5" fill="#a9cdf2">画像驱动检验</text>
+
+          <!-- satellite: 制造风险停复线 (lower right) -->
+          <circle cx="456" cy="432" r="60" fill="rgba(8,28,56,0.97)" stroke="#38bdf8" stroke-width="2.5"/>
+          <text x="456" y="428" text-anchor="middle" font-size="14" font-weight="800" fill="#eaf6ff">制造风险停复线</text>
+          <text x="456" y="447" text-anchor="middle" font-size="9.5" fill="#a9cdf2">R0-R5 控制</text>
+
+          <!-- satellite: 文件流程控制 (lower left) -->
+          <circle cx="174" cy="444" r="60" fill="rgba(8,28,56,0.97)" stroke="#fbbf24" stroke-width="2.5"/>
+          <text x="174" y="440" text-anchor="middle" font-size="14" font-weight="800" fill="#eaf6ff">文件流程控制</text>
+          <text x="174" y="459" text-anchor="middle" font-size="9.5" fill="#a9cdf2">受控文控体系</text>
+
+          <!-- ====== CENTER CORE ====== -->
+          <circle cx="320" cy="270" r="74" fill="url(#hubCore)" stroke="#7dd3fc" stroke-width="2.5"/>
+          <text x="320" y="262" text-anchor="middle" font-size="21" font-weight="800" fill="#eaf6ff">NPI 主线</text>
+          <text x="320" y="286" text-anchor="middle" font-size="10.5" fill="#bfe6ff">控制塔 · 统筹全局</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- NPI status main line G0-G7 -->
+    <div class="panel">
+      <h2 class="sec"><span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>NPI 状态主线 (G0-G7)</h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead>
+            <tr><th style="width:22%">状态阶段</th><th style="width:40%">主要目的 / 核心闸门</th><th style="width:38%">触发关联与防呆要求</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="stage">G0 客户需求/商机</td><td><div>识别客户重点和潜在不满意项</div><div class="gate">闸门：需求来源、重点问题和责任人明确</div></td><td><span class="badge">预风险分析</span></td></tr>
+            <tr><td class="stage">G1 预启动/分级</td><td><div>决定简单、标准、复杂路径</div><div class="gate">闸门：类型、计划和风险等级确认</div></td><td><span class="badge">新物料预识别、采购预介入</span></td></tr>
+            <tr><td class="stage">G2 正式启动</td><td><div>建立正式项目基线，资料转换</div><div class="gate">闸门：资料齐套或缺口有批准计划</div></td><td><span class="badge">DFM / MRR</span></td></tr>
+            <tr><td class="stage">G3 物料与IQC准备</td><td><div>保证物料可用且检验能力到位</div><div class="gate">闸门：关键物料状态、方案准备明确</div></td><td><span class="badge">物料认证、画像生成、检验方案</span></td></tr>
+            <tr><td class="stage">G4 试制准备</td><td><div>确认5M1E和开线条件</div><div class="gate">闸门：人机料法环测具备，风险有控制措施</div></td><td><span class="badge">生产、质量、测试、设备确认</span></td></tr>
+            <tr><td class="stage">G5 试制/小批量</td><td><div>验证产品和制造能力</div><div class="gate">闸门：FQC、测试、问题闭环按正式制度判断</div></td><td><span class="badge">IQC反馈、实时风险、停复线</span></td></tr>
+            <tr><td class="stage">G6 客户/成熟度评审</td><td><div>判断继续验证或量产</div><div class="gate">闸门：制度门槛满足，遗留问题有授权/期限</div></td><td><span class="badge">客户重点问题闭环、遗留风险</span></td></tr>
+            <tr><td class="stage">G7 移交与固化</td><td><div>防止经验随项目结束丢失</div><div class="gate">闸门：SOP/SIP/PFMEA/QCP和规则更新完成</div></td><td><span class="badge">治理、知识、规则版本受控更新</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- S/A/B 等级统一口径（定义与方法）+ 例子 -->
+    <div class="panel">
+      <h2 class="sec"><span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>S/A/B 等级统一口径（定义与方法）</h2>
+
+      <table class="sab-table">
+        <thead><tr><th style="width:12%">等级</th><th style="width:44%">定义</th><th style="width:44%">判断重点</th></tr></thead>
+        <tbody>
+          <tr><td class="lvl">B级</td><td>IT 承载过站，支持佐证上传</td><td>有无完成、有无上传</td></tr>
+          <tr><td class="lvl">A级</td><td>IT 承载过站，支持佐证上传，支持佐证 AI 校验</td><td>上传内容是否完整、正确、与标准一致；最终专业判断仍由人完成</td></tr>
+          <tr><td class="lvl">S级</td><td>IT 承载过站，支持佐证自动获取或上传，支持 AI 检验，正常场景无需人工干预</td><td>系统自动采集、判断、执行、过站和留证；异常升级人工</td></tr>
+        </tbody>
+      </table>
+
+      <div class="sab-note">
+        <h4>方法说明</h4>
+        <ul>
+          <li><strong style="color:#7dd3fc">AI 校验</strong>：检查完整性、格式、版本、一致性和是否符合受控标准。</li>
+          <li><strong style="color:#7dd3fc">AI 检验</strong>：依据明确规则和数据直接形成合格/不合格或通过/不通过判定，并触发下一步。</li>
+          <li><strong style="color:#7dd3fc">S 级不是所有情况都取消人工</strong>。异常、低置信度、质量放行、停复线和客户结论仍应进入人工闸门。</li>
+          <li><strong style="color:#7dd3fc">大节点拆分</strong>：一个大节点可以拆成「S 级自动采集/检验子节点 ＋ A 级人工裁决子节点」，避免为了追求 S 级取消必要责任。</li>
+        </ul>
+      </div>
+
+      <div class="ex-title"><span class="tag">例子</span>按节点说明 B/A/S（示例：003 资料转换节点）</div>
+      <div class="lvl-block">
+        <div class="lvl-head b">B 级</div>
+        <ul class="lvl-list">
+          <li>工程师在 IT 系统上传客户 BOM、图纸和 SIP。</li>
+          <li>系统只检查是否存在附件。</li>
+          <li>即使上传错误版本或 SIP 缺项，也可能过站。</li>
+        </ul>
+      </div>
+      <div class="lvl-block">
+        <div class="lvl-head a">A 级</div>
+        <ul class="lvl-list">
+          <li>工程师上传资料。</li>
+          <li>AI 检查客户 BOM、报价 BOM、旧 BOM 及 EC/临技是否一致。</li>
+          <li>AI 检查图纸和 SIP 版本、必检项目、关键参数是否匹配。</li>
+          <li>有冲突或缺项时禁止正常过站，由工程师修改或申请例外。</li>
+        </ul>
+      </div>
+      <div class="lvl-block">
+        <div class="lvl-head s">S 级</div>
+        <ul class="lvl-list">
+          <li>系统自动从客户资料库和 PEBS 获取最新文件，不要求工程师专门上传。</li>
+          <li>自动完成版本识别、BOM 比对和 SIP 草稿生成。</li>
+          <li>正常场景自动进入下一环节；冲突、低置信度或关键风险自动转人工。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- NPI 分流 -->
+      <div class="panel">
+        <h2 class="mini-head"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="12" r="2"/><path d="M8 6h4a4 4 0 0 1 4 4M8 18h4a4 4 0 0 0 4-4"/></svg></span>NPI 简单/标准/复杂 分流</h2>
+        <div class="branch s"><h4>简单路径</h4><p>成熟平台/供应商。复用基线，重点验证变化点，减少信息搬运。</p></div>
+        <div class="branch m"><h4>标准路径</h4><p>局部变化。标准NPI任务包、四维评审、风险增补验证。</p></div>
+        <div class="branch c"><h4>复杂路径</h4><p>新平台/红线/关键新物料。提前专项评审、驻项团队、双闸门全量采集。</p></div>
+        <div class="rule-box"><strong>规则：</strong>涉及安全/质量红线、全新工艺/客户特殊要求等，强制按“复杂型”。复杂度只改变验证深度，不降低制度门槛！</div>
+      </div>
+
+      <!-- 风险状态 (R0-R5) -->
+      <div class="panel">
+        <h2 class="mini-head"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg></span>制造风险统一状态 (R0-R5)</h2>
+        <div style="font-size:11px;letter-spacing:1px;color:var(--text-mute);font-weight:700;margin-bottom:8px">制造风险统一状态</div>
+        <div class="risk-row">
+          <span class="risk r0">R0 正常</span>
+          <span class="risk r1">R1 风险萌芽</span>
+          <span class="risk r2">R2 预警</span>
+          <span class="risk r3">R3 早期干预</span>
+          <span class="risk r4">R4 隔离/降级</span>
+          <span class="risk r5">R5 正式停线</span>
+        </div>
+        <div class="rule-box" style="margin-top:14px"><strong>说明：</strong>S/A/B 防呆分级口径已统一整理，详见上方「S/A/B 等级统一口径」面板。</div>
+      </div>
+    </div>
+
+    <!-- 流程拟升级的 4 个节点 -->
+    <div class="panel">
+      <h2 class="sec"><span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>流程拟升级的 4 个节点</h2>
+
+      <!-- 节点1 -->
+      <div class="node">
+        <div class="node-head"><div class="node-num">1</div><div><h3>SIP 自动转换</h3><div class="sub">自动取数、公式复算、阈值判断与异常开单</div></div></div>
+        <div style="padding:0 22px 6px;"><a href="javascript:void(0)" onclick="document.querySelector('.tab-btn[data-tab=sip]').click()" style="display:inline-block;margin-top:8px;color:var(--accent);font-weight:600;cursor:pointer;font-size:13px;text-decoration:underline;">查看 SIP 自动转换案例演示 →</a></div>
+        <div class="node-body">
+          <div class="node-row"><div class="k">当前问题</div><div class="v">检验记录表需人工重排；抽样数、判定标准转换依赖个人经验；尺寸公差、外观项和报告项混排，容易漏项、错判，异常开单滞后。</div></div>
+          <div class="node-row"><div class="k">使用工具</div><div class="v">Excel/OCR 解析、检验项目抽取、判定标准结构化、样品列自动生成、公差公式复算、OK/NG 自动判定引擎、异常电子流接口。</div></div>
+          <div class="node-row"><div class="k">主要工作</div><div class="v">自动读取原始 SIP 文件；提取检验项目、方法、设备、抽样数、频次和判定标准；自动生成标准化检验记录表；对测量项按公差自动判定，对外观项提供 OK/NG 选项，对报告项要求上传附件；异常自动标红并生成异常任务。</div></div>
+          <div class="node-row"><div class="k">达标表现</div><div class="v">原始 SIP 上传后系统自动生成检验记录表；检验员只需填写结果或上传附件；系统自动复算公差、判定单项 OK/NG、汇总批次结论并自动开异常单。</div></div>
+          <div class="node-row"><div class="k">验收样例</div><div class="v">选择一个真实 SIP 文件，系统能正确识别至少一个尺寸公差项、一个外观项和一个报告项，生成可导出的标准检验记录表，并触发异常判定。</div></div>
+        </div>
+      </div>
+
+      <!-- 节点2 -->
+      <div class="node">
+        <div class="node-head"><div class="node-num">2</div><div><h3>003 资料转换</h3><div class="sub">客户资料自动读取、BOM 比对与 SIP 草稿生成</div></div></div>
+        <div class="node-body">
+          <div class="node-row"><div class="k">当前问题</div><div class="v">客户资料分散；BOM、报价 BOM、旧资料和 EC/临技需要人工查找与比对；SIP 初稿生成依赖人工。</div></div>
+          <div class="node-row"><div class="k">使用工具</div><div class="v">文档/OCR 解析工具、BOM 差异比对工具、版本一致性校验工具、现有“图片生成 SIP”工具、受控标准知识库。</div></div>
+          <div class="node-row"><div class="k">主要工作</div><div class="v">自动读取客户图纸和技术文件；比对客户 BOM、报价 BOM、PEBS 旧资料及 EC/临技；标记缺失、冲突和版本异常；生成 SIP 草稿及资料缺口清单。</div></div>
+          <div class="node-row"><div class="k">达标表现</div><div class="v">资料由 IT 节点承载；上传后 AI 自动检查完整性、版本、BOM 差异和 SIP 关键项目；不符合项禁止正常过站；工程和品质负责最终确认。</div></div>
+          <div class="node-row"><div class="k">验收样例</div><div class="v">选择一个真实编码，AI 能够发现至少一类资料缺失、BOM 差异或版本冲突，并形成可追溯结果。</div></div>
+        </div>
+      </div>
+
+      <!-- 节点3 -->
+      <div class="node">
+        <div class="node-head"><div class="node-num">3</div><div><h3>006 MRR 可制造性评估</h3><div class="sub">规则库 + 历史问题复用的自动风险清单</div></div></div>
+        <div class="node-body">
+          <div class="node-row"><div class="k">当前问题</div><div class="v">评估依赖个人经验；历史 FAI、OBA、停线及 DFM 问题没有充分复用；风险识别深度不一致。</div></div>
+          <div class="node-row"><div class="k">使用工具</div><div class="v">MRR/DFM 规则库、历史问题检索工具、相似项目匹配工具、风险清单生成工具、智能评审助手。</div></div>
+          <div class="node-row"><div class="k">主要工作</div><div class="v">将新编码与 DFM 基线、历史 FAI 问题、停线事件、相似物料和工艺进行比较；生成生产、工艺、质量、测试四个视角的风险清单；提出待验证项目和自动化评估建议。</div></div>
+          <div class="node-row"><div class="k">达标表现</div><div class="v">MRR 资料上传后，AI 自动检查必填项、标准符合性和风险遗漏；自动生成评审建议；四个专业角色仍负责结论和签责。</div></div>
+          <div class="node-row"><div class="k">验收样例</div><div class="v">AI 识别出的风险能够关联到正式标准或历史案例，不能只生成无证据的通用风险描述。</div></div>
+        </div>
+      </div>
+
+      <!-- 节点4 -->
+      <div class="node">
+        <div class="node-head"><div class="node-num">4</div><div><h3>009 样机试制</h3><div class="sub">SN 过站自动加载标准并实时比对采集证据</div></div></div>
+        <div class="node-body">
+          <div class="node-row"><div class="k">当前问题</div><div class="v">现场证据依赖人工填写；SOP/SIP 版本、关键物料、扭矩和测试结果可能脱节；风险通常在试制完成后才集中汇总。</div></div>
+          <div class="node-row"><div class="k">使用工具</div><div class="v">工位扫码工具、SOP/SIP 自动加载工具、视觉识别、扭矩和测试数据采集接口、异常趋势识别工具、Andon/现场提醒。</div></div>
+          <div class="node-row"><div class="k">主要工作</div><div class="v">产品 SN 过站时自动加载有效版本；自动绑定物料、人员、工位和任务令；采集扭矩、测试和照片；与 SIP 标准比对；异常时提示、禁止过站或转复检。</div></div>
+          <div class="node-row"><div class="k">达标表现</div><div class="v">扭矩、测试等可直接从设备获取的证据不再要求人工上传；AI 自动进行标准比对；异常由人确认和处置；质量放行仍保留人工权限。</div></div>
+          <div class="node-row"><div class="k">验收样例</div><div class="v">选择一个关键工位，跑通“SN 扫码 — 标准加载 — 数据采集 — AI 检查 — 异常阻断 — 结果回写”。</div></div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ===================== TAB 3: ROADMAP ===================== -->
+  <section id="tab-roadmap" style="display:none">
+    <div class="ms-grid">
+      <div class="ms">
+        <div class="kicker">第一正式节点</div>
+        <div class="date">2026年10月17日（国庆后）</div>
+        <div class="goal">目标：形成规划草案与 As-Is 基线</div>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>历史与现状是否梳理清楚</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>“3”的草案、五流程关系成立</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>确定首轮真实NPI试点方向</li>
+        </ul>
+      </div>
+      <div class="ms">
+        <div class="kicker">第二正式节点</div>
+        <div class="date">2027年2月22日（春节复工后）</div>
+        <div class="goal">目标：真实项目验证、收敛与固化</div>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>真实项目验证是否有效</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>预警、内容与物理闭环具备固化条件</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>文件流程控制程序可发布</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="sec"><span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>执行三步曲</h2>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-num">1</div>
+          <div class="tl-body">
+            <h3>回到历史和当前状态，形成规划草案</h3>
+            <div class="when">当前阶段 · 至 2026年10月17日</div>
+            <p>• 选择3个典型失败案例，拉取10-20个历史项目数据，建立真实时间线。</p>
+            <p>• 校准FTY，补齐DT/TT/CT/QT/SLA定义。明确TT用于产线节拍而非总体流程周期。</p>
+            <p>• 画出真实As-Is触发关系，建立S/A/B等级与风险动作草案。</p>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-num">2</div>
+          <div class="tl-body">
+            <h3>用真实NPI项目持续交互和验证</h3>
+            <div class="when">节点一后 · 至 2027年春节前</div>
+            <p>• 运行新物料前移闭环：初版BOM识别、采购介入、缓存不足预警。</p>
+            <p>• 运行画像驱动IQC闭环：生成检验方案草稿、到货执行、回写画像。</p>
+            <p>• 逐项验证预警信号与动作；对阻断/隔离等开展现场试点。</p>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-num">3</div>
+          <div class="tl-body">
+            <h3>春节后复核、收敛和固化</h3>
+            <div class="when">春节复工后 · 至 2027年2月22日</div>
+            <p>• 比较试点前后FTY、DT、关键时间与质量成本表现。</p>
+            <p>• 收敛固化 NPI G0-G7、防呆S/A/B定义，确认可推广的AI预警与动作。</p>
+            <p>• 完成《文件流程控制程序》评审稿，生成下一阶段项目清单。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 4: GOVERNANCE ===================== -->
+  <section id="tab-governance" style="display:none">
+    <div class="redline">
+      <h2><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>方案退回条件（严禁进入开发）</h2>
+      <div class="rl-grid">
+        <div class="rl-item"><span class="x">✖</span><span>只有流程图，没有状态、证据和异常路径</span></div>
+        <div class="rl-item"><span class="x">✖</span><span>TT（节拍）仍只有一个总周期时间</span></div>
+        <div class="rl-item"><span class="x">✖</span><span>新物料仍在NPI后端才通知采购</span></div>
+        <div class="rl-item"><span class="x">✖</span><span>IQC方案与画像、认证和历史风险没有连接</span></div>
+        <div class="rl-item"><span class="x">✖</span><span>预警没有提前量、动作、Owner和升级机制</span></div>
+        <div class="rl-item"><span class="x">✖</span><span>自动停线没有安全逻辑、接口、复位和反馈</span></div>
+        <div class="rl-item"><span class="x">✖</span><span>AI生成内容没有来源、审批状态和现场验证</span></div>
+        <div class="rl-item"><span class="x">✖</span><span>指标没有分子、分母、主键和复算方法</span></div>
+        <div class="rl-item"><span class="x">✖</span><span>简单流程试图通过“降低制度门槛”来提速</span></div>
+        <div class="rl-item"><span class="x">✖</span><span>规则、模型和流程变化不可追溯、不可回退</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="mini-head"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z"/></svg></span>立即开始的十项工作</h2>
+      <div class="ten-grid">
+        <table class="tbl">
+          <thead><tr><th style="width:48px">#</th><th>任务项</th><th style="width:140px">建议主责</th><th style="width:130px">完成节点</th></tr></thead>
+          <tbody>
+            <tr><td class="num-cell">1</td><td>统一“355”定义并停止沿用未经验证的五流程/节点结论</td><td><span class="badge">项目经理</span></td><td>第一步</td></tr>
+            <tr><td class="num-cell">2</td><td>选定3个历史典型案例和10-20个统计样本</td><td><span class="badge">NPI Owner</span></td><td>第一步</td></tr>
+            <tr><td class="num-cell">3</td><td>导出真实时间戳、结果、异常和成本数据</td><td><span class="badge">数据Owner/IT</span></td><td>第一步</td></tr>
+            <tr><td class="num-cell">4</td><td>建立历史事件时间线和最早可识别点</td><td><span class="badge">四个业务组</span></td><td>第一节点前</td></tr>
+            <tr><td class="num-cell">5</td><td>建立NPI G0—G7节点与状态表</td><td><span class="badge">NPI Owner</span></td><td>第一节点前</td></tr>
+            <tr><td class="num-cell">6</td><td>完成多时间尺度矩阵，不再只报总周期</td><td><span class="badge">NPI/PMC/数据</span></td><td>第一节点前</td></tr>
+            <tr><td class="num-cell">7</td><td>建立项目-物料-画像-IQC-试制证据链</td><td><span class="badge">IT/品质/采购</span></td><td>第一/二步</td></tr>
+            <tr><td class="num-cell">8</td><td>确定一个真实NPI试点和首轮物料</td><td><span class="badge">项目委员会</span></td><td>第一节点</td></tr>
+            <tr><td class="num-cell">9</td><td>打通新物料前移与画像驱动IQC闭环</td><td><span class="badge">采购/品质/IT</span></td><td>第二步</td></tr>
+            <tr><td class="num-cell">10</td><td>用试点结果验证文件控制程序并形成下阶段计划</td><td><span class="badge">体系/文控/PM</span></td><td>第二节点</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 5: SIP 演示实例 ===================== -->
+  <section id="tab-sip" style="display:none">
+    <div class="panel">
+      <h2 class="sec"><span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg></span>SIP 演示实例</h2>
+      <p class="lead">以下为「SIP 自动转换」节点的演示版工具：上传原始 SIP/检验指导书 Excel，系统自动提取检验项目、方法、设备、抽样数、判定标准，生成可填写的标准化检验记录表，并支持自动判定与导出。</p>
+      <div class="sip-embed bg-gray-50 min-h-screen flex flex-col text-gray-800">
+        <!-- ===== SIP 检验计划智能生成工具 (演示版) · 原文内联自 sip.html ===== -->
+        <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+          <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="bg-blue-600 p-2 rounded-lg text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+              </div>
+              <h1 class="text-xl font-bold text-gray-800">
+                SIP 智能生成器 
+                <span class="text-sm bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full ml-1 font-normal border border-orange-200">Demo 演示版</span>
+              </h1>
+            </div>
+            <div class="text-sm text-gray-500 font-medium">
+              将非结构化指导书自动转化为标准化检验记录表
+            </div>
+          </div>
+        </header>
+
+        <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full flex flex-col gap-6">
+          <div id="messageBox" class="hidden rounded-lg p-4 mb-4 text-sm" role="alert">
+            <div class="flex items-center gap-2">
+              <svg id="messageIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"></svg>
+              <span id="messageText" class="font-medium"></span>
+            </div>
+          </div>
+
+          <div id="stepIndicator" class="flex items-center text-sm font-medium text-gray-500 mb-2">
+            <span class="text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">1. 上传文件</span>
+            <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            <span id="step2">2. AI 智能提取</span>
+            <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            <span id="step3">3. 导出记录表</span>
+          </div>
+
+          <div id="dropZone" class="drop-zone border-2 border-dashed border-gray-300 rounded-2xl bg-white p-16 text-center shadow-sm transition-all">
+            <input type="file" id="fileInput" class="hidden" accept=".xlsx,.xls,.csv">
+            <div class="flex flex-col items-center justify-center">
+              <div class="bg-blue-50 p-4 rounded-full mb-4 text-blue-500">
+                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+              </div>
+              <h2 class="text-2xl font-semibold text-gray-800 mb-2">点击或拖拽原始 SIP 文件到此处</h2>
+              <p class="text-gray-500 mb-8">例如：<span class="font-mono bg-gray-100 px-1 rounded text-gray-600">21100087端子座检验指导书SIP.xlsx</span></p>
+
+              <div class="flex gap-4">
+                <button id="uploadBtn" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors shadow-sm cursor-pointer">上传 Excel 文件</button>
+                <button id="demoBtn" class="bg-orange-100 text-orange-700 border border-orange-200 px-6 py-2.5 rounded-lg font-medium text-sm hover:bg-orange-200 transition-colors shadow-sm cursor-pointer flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                  一键体验演示数据
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="loadingStatus" class="hidden flex-col items-center justify-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
+            <div class="loader mb-6"></div>
+            <h3 id="statusTitle" class="text-xl font-semibold text-gray-800 mb-2">正在解析文件</h3>
+            <p id="statusText" class="text-gray-500 text-sm mb-6">正在提取文字内容...</p>
+            <div class="w-80 h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+              <div id="progressBar" class="h-full bg-blue-500 transition-all duration-300 ease-out" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div id="resultArea" class="hidden flex-col gap-6">
+            <div class="flex flex-wrap gap-6 bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-sm">
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500 font-medium">检验员:</span>
+                <span id="autoInspector" class="font-bold text-gray-800 bg-gray-100 px-3 py-1 rounded-md">系统自动带出</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500 font-medium">检验时间戳:</span>
+                <span id="autoTime" class="font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-md">自动生成</span>
+              </div>
+              <div class="flex items-center gap-2 flex-grow">
+                <span class="text-gray-500 font-medium">生产批次 / 条码:</span>
+                <input type="text" id="batchNumber" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm flex-grow focus:ring-2 focus:ring-blue-500 outline-none" placeholder="请扫描或手动输入条码 (例如：LOT-20260828)" value="LOT-20260828">
+              </div>
+            </div>
+
+            <div class="flex justify-between items-end bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <div>
+                <h3 class="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2">
+                  <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  智能提取完成
+                </h3>
+                <p class="text-gray-500 text-sm">已为您自动补充“检验记录”空白列，可直接导出供检验员使用。</p>
+              </div>
+              <div class="flex gap-3">
+                <button id="resetBtn" class="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                  返回首页
+                </button>
+                <button id="downloadExcelBtn" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-medium transition-colors shadow-md shadow-green-600/20">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                  导出标准 Excel 表格
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+              <div class="bg-gray-50 px-6 py-3 border-b border-gray-200 flex justify-between items-center">
+                <span class="font-semibold text-gray-700" id="previewTitle">数据预览区 (演示文件)</span>
+                <span id="rowCountLabel" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">共 0 个检验项</span>
+              </div>
+              <div class="overflow-x-auto p-0">
+                <table class="w-full text-sm text-left sip-table" id="previewTable">
+                  <thead id="tableHead"></thead>
+                  <tbody id="tableBody"></tbody>
+                </table>
+              </div>
+              <div class="bg-gray-50 border-t border-gray-200 p-6 flex flex-col gap-5">
+                <div class="flex items-center gap-4">
+                  <span class="font-semibold text-gray-700 text-base">总体判断结论:</span>
+                  <span id="overallJudgment" class="px-5 py-1.5 rounded-lg font-bold bg-gray-200 text-gray-600 shadow-inner">等待检验...</span>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <span class="font-semibold text-gray-700">检验备注 / 异常样品追溯:</span>
+                  <textarea id="inspectRemarks" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none shadow-inner" rows="3" placeholder="填写说明：如遇不良品，请在此备注对应样品编号及条码（例如：#2 样品条码为 xxxxx，表面存在划伤，已做报废隔离处理）。"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        <script>
+          const dropZone = document.getElementById('dropZone');
+          const fileInput = document.getElementById('fileInput');
+          const uploadBtn = document.getElementById('uploadBtn');
+          const demoBtn = document.getElementById('demoBtn');
+          const loadingStatus = document.getElementById('loadingStatus');
+          const statusTitle = document.getElementById('statusTitle');
+          const statusText = document.getElementById('statusText');
+          const progressBar = document.getElementById('progressBar');
+          const resultArea = document.getElementById('resultArea');
+          const resetBtn = document.getElementById('resetBtn');
+          const downloadExcelBtn = document.getElementById('downloadExcelBtn');
+          const tableBody = document.getElementById('tableBody');
+          const rowCountLabel = document.getElementById('rowCountLabel');
+          const previewTitle = document.getElementById('previewTitle');
+          const messageBox = document.getElementById('messageBox');
+          const messageText = document.getElementById('messageText');
+          const messageIcon = document.getElementById('messageIcon');
+
+          const autoInspector = document.getElementById('autoInspector');
+          const autoTime = document.getElementById('autoTime');
+          const overallJudgment = document.getElementById('overallJudgment');
+          const inspectRemarks = document.getElementById('inspectRemarks');
+          const batchNumber = document.getElementById('batchNumber');
+
+          const step2 = document.getElementById('step2');
+          const step3 = document.getElementById('step3');
+
+          let currentSipData = [];
+          let currentFileName = "演示版_端子座检验SIP";
+          let globalMaxSamples = 1;
+
+          function getSampleCount(str) {
+            if (!str) return 1;
+            const match = str.match(/\d+/);
+            if (match) {
+              let num = parseInt(match[0], 10);
+              return (num > 0 && num <= 20) ? num : 1;
+            }
+            return 1;
+          }
+
+          const DEMO_DATA = [
+            {"检验项目":"1. 尺寸检验 (注塑材料)","检验方法":"目视","检验设备":"复核供应商报告","抽样数":"1次","抽样频次":"季度","判定标准":"注塑材料：尼龙66\n(报告有效期内一年)"},
+            {"检验项目":"2. 尺寸检验 (图纸尺寸 - 长度①)","检验方法":"测量","检验设备":"卡尺/2.5次元","抽样数":"5PCS","抽样频次":"每批","判定标准":"50.5+/-0.3mm"},
+            {"检验项目":"3. 尺寸检验 (图纸尺寸 - 宽度②)","检验方法":"测量","检验设备":"卡尺/2.5次元","抽样数":"5PCS","抽样频次":"每批","判定标准":"35.5+/-0.3mm"},
+            {"检验项目":"4. 性能检验 (阻燃等级)","检验方法":"目视","检验设备":"复核供应商测试报告","抽样数":"1次","抽样频次":"每批","判定标准":"E/UK1端部固定件阻燃等级：V0"},
+            {"检验项目":"5. 外观检验 (披锋)","检验方法":"目视","检验设备":"无","抽样数":"3PCS","抽样频次":"每批","判定标准":"产品表面不可有披锋缺陷"},
+            {"检验项目":"6. 外观检验 (缩水)","检验方法":"目视","检验设备":"无","抽样数":"3PCS","抽样频次":"每批","判定标准":"产品表面不可有缩水缺陷"},
+            {"检验项目":"7. 外观检验 (脏污)","检验方法":"目视","检验设备":"无","抽样数":"3PCS","抽样频次":"每批","判定标准":"产品表面不可有脏污缺陷"},
+            {"检验项目":"8. 外观检验 (变形)","检验方法":"目视","检验设备":"无","抽样数":"3PCS","抽样频次":"每批","判定标准":"产品表面不可有变形缺陷"}
+          ];
+
+          function showMessage(type, text) {
+            messageBox.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'border-red-200', 'bg-blue-50', 'text-blue-700', 'border-blue-200');
+            messageBox.classList.add('border');
+            if (type === 'error') {
+              messageBox.classList.add('bg-red-50', 'text-red-700', 'border-red-200');
+              messageIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
+            } else {
+              messageBox.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
+              messageIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
+            }
+            messageText.innerText = text;
+            setTimeout(() => { messageBox.classList.add('hidden'); }, 8000);
+          }
+
+          uploadBtn.addEventListener('click', () => fileInput.click());
+          dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+          dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+          dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) { handleFile(e.dataTransfer.files[0]); }
+          });
+          fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) { handleFile(e.target.files[0]); }
+          });
+
+          demoBtn.addEventListener('click', () => {
+            currentFileName = "21100087端子座检验指导书SIP";
+            previewTitle.innerText = `数据预览区 (${currentFileName}.xlsx)`;
+            runMockAIProcess();
+          });
+
+          resetBtn.addEventListener('click', () => {
+            resultArea.classList.add('hidden');
+            dropZone.classList.remove('hidden');
+            fileInput.value = '';
+            currentSipData = [];
+            step2.className = "text-gray-500";
+            step3.className = "text-gray-500";
+          });
+
+          async function handleFile(file) {
+            currentFileName = file.name.replace(/\.[^/.]+$/, "");
+            previewTitle.innerText = `数据预览区 (${file.name})`;
+            runMockAIProcess();
+          }
+
+          async function runMockAIProcess() {
+            dropZone.classList.add('hidden');
+            messageBox.classList.add('hidden');
+            loadingStatus.classList.remove('hidden');
+            loadingStatus.classList.add('flex');
+
+            const now = new Date();
+            autoTime.innerText = now.toLocaleString();
+            autoInspector.innerText = "智能质检员_01 (已登录)";
+
+            overallJudgment.innerText = '检验中...';
+            overallJudgment.className = 'px-5 py-1.5 rounded-lg font-bold bg-blue-100 text-blue-700 shadow-inner';
+
+            updateProgress(20, '读取 Excel 内容...', '正在解析表格结构与文本信息');
+            await new Promise(r => setTimeout(r, 800));
+
+            step2.className = "text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200";
+            updateProgress(60, 'AI 智能提取中...', '正在分析检验项目、方法及判定标准...');
+            await new Promise(r => setTimeout(r, 1500));
+
+            currentSipData = DEMO_DATA;
+            updateProgress(100, '提取完毕', '正在生成结构化表格');
+
+            setTimeout(() => {
+              renderTable(currentSipData);
+              step3.className = "text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200";
+              loadingStatus.classList.add('hidden');
+              loadingStatus.classList.remove('flex');
+              resultArea.classList.remove('hidden');
+              resultArea.classList.add('flex');
+            }, 800);
+          }
+
+          function updateProgress(percent, title, text) {
+            progressBar.style.width = `${percent}%`;
+            statusTitle.innerText = title;
+            statusText.innerText = text;
+          }
+
+          /* // ==========================================
+          // [真实 API 调用代码备份 - 预留给未来替换]
+          // ==========================================
+          async function callRealGeminiAI(rawText) {
+            const apiKey = "YOUR_API_KEY_HERE";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            const systemPrompt = `你是一个专业的质量工程师。你的任务是从杂乱的SIP/检验指导书文本中提取具体的检验计划。提取所有的【检验项目】，并找到每个项目对应的：【检验方法】、【检验设备】、【抽样数】、【抽样频次】、【判定标准】。`;
+          }
+          */
+
+          function renderTable(dataArray) {
+            tableBody.innerHTML = '';
+            rowCountLabel.innerText = `共提取 ${dataArray.length} 个检验项目`;
+
+            globalMaxSamples = 1;
+            dataArray.forEach(item => {
+              const count = getSampleCount(item['抽样数']);
+              if (count > globalMaxSamples) globalMaxSamples = count;
+            });
+
+            const thead = document.querySelector('#previewTable thead');
+            let theadHtml = `
+              <tr>
+                <th class="w-12 text-center" rowspan="2">序号</th>
+                <th class="w-48" rowspan="2">检验项目</th>
+                <th class="w-24" rowspan="2">检验方法</th>
+                <th class="w-24" rowspan="2">检验设备</th>
+                <th class="w-16" rowspan="2">抽样数</th>
+                <th class="w-20" rowspan="2">抽样频次</th>
+                <th class="w-48" rowspan="2">判定标准</th>
+                <th class="text-center text-blue-600 bg-blue-50/80 border-b-0 py-2" colspan="${globalMaxSamples}">检验记录 (请在对应区域填写或勾选)</th>
+                <th class="w-20 text-center bg-gray-100 border-b-0" rowspan="2">单项判定</th>
+              </tr>
+              <tr>
+            `;
+            for (let i = 1; i <= globalMaxSamples; i++) {
+              theadHtml += `<th class="text-center text-blue-700 bg-blue-100/50 text-xs py-1 border-t-0 font-semibold min-w-[5rem]">样品 ${i}</th>`;
+            }
+            theadHtml += `</tr>`;
+            thead.innerHTML = theadHtml;
+
+            function getSmartPlaceholder(item, rowIndex) {
+              const method = item['检验方法'] || '';
+              const equip = item['检验设备'] || '';
+              const criteria = item['判定标准'] || '';
+
+              if (equip.includes('报告') || method.includes('报告') || criteria.includes('报告')) {
+                return `
+                  <label class="cursor-pointer flex items-center justify-center gap-1 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 px-2 py-1.5 rounded text-xs transition-colors w-full font-medium">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                    上传附件
+                    <input type="file" class="hidden eval-item" onchange="evaluateRow(${rowIndex})" />
+                  </label>`;
+              } else if (method.includes('目视') || criteria.includes('披锋') || criteria.includes('缩水') || criteria.includes('脏污') || criteria.includes('变形') || criteria.includes('外观')) {
+                return `
+                  <select class="eval-item w-full bg-white border border-gray-300 text-gray-700 py-1.5 px-1 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none cursor-pointer text-center appearance-none" onchange="evaluateRow(${rowIndex})">
+                    <option value="" disabled selected>-</option>
+                    <option value="OK" class="text-green-600 font-bold">OK</option>
+                    <option value="NG" class="text-red-600 font-bold">NG</option>
+                  </select>`;
+              } else {
+                return `
+                  <input type="text" inputmode="decimal" class="eval-item w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-xs text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none placeholder-gray-300 text-center" placeholder="填测量值" oninput="evaluateRow(${rowIndex})" />
+                `;
+              }
+            }
+
+            dataArray.forEach((item, index) => {
+              const sampleCount = getSampleCount(item['抽样数']);
+              const tr = document.createElement('tr');
+              tr.id = `row-${index}`;
+
+              let trHtml = `
+                <td class="text-center text-gray-500">${index + 1}</td>
+                <td class="font-medium text-gray-800">${item['检验项目'] || '-'}</td>
+                <td class="text-gray-600">${item['检验方法'] || '-'}</td>
+                <td class="text-gray-600">${item['检验设备'] || '-'}</td>
+                <td class="text-gray-600 font-medium text-blue-600">${item['抽样数'] || '-'}</td>
+                <td class="text-gray-600">${item['抽样频次'] || '-'}</td>
+                <td class="text-gray-600 whitespace-pre-wrap">${item['判定标准'] || '-'}</td>
+              `;
+
+              for (let i = 1; i <= globalMaxSamples; i++) {
+                if (i <= sampleCount) {
+                  let placeholder;
+                  if (index === 0 && i === 1) {
+                    placeholder = `
+                      <div class="flex flex-col items-center gap-1 p-1">
+                        <button type="button" onclick="document.getElementById('nylonReportModal').classList.remove('hidden')" title="点击查看匹配报告" class="flex items-center justify-center bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 w-8 h-8 rounded transition-colors cursor-pointer">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </button>
+                        <span class="text-[10px] text-green-600 leading-tight text-center">自动匹配到厂商季度合格报告。</span>
+                      </div>`;
+                  } else {
+                    placeholder = getSmartPlaceholder(item, index);
+                  }
+                  trHtml += `<td class="bg-blue-50/20 border-x border-blue-100/60 align-middle">${placeholder}</td>`;
+                } else {
+                  trHtml += `<td class="bg-gray-100/60 border-x border-gray-200 text-center text-gray-300 align-middle text-lg">/</td>`;
+                }
+              }
+
+              trHtml += `<td id="judge-${index}" class="text-center font-bold text-gray-400 bg-gray-50 border-l border-gray-300 align-middle">-</td>`;
+
+              tr.innerHTML = trHtml;
+              tableBody.appendChild(tr);
+
+              if (index === 0) {
+                setTimeout(() => {
+                  const judgeCell = document.getElementById('judge-0');
+                  if (judgeCell) {
+                    judgeCell.innerHTML = 'OK';
+                    judgeCell.className = 'text-center font-bold text-green-600 bg-green-100 border-l border-green-300 align-middle transition-colors';
+                    updateOverallStatus();
+                  }
+                }, 0);
+              }
+            });
+          }
+
+          window.evaluateRow = function(rowIndex) {
+            const item = currentSipData[rowIndex];
+            const row = document.getElementById(`row-${rowIndex}`);
+            const inputs = row.querySelectorAll('.eval-item');
+            const judgeCell = document.getElementById(`judge-${rowIndex}`);
+
+            let hasData = false;
+            let isNg = false;
+            let allFilled = true;
+
+            const criteria = item['判定标准'] || '';
+            let min = -Infinity, max = Infinity;
+            const match = criteria.match(/([\d.]+)\s*\+\/-\s*([\d.]+)/);
+            if (match) {
+              const center = parseFloat(match[1]);
+              const tol = parseFloat(match[2]);
+              min = center - tol;
+              max = center + tol;
+            }
+
+            inputs.forEach(input => {
+              let val;
+              if (input.tagName === 'INPUT' && input.type === 'file') {
+                if (input.files.length > 0) { hasData = true; val = 'OK'; }
+                else { allFilled = false; }
+              } else {
+                val = input.value.trim();
+                if (val !== '') { hasData = true; }
+                else { allFilled = false; }
+              }
+
+              if (val !== '') {
+                if (input.tagName === 'SELECT') {
+                  if (val === 'NG') isNg = true;
+                } else if (input.type === 'text') {
+                  if(match) {
+                    const numVal = parseFloat(val);
+                    if (isNaN(numVal) || numVal < min || numVal > max) {
+                      isNg = true;
+                      input.classList.add('text-red-600', 'font-bold');
+                      input.classList.remove('text-green-600');
+                    } else {
+                      input.classList.remove('text-red-600', 'font-bold');
+                      input.classList.add('text-green-600', 'font-bold');
+                    }
+                  }
+                }
+              }
+            });
+
+            if (!hasData) {
+              judgeCell.innerHTML = '-';
+              judgeCell.className = 'text-center font-bold text-gray-400 bg-gray-50 border-l border-gray-300 align-middle transition-colors';
+            } else if (isNg) {
+              judgeCell.innerHTML = 'NG';
+              judgeCell.className = 'text-center font-bold text-red-600 bg-red-100 border-l border-red-300 align-middle transition-colors';
+            } else if (allFilled) {
+              judgeCell.innerHTML = 'OK';
+              judgeCell.className = 'text-center font-bold text-green-600 bg-green-100 border-l border-green-300 align-middle transition-colors';
+            } else {
+              judgeCell.innerHTML = '测定中';
+              judgeCell.className = 'text-center font-bold text-blue-500 bg-blue-50 border-l border-blue-200 align-middle transition-colors text-xs';
+            }
+
+            updateOverallStatus();
+          };
+
+          function updateOverallStatus() {
+            const judgeCells = Array.from(document.querySelectorAll('[id^="judge-"]')).map(el => el.innerText);
+            if (judgeCells.includes('NG')) {
+              overallJudgment.innerText = '批次不合格 (存在 NG 项)';
+              overallJudgment.className = 'px-5 py-1.5 rounded-lg font-bold bg-red-600 text-white shadow-md animate-pulse';
+            } else if (judgeCells.every(j => j === 'OK')) {
+              overallJudgment.innerText = '批次合格 (ALL OK)';
+              overallJudgment.className = 'px-5 py-1.5 rounded-lg font-bold bg-green-600 text-white shadow-md';
+            } else {
+              overallJudgment.innerText = '检验进行中...';
+              overallJudgment.className = 'px-5 py-1.5 rounded-lg font-bold bg-blue-100 text-blue-700 shadow-inner';
+            }
+          }
+
+          downloadExcelBtn.addEventListener('click', () => {
+            if (!currentSipData || currentSipData.length === 0) return;
+
+            function getSmartPlaceholderExcel(item) {
+              const method = item['检验方法'] || '';
+              const equip = item['检验设备'] || '';
+              const criteria = item['判定标准'] || '';
+              if (equip.includes('报告') || method.includes('报告') || criteria.includes('报告')) return "[在此插入附件]";
+              if (method.includes('目视') || criteria.includes('披锋') || criteria.includes('缩水') || criteria.includes('脏污') || criteria.includes('变形') || criteria.includes('外观')) return "[填写 OK / NG]";
+              return " ";
+            }
+
+            const exportData = currentSipData.map((item, index) => {
+              const sampleCount = getSampleCount(item['抽样数']);
+              let rowObj = {
+                "序号": index + 1,
+                "检验项目": item['检验项目'] || '',
+                "检验方法": item['检验方法'] || '',
+                "检验设备": item['检验设备'] || '',
+                "抽样数": item['抽样数'] || '',
+                "抽样频次": item['抽样频次'] || '',
+                "判定标准": item['判定标准'] || ''
+              };
+              for(let i = 1; i <= globalMaxSamples; i++) {
+                if (i <= sampleCount) {
+                  rowObj[`样品 ${i}`] = getSmartPlaceholderExcel(item);
+                } else {
+                  rowObj[`样品 ${i}`] = "/";
+                }
+              }
+              const judgeText = document.getElementById(`judge-${index}`).innerText;
+              rowObj['单项判定'] = (judgeText === '-' || judgeText === '测定中') ? '' : judgeText;
+              return rowObj;
+            });
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+
+            const wscols = [{wch: 6}, {wch: 28}, {wch: 12}, {wch: 18}, {wch: 10}, {wch: 10}, {wch: 35}];
+            for(let i = 0; i < globalMaxSamples; i++) { wscols.push({wch: 14}); }
+            wscols.push({wch: 12});
+            ws['!cols'] = wscols;
+
+            XLSX.utils.sheet_add_aoa(ws, [
+              [],
+              ["追溯基础信息", "检验员:", autoInspector.innerText, "时间:", autoTime.innerText, "批次/条码:", batchNumber.value],
+              ["检验结果总结", "总体判定:", overallJudgment.innerText.replace('(ALL OK)', '').replace('(存在 NG 项)', '')],
+              ["备注说明", inspectRemarks.value]
+            ], {origin: -1});
+
+            XLSX.utils.book_append_sheet(wb, ws, "检验记录表");
+            XLSX.writeFile(wb, `${currentFileName}_${batchNumber.value}_记录.xlsx`);
+          });
+        </script>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB 6: EVOLVE · 演进路径与履历 ===================== -->
+  <section id="tab-evolve" style="display:none">
+
+    <!-- ===== 1. 引子：路径全景 ===== -->
+    <div class="panel">
+      <h2 class="sec"><span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span>演进路径与履历 · 共识沉淀</h2>
+      <p class="lead">从 <strong style="color:#7dd3fc">0805 QSA 第一阶段打法</strong> 到 <strong style="color:#5eead4">0907 智能履历与 AI 协同新阶段</strong>，5 周内连续完成 <strong style="color:#7dd3fc">六</strong> 个里程碑：<strong style="color:#7dd3fc">打法 → 分水岭 → 统一口径 → 示范案例 → 落地计划 → 纪要固化</strong>。本页按时间顺序沉淀每一次的 <strong style="color:#fde68a">关键产物 + 共识要点 + 与下一步的衔接</strong>，可作为后续评审、复盘和对外汇报的统一依据。</p>
+
+      <!-- 顶部时间轴总览 SVG -->
+      <div style="margin-top:14px;background:rgba(6,18,38,0.55);border:1px solid var(--panel-border);border-radius:14px;padding:22px 16px 8px;">
+        <svg viewBox="0 0 1100 220" width="100%" role="img" aria-label="0805→0831 演进路径时间轴">
+          <defs>
+            <linearGradient id="evoLine" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#22d3ee"/>
+              <stop offset="22%" stop-color="#3b82f6"/>
+              <stop offset="42%" stop-color="#818cf8"/>
+              <stop offset="62%" stop-color="#c084fc"/>
+              <stop offset="83%" stop-color="#34d399"/>
+              <stop offset="100%" stop-color="#5eead4"/>
+            </linearGradient>
+            <radialGradient id="evoNode" cx="50%" cy="40%" r="65%">
+              <stop offset="0%" stop-color="#0ea5e9"/>
+              <stop offset="100%" stop-color="#0b3a6b"/>
+            </radialGradient>
+            <filter id="evoGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2.5" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <marker id="evoArrow" markerWidth="11" markerHeight="11" refX="7" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#5eead4"/>
+            </marker>
+          </defs>
+
+          <!-- 主轴线 -->
+          <line x1="80" y1="110" x2="1020" y2="110" stroke="url(#evoLine)" stroke-width="6" stroke-linecap="round" marker-end="url(#evoArrow)" opacity="0.85"/>
+          <!-- 流动能量 -->
+          <line x1="80" y1="110" x2="1020" y2="110" stroke="#a5f3fc" stroke-width="2.5" stroke-dasharray="2 18" stroke-linecap="round" opacity="0.9" filter="url(#evoGlow)">
+            <animate attributeName="stroke-dashoffset" from="40" to="0" dur="1.6s" repeatCount="indefinite"/>
+          </line>
+
+          <!-- 6 个节点 -->
+          <!-- 0805 -->
+          <g>
+            <circle cx="100" cy="110" r="40" fill="rgba(8,28,56,0.95)" stroke="#22d3ee" stroke-width="2.5"/>
+            <text x="100" y="100" text-anchor="middle" font-size="11" font-weight="700" fill="#22d3ee" letter-spacing="1">0805</text>
+            <text x="100" y="120" text-anchor="middle" font-size="12" font-weight="700" fill="#eaf6ff">QSA 打法</text>
+            <text x="100" y="172" text-anchor="middle" font-size="11" fill="#a9cdf2">第一阶段指导书</text>
+            <text x="100" y="190" text-anchor="middle" font-size="10" fill="#7ba7d4">S/A/B 防呆 + 五能力</text>
+          </g>
+          <!-- 0810 -->
+          <g>
+            <circle cx="290" cy="110" r="40" fill="rgba(8,28,56,0.95)" stroke="#3b82f6" stroke-width="2.5"/>
+            <text x="290" y="100" text-anchor="middle" font-size="11" font-weight="700" fill="#60a5fa" letter-spacing="1">0810</text>
+            <text x="290" y="120" text-anchor="middle" font-size="12" font-weight="700" fill="#eaf6ff">分水岭</text>
+            <text x="290" y="172" text-anchor="middle" font-size="11" fill="#a9cdf2">阶段 2→3 评价表</text>
+            <text x="290" y="190" text-anchor="middle" font-size="10" fill="#7ba7d4">10 项 100 分 · ≥80 跨过</text>
+          </g>
+          <!-- 0812 -->
+          <g>
+            <circle cx="480" cy="110" r="40" fill="rgba(8,28,56,0.95)" stroke="#818cf8" stroke-width="2.5"/>
+            <text x="480" y="100" text-anchor="middle" font-size="11" font-weight="700" fill="#a5b4fc" letter-spacing="1">0812</text>
+            <text x="480" y="120" text-anchor="middle" font-size="12" font-weight="700" fill="#eaf6ff">统一口径</text>
+            <text x="480" y="38" text-anchor="middle" font-size="11" fill="#a9cdf2">+AI vs AI+</text>
+            <text x="480" y="56" text-anchor="middle" font-size="10" fill="#7ba7d4">流程不动 vs 重构</text>
+            <text x="480" y="172" text-anchor="middle" font-size="11" fill="#a9cdf2">风险前移 · 流程减法 · 物理闭环</text>
+            <text x="480" y="190" text-anchor="middle" font-size="10" fill="#7ba7d4">识别痛点→共识→落组织</text>
+          </g>
+          <!-- 0821 -->
+          <g>
+            <circle cx="670" cy="110" r="40" fill="rgba(8,28,56,0.95)" stroke="#c084fc" stroke-width="2.5"/>
+            <text x="670" y="100" text-anchor="middle" font-size="11" font-weight="700" fill="#d8b4fe" letter-spacing="1">0821</text>
+            <text x="670" y="120" text-anchor="middle" font-size="12" font-weight="700" fill="#eaf6ff">示范案例</text>
+            <text x="670" y="172" text-anchor="middle" font-size="11" fill="#a9cdf2">四合一项目 · 重生 & 重构</text>
+            <text x="670" y="190" text-anchor="middle" font-size="10" fill="#7ba7d4">WICG003 重生 / WIPZ001 重构</text>
+          </g>
+          <!-- 0831 -->
+          <g>
+            <circle cx="860" cy="110" r="40" fill="rgba(8,28,56,0.95)" stroke="#34d399" stroke-width="2.5"/>
+            <text x="860" y="100" text-anchor="middle" font-size="11" font-weight="700" fill="#34d399" letter-spacing="1">0831</text>
+            <text x="860" y="120" text-anchor="middle" font-size="12" font-weight="700" fill="#eaf6ff">NPI 重构</text>
+            <text x="860" y="172" text-anchor="middle" font-size="11" fill="#a9cdf2">355 · G0-G7 + 4 升级节点</text>
+            <text x="860" y="190" text-anchor="middle" font-size="10" fill="#7ba7d4">执行规划 · 已落地</text>
+          </g>
+          <!-- 0907 (新增 · 当前) -->
+          <g>
+            <circle cx="1010" cy="110" r="44" fill="rgba(8,28,56,0.95)" stroke="#5eead4" stroke-width="3" filter="url(#evoGlow)"/>
+            <circle cx="1010" cy="110" r="50" fill="none" stroke="#5eead4" stroke-width="1.5" opacity="0.5">
+              <animate attributeName="r" values="50;62;50" dur="2.6s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.55;0;0.55" dur="2.6s" repeatCount="indefinite"/>
+            </circle>
+            <text x="1010" y="100" text-anchor="middle" font-size="11" font-weight="700" fill="#5eead4" letter-spacing="1">0907</text>
+            <text x="1010" y="120" text-anchor="middle" font-size="12" font-weight="700" fill="#eaf6ff">智能协同</text>
+            <text x="1010" y="172" text-anchor="middle" font-size="11" fill="#a9cdf2">智能履历 + 评分 + AI 协同</text>
+            <text x="1010" y="190" text-anchor="middle" font-size="10" fill="#5eead4">本页追加 ★ 当前</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ===== 2. 五段履历（按时间顺序） ===== -->
+    <div class="panel">
+      <h2 class="sec"><span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg></span>六段履历 · 关键产物与共识要点</h2>
+      <p class="lead">每一段记录「<strong style="color:#7dd3fc">产出物</strong> · <strong style="color:#7dd3fc">核心共识</strong> · <strong style="color:#fcd34d">与下一步的衔接</strong>」三件事。读完全部五段即可掌握本项目自启动以来的全部关键决策点。</p>
+
+      <!-- ============ 0805 ============ -->
+      <div style="position:relative;padding:18px 18px 18px 86px;margin-top:14px;background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.25);border-radius:14px;">
+        <div style="position:absolute;left:18px;top:18px;width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#22d3ee,#0ea5e9);color:#04101f;display:grid;place-items:center;font-weight:800;font-size:13px;line-height:1.15;text-align:center;box-shadow:0 0 16px rgba(34,211,238,0.35);">08<br/>05</div>
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:#22d3ee;letter-spacing:2px;font-weight:700;">MILESTONE · 01</span>
+          <h3 style="margin:0;font-size:18px;font-weight:800;color:#eaf6ff;">QSA 第一阶段 · 流程梳理与防呆建设指导书（详细版）</h3>
+        </div>
+        <div style="margin-top:6px;font-size:12px;color:#a9cdf2;">📄 产出物：<code style="background:rgba(56,189,248,0.12);padding:2px 8px;border-radius:6px;color:#7dd3fc;">QSA第一阶段流程梳理与防呆建设指导书(详细版)(0805).docx</code></div>
+        <ul style="margin:10px 0 0;padding-left:18px;line-height:1.85;color:#cfe6ff;font-size:13.5px;">
+          <li>提出 <strong style="color:#7dd3fc">S/A/B 三级防呆</strong>：S=全系统自动零干预 / A=AI+人工佐证 / B=IT 承载；防呆率=(S+A+B)/总节点。</li>
+          <li>确立 <strong style="color:#7dd3fc">智能体五能力运行环</strong>（感知→规划→工具→记忆→反思）+ L0–L4 成熟度分级；锚定整体 L2、任一能力达 L3 即"部分跃迁"。</li>
+          <li>提出 <strong style="color:#7dd3fc">双路径</strong>（问题→工具 / 工具→问题）+ <strong style="color:#7dd3fc">三转变</strong>（静态→动态、应审→日常、合规→诊断）。</li>
+          <li>立下 EC 标杆：结构 EC 54%→92%、总装 EC 50%→81%；近 28 个月漏执行 18 起，是改进出发点。</li>
+        </ul>
+        <div style="margin-top:10px;padding:10px 14px;background:rgba(34,211,238,0.08);border-left:3px solid #22d3ee;border-radius:0 8px 8px 0;font-size:12.5px;color:#a9cdf2;">
+          <strong style="color:#22d3ee">→ 衔接下一步：</strong>"智能体成熟度到底要到什么程度才算达标？"——这一问题直接催生了 0810 的分水岭评价表。
+        </div>
+      </div>
+
+      <!-- ============ 0810 ============ -->
+      <div style="position:relative;padding:18px 18px 18px 86px;margin-top:14px;background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.25);border-radius:14px;">
+        <div style="position:absolute;left:18px;top:18px;width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px;line-height:1.15;text-align:center;box-shadow:0 0 16px rgba(59,130,246,0.35);">08<br/>10</div>
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:#60a5fa;letter-spacing:2px;font-weight:700;">MILESTONE · 02</span>
+          <h3 style="margin:0;font-size:18px;font-weight:800;color:#eaf6ff;">阶段 2→3 分水岭评价表（通俗版）</h3>
+        </div>
+        <div style="margin-top:6px;font-size:12px;color:#a9cdf2;">📊 产出物：<code style="background:rgba(56,189,248,0.12);padding:2px 8px;border-radius:6px;color:#7dd3fc;">阶段2~3分水岭评价表_通俗版（0810）.xlsx</code></div>
+        <ul style="margin:10px 0 0;padding-left:18px;line-height:1.85;color:#cfe6ff;font-size:13.5px;">
+          <li>建立 <strong style="color:#7dd3fc">10 项 × 加权打分</strong>（满分 100）：目标承接、感知/分流/编排/自闭环、权责/审计、QCD 改善、知识复利；<strong style="color:#fcd34d">≥80 分 = 跨过阶段 3 分水岭</strong>。</li>
+          <li>明确"阶段 2=听指令干活的工具，阶段 3=能扛业务责任的搭档"——把抽象成熟度变成可量化打分。</li>
+          <li>强调"<strong style="color:#7dd3fc">三条铁律</strong>"：评估需工艺+IT/AI+一线三方共评、每季度复评、勾选列定位现状与目标差距。</li>
+          <li>口径衔接：L3 ↔ 防呆 S 级 / L2 ↔ A 级 / L0–L1 ↔ B 级；与 QSA 指导书形成"两把尺"互相印证。</li>
+        </ul>
+        <div style="margin-top:10px;padding:10px 14px;background:rgba(59,130,246,0.08);border-left:3px solid #3b82f6;border-radius:0 8px 8px 0;font-size:12.5px;color:#a9cdf2;">
+          <strong style="color:#60a5fa">→ 衔接下一步：</strong>"评分表背后到底要走哪条路径才能拿到 80 分？"——团队需要一套可对内对外讲清的路径口径。
+        </div>
+      </div>
+
+      <!-- ============ 0812 ============ -->
+      <div style="position:relative;padding:18px 18px 18px 86px;margin-top:14px;background:rgba(129,140,248,0.06);border:1px solid rgba(129,140,248,0.28);border-radius:14px;">
+        <div style="position:absolute;left:18px;top:18px;width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#818cf8,#4f46e5);color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px;line-height:1.15;text-align:center;box-shadow:0 0 16px rgba(129,140,248,0.35);">08<br/>12</div>
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:#a5b4fc;letter-spacing:2px;font-weight:700;">MILESTONE · 03</span>
+          <h3 style="margin:0;font-size:18px;font-weight:800;color:#eaf6ff;">AI 驱动流程重构 · 从「加 AI 提效」迈向「流程重生」</h3>
+        </div>
+        <div style="margin-top:6px;font-size:12px;color:#a9cdf2;">🖼 产出物：<code style="background:rgba(56,189,248,0.12);padding:2px 8px;border-radius:6px;color:#7dd3fc;">AI驱动流程重构：从"加AI提效"迈向"流程重生"0812.jpg</code>（会议核心观点）</div>
+        <ul style="margin:10px 0 0;padding-left:18px;line-height:1.85;color:#cfe6ff;font-size:13.5px;">
+          <li><strong style="color:#a5b4fc">两种 AI 路径</strong>首次对内统一：<strong style="color:#7dd3fc">+AI</strong>=原有流程骨架不变，叠加 AI 能力快速见效；<strong style="color:#fcd34d">AI+</strong>=以智能体重写流程，节点/职责/协同被改写。</li>
+          <li>三大重构原则——<strong style="color:#a5b4fc">风险前移</strong>（核心从事后转事前）/ <strong style="color:#a5b4fc">流程减法</strong>（删冗余规则、破信息孤岛）/ <strong style="color:#a5b4fc">物理闭环</strong>（已闭环是必要信息、避免假闭环）。</li>
+          <li>决策链统一为四步：<strong style="color:#a5b4fc">识别痛点 → 概念界定 → 锚点选择 → 组织落实</strong>；典型锚点 = "以 BNPI（部门导入）为锚点"。</li>
+          <li>后续行动锚定：明日起正式立项"六合一项目组"；9 月前汇报会汇报自评打分；其他项目走 "D/A/I 优化，六合一为模板"路径。</li>
+        </ul>
+        <div style="margin-top:10px;padding:10px 14px;background:rgba(129,140,248,0.08);border-left:3px solid #818cf8;border-radius:0 8px 8px 0;font-size:12.5px;color:#a9cdf2;">
+          <strong style="color:#a5b4fc">→ 衔接下一步：</strong>统一了路径口径后，必须用"真实业务案例"验证——0821 的四合一案例就是为此而生。
+        </div>
+      </div>
+
+      <!-- ============ 0821 ============ -->
+      <div style="position:relative;padding:18px 18px 18px 86px;margin-top:14px;background:rgba(192,132,252,0.06);border:1px solid rgba(192,132,252,0.28);border-radius:14px;">
+        <div style="position:absolute;left:18px;top:18px;width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#c084fc,#7c3aed);color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px;line-height:1.15;text-align:center;box-shadow:0 0 16px rgba(192,132,252,0.35);">08<br/>21</div>
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:#d8b4fe;letter-spacing:2px;font-weight:700;">MILESTONE · 04</span>
+          <h3 style="margin:0;font-size:18px;font-weight:800;color:#eaf6ff;">四合一项目 · AI+「重生 & 重构」标准示范案例</h3>
+        </div>
+        <div style="margin-top:6px;font-size:12px;color:#a9cdf2;">📄 产出物：<code style="background:rgba(56,189,248,0.12);padding:2px 8px;border-radius:6px;color:#7dd3fc;">四合一项目AI+重生重构案例0821.txt</code></div>
+        <ul style="margin:10px 0 0;padding-left:18px;line-height:1.85;color:#cfe6ff;font-size:13.5px;">
+          <li><strong style="color:#d8b4fe">定义统一</strong>：AI 重生=流程骨架/权责/作业方式不变，AI 嵌入环节赋能（原地升级）；AI 重构=打破原流程逻辑与权责机制，建立全新业务范式（体系再造）。</li>
+          <li><strong style="color:#d8b4fe">示范案例 1 · 重生</strong>（WICG003 新物料认证·资料审核 + 风险预判）：流程/审批/职责<strong>一丝不改</strong>，把"资料核对、参数比对、历史风险检索、验证项提示"全部交给 AI 智能体自动完成，人只做复核与终审。</li>
+          <li><strong style="color:#d8b4fe">示范案例 2 · 重构</strong>（WIPZ001 制造停线·闭环督办 + 复盘迭代）：彻底推翻"出事再处理、人工推着走"的旧机制——AI 前置预警→自动定级→智能派责→自动督办→逾期锁控→自动沉淀复盘→反向更新标准基线。</li>
+          <li>启发口径：所有"<strong style="color:#fcd34d">人工核对/检索/比对</strong>"环节可重生；所有"<strong style="color:#fcd34d">被动处置/人工串联/无法自我迭代</strong>"流程可重构。</li>
+        </ul>
+        <div style="margin-top:10px;padding:10px 14px;background:rgba(192,132,252,0.08);border-left:3px solid #c084fc;border-radius:0 8px 8px 0;font-size:12.5px;color:#a9cdf2;">
+          <strong style="color:#d8b4fe">→ 衔接下一步：</strong>有了示范案例的脚手架，下一步必须把"<strong style="color:#fcd34d">真正落地的第一个项目</strong>"摆上日程——NPI 重构执行规划因此出炉。
+        </div>
+      </div>
+
+      <!-- ============ 0831 ============ -->
+      <div style="position:relative;padding:18px 18px 18px 86px;margin-top:14px;background:rgba(52,211,153,0.07);border:1.5px solid rgba(52,211,153,0.40);border-radius:14px;box-shadow:0 0 22px rgba(52,211,153,0.18);">
+        <div style="position:absolute;left:18px;top:18px;width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#34d399,#059669);color:#04101f;display:grid;place-items:center;font-weight:800;font-size:13px;line-height:1.15;text-align:center;box-shadow:0 0 16px rgba(52,211,153,0.45);">08<br/>31</div>
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:#34d399;letter-spacing:2px;font-weight:700;">MILESTONE · 05 ✓ 已落地</span>
+          <h3 style="margin:0;font-size:18px;font-weight:800;color:#eaf6ff;">"355"框架下的 NPI 核心专项重构执行规划</h3>
+        </div>
+        <div style="margin-top:6px;font-size:12px;color:#a9cdf2;">📄 产出物：<code style="background:rgba(56,189,248,0.12);padding:2px 8px;border-radius:6px;color:#7dd3fc;">355_npi(0831).html</code>（本页）</div>
+        <ul style="margin:10px 0 0;padding-left:18px;line-height:1.85;color:#cfe6ff;font-size:13.5px;">
+          <li><strong style="color:#34d399">3 → 5 → 5 → ↺3 闭环</strong>：3 提供共同语言和控制底座 → 5 个流程明确 NPI 端到端业务对象 → 5 步循环逐模块反复改造和验证 → 结果回写"3"，更新节点/目标/履历进入下一轮。</li>
+          <li><strong style="color:#34d399">NPI 主线 G0–G7</strong>：新增 <strong style="color:#7dd3fc">SIP 自动转换</strong>、<strong style="color:#7dd3fc">003 资料转换</strong>、<strong style="color:#7dd3fc">006 MRR</strong>、<strong style="color:#7dd3fc">009 样机试制</strong> 四个升级节点；剔除 014 小批量试产 → 主线由 13 步瘦身到 <strong style="color:#34d399">7 步主流程 + 4 升级节点</strong>。</li>
+          <li>智能体定位：<strong style="color:#34d399">整体 L2 任务型自治 + 部分能力 L3</strong>；优先在感知/记忆两条线上做"部分跃迁"，不追求全 L3 自主。</li>
+          <li>防呆方案：S 级 PEBS 系统锁定（未执行则关联工序锁定）+ A 级 AI 校验 + B 级 IT 承载；评估点 = <strong style="color:#34d399">10/17 过程验收</strong>（不是上线）。</li>
+        </ul>
+        <div style="margin-top:10px;padding:10px 14px;background:rgba(52,211,153,0.10);border-left:3px solid #34d399;border-radius:0 8px 8px 0;font-size:12.5px;color:#a9cdf2;">
+          <strong style="color:#34d399">→ 衔接下一步：</strong>0831 落地"NPI 控制塔"机制后，0907 阶段共识将其升级为"履历 + 评分 + AI 协同"三件套，并明确本周立即行动（V3 PCS 2506 接入 / 流程节点细化）。
+        </div>
+      </div>
+
+      <!-- ============ 0907 ============ -->
+      <div style="position:relative;padding:18px 18px 18px 86px;margin-top:14px;background:rgba(45,212,191,0.08);border:1.5px solid rgba(45,212,191,0.45);border-radius:14px;box-shadow:0 0 22px rgba(45,212,191,0.18);">
+        <div style="position:absolute;left:18px;top:18px;width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#5eead4,#2dd4bf);color:#042f2e;display:grid;place-items:center;font-weight:800;font-size:13px;line-height:1.15;text-align:center;box-shadow:0 0 16px rgba(45,212,191,0.45);">09<br/>07</div>
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:#5eead4;letter-spacing:2px;font-weight:700;">MILESTONE · 06 ★ 当前</span>
+          <h3 style="margin:0;font-size:18px;font-weight:800;color:#eaf6ff;">智能履历与 AI 协同新阶段</h3>
+        </div>
+        <div style="margin-top:6px;font-size:12px;color:#a9cdf2;">📋 产出物：<code style="background:rgba(56,189,248,0.12);padding:2px 8px;border-radius:6px;color:#7dd3fc;">0907 阶段共识（智能履历与 AI 协同新阶段）</code></div>
+        <ul style="margin:10px 0 0;padding-left:18px;line-height:1.85;color:#cfe6ff;font-size:13.5px;">
+          <li><strong style="color:#5eead4">核心机制确立</strong>：① 项目履历体系——记录所有会议/决策/变更/责任人，形成全生命周期可追溯档案，服务管理透明化、团队自审与知识沉淀；② 数字化<strong style="color:#7dd3fc">目标评分</strong>——每次会议后评估项目与最终目标（如 AI 集成）的距离，量化进度、识别欠效工作；③ <strong style="color:#7dd3fc">风险预警</strong>——依据工艺流（非产品系列）自动关联历史问题库（2000+ 条）做潜在风险提示。</li>
+          <li><strong style="color:#5eead4">功能优化重点</strong>：① 流程可视化·节点细化——将完整生产流程嵌入系统、显示前历处具体节点（生产/报废），节拍细化至每个操作步骤的周周时间；② <strong style="color:#7dd3fc">SIP/SOP 重叠检查</strong>——审核文档对 72 个质控要素的覆盖度，系统对比并强制说明原因，解决人工编写耗时易漏；③ 权限与视图分级——员工看个人待办/失分点、主管看属下编码、管理员更高权限 + 总体驾驶舱（需数据脱敏）。</li>
+          <li><strong style="color:#5eead4">行动方向与规划</strong>：🔴 紧急（一周内）——督促龚雨婷将 V3 PCS（2506）纳入系统管理避免监管缺失 + 一周至十天内完成生产流程节点细化；🟡 近期（10 月）——制作中汇报视频，用可视化履历变化展示成果与团队努力；🟢 长期（AI 集成）——先夯实数据基础、不做过度复杂功能，未来构建极简前端、剥离冗余，为接入 AI Agent 做准备，项目履历沉淀转为 AI 训练数据。</li>
+          <li><strong style="color:#5eead4">定位升级</strong>：把质量管理从「记录系统」升级为「智能基因库」——0831 的"NPI 控制塔"升级为「<strong style="color:#fcd34d">履历 + 评分 + AI 协同</strong>」三件套，为 10/17 评审新增"数据基础设施齐备性"维度。</li>
+        </ul>
+        <div style="margin-top:10px;padding:10px 14px;background:rgba(45,212,191,0.12);border-left:3px solid #5eead4;border-radius:0 8px 8px 0;font-size:12.5px;color:#a9cdf2;">
+          <strong style="color:#5eead4">→ 当前状态：</strong>0907 阶段共识已明确"数据沉淀优先"路线与本周立即行动项；本页履历同步追加至第 6 段，后续随 10/17 过程验收、W7–W26 验证期持续回写。
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 3. 演进洞察 ===== -->
+    <div class="panel">
+      <h2 class="sec"><span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></span>演进洞察 · 五段之间的内在逻辑</h2>
+      <p class="lead">把这六段连起来看，会发现一条非常清晰的"认知→方法→工具→示范→落地→固化"链条——每一段都是上一段"自然长出来的下一步"，而不是孤立事件。</p>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:10px;">
+        <div style="background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,248,0.22);border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:#22d3ee;font-weight:700;letter-spacing:1px;">STEP 1 · 认知</div>
+          <div style="margin-top:4px;font-size:14px;font-weight:700;color:#eaf6ff;">QSA 打法</div>
+          <div style="margin-top:6px;font-size:12.5px;color:#a9cdf2;line-height:1.7;">把"成熟度"这件事拆成五能力 + L0–L4 + S/A/B 防呆，建立了<strong style="color:#7dd3fc">共同语言</strong>。</div>
+        </div>
+        <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,248,0.22);border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:#60a5fa;font-weight:700;letter-spacing:1px;">STEP 2 · 量化</div>
+          <div style="margin-top:4px;font-size:14px;font-weight:700;color:#eaf6ff;">分水岭评价</div>
+          <div style="margin-top:6px;font-size:12.5px;color:#a9cdf2;line-height:1.7;">把抽象成熟度变成<strong style="color:#7dd3fc">10 项打分 + ≥80 分及格线</strong>，避免争论"够不够 L3"。</div>
+        </div>
+        <div style="background:rgba(129,140,248,0.06);border:1px solid rgba(129,140,248,0.22);border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:#a5b4fc;font-weight:700;letter-spacing:1px;">STEP 3 · 路径</div>
+          <div style="margin-top:4px;font-size:14px;font-weight:700;color:#eaf6ff;">+AI vs AI+</div>
+          <div style="margin-top:6px;font-size:12.5px;color:#a9cdf2;line-height:1.7;">讲清"走哪条路"——<strong style="color:#7dd3fc">流程不动就用 +AI</strong>，<strong style="color:#fcd34d">流程要改就用 AI+</strong>，不再混着说。</div>
+        </div>
+        <div style="background:rgba(192,132,252,0.06);border:1px solid rgba(192,132,252,0.22);border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:#d8b4fe;font-weight:700;letter-spacing:1px;">STEP 4 · 示范</div>
+          <div style="margin-top:4px;font-size:14px;font-weight:700;color:#eaf6ff;">重生 & 重构</div>
+          <div style="margin-top:6px;font-size:12.5px;color:#a9cdf2;line-height:1.7;">用真实业务环节（认证/停线）做<strong style="color:#7dd3fc">两套标准示范</strong>，让团队对号入座。</div>
+        </div>
+        <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.30);border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:#34d399;font-weight:700;letter-spacing:1px;">STEP 5 · 落地</div>
+          <div style="margin-top:4px;font-size:14px;font-weight:700;color:#eaf6ff;">NPI 重构</div>
+          <div style="margin-top:6px;font-size:12.5px;color:#a9cdf2;line-height:1.7;">在<strong style="color:#34d399">最关键的 NPI 流程</strong>上把上述全部要素一次性跑通，进入真实验证期。</div>
+        </div>
+        <div style="background:rgba(45,212,191,0.08);border:1px solid rgba(45,212,191,0.32);border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:#5eead4;font-weight:700;letter-spacing:1px;">STEP 6 · 固化</div>
+          <div style="margin-top:4px;font-size:14px;font-weight:700;color:#eaf6ff;">纪要固化 · AI 协同</div>
+          <div style="margin-top:6px;font-size:12.5px;color:#a9cdf2;line-height:1.7;">用<strong style="color:#5eead4">项目履历 + 数字化评分 + 历史问题库</strong>把机制固化，向极简 AI 协同演进。</div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;padding:14px 16px;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.30);border-radius:12px;font-size:13.5px;line-height:1.85;color:#cfe6ff;">
+        <strong style="color:#7dd3fc">一句话总结这条演进路径：</strong>先把"<strong style="color:#fcd34d">怎么评</strong>"立起来（0805+0810）→ 再把"<strong style="color:#fcd34d">走哪条路</strong>"讲清楚（0812）→ 再用"<strong style="color:#fcd34d">真实案例</strong>"把脚手架搭好（0821）→ 把"<strong style="color:#fcd34d">第一个项目</strong>"跑起来（0831）→ 最后用"<strong style="color:#fcd34d">阶段共识</strong>"把机制固化、向 AI 协同演进（0907）。<br/>
+        <strong style="color:#fcd34d">核心不变的三件事：</strong>① 共识先行（不打无准备的仗）② 量化可评（不靠感觉）③ 真实业务承载（不搞空中楼阁）。
+      </div>
+    </div>
+
+    <!-- ===== 4. 未来演进预期 ===== -->
+    <div class="panel">
+      <h2 class="sec"><span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>下一步 · 履历还会怎么长</h2>
+      <p class="lead">按"355"循环，每完成一次五步改造就回写一次"3"。以下三项是<strong style="color:#fcd34d">下一次回写履历</strong>的关键事件，每完成一项会在本页追加一个时间节点。</p>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:10px;">
+        <div style="background:rgba(56,189,248,0.06);border:1px dashed rgba(56,189,248,0.35);border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:#7dd3fc;font-weight:700;letter-spacing:1px;">待续 · NODE 06</div>
+          <div style="margin-top:4px;font-size:14px;font-weight:700;color:#eaf6ff;">10/17 NPI 过程验收</div>
+          <div style="margin-top:6px;font-size:12.5px;color:#a9cdf2;line-height:1.7;">首次跑通 4 个升级节点 + S/A/B 防呆的实证；评审节点而非"上线"判定。</div>
+        </div>
+        <div style="background:rgba(56,189,248,0.06);border:1px dashed rgba(56,189,248,0.35);border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:#7dd3fc;font-weight:700;letter-spacing:1px;">待续 · NODE 07</div>
+          <div style="margin-top:4px;font-size:14px;font-weight:700;color:#eaf6ff;">W7–W26 真实验证期</div>
+          <div style="margin-top:6px;font-size:12.5px;color:#a9cdf2;line-height:1.7;">10/17 → 2027/2/22 持续沉淀数据；按"3→5→5→↺3"循环积累节点 / 目标 / 履历的迭代。</div>
+        </div>
+        <div style="background:rgba(56,189,248,0.06);border:1px dashed rgba(56,189,248,0.35);border-radius:12px;padding:14px;">
+          <div style="font-size:11px;color:#7dd3fc;font-weight:700;letter-spacing:1px;">待续 · NODE 08</div>
+          <div style="margin-top:4px;font-size:14px;font-weight:700;color:#eaf6ff;">横向扩展 · 六合一项目</div>
+          <div style="margin-top:6px;font-size:12.5px;color:#a9cdf2;line-height:1.7;">用 NPI 的方法论复制到 IQC / EC / 新物料认证 / 制造停线等其余 4 个流程。</div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div class="footnote">“355”框架下的NPI核心专项重构执行规划 · V1.0 · 科技蓝主题 · 原生 HTML 单文件</div>
+
+</div>
+
+<script>
+  (function(){
+    var btns = document.querySelectorAll('.tab-btn');
+    var tabs = {
+      overview: document.getElementById('tab-overview'),
+      npi: document.getElementById('tab-npi'),
+      roadmap: document.getElementById('tab-roadmap'),
+      governance: document.getElementById('tab-governance'),
+      sip: document.getElementById('tab-sip'),
+      evolve: document.getElementById('tab-evolve')
+    };
+    btns.forEach(function(b){
+      b.addEventListener('click', function(){
+        var id = b.getAttribute('data-tab');
+        btns.forEach(function(x){ x.classList.toggle('active', x === b); });
+        Object.keys(tabs).forEach(function(k){
+          tabs[k].style.display = (k === id) ? '' : 'none';
+        });
+        window.scrollTo({top:0, behavior:'smooth'});
+      });
+    });
+  })();
+</script>
+
+  <!-- ===================== 注塑材料季度合格报告 弹窗（内联，替代外部文件） ===================== -->
+  <div id="nylonReportModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" onclick="if(event.target===this){this.classList.add('hidden');}">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex items-center gap-3">
+        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        <div>
+          <h3 class="font-bold text-base leading-tight">注塑材料检验报告</h3>
+          <p class="text-xs opacity-85">季度合格报告 · 系统自动匹配</p>
+        </div>
+        <button type="button" onclick="document.getElementById('nylonReportModal').classList.add('hidden')" class="ml-auto text-white/80 hover:text-white text-2xl leading-none font-light">&times;</button>
+      </div>
+      <div class="p-6">
+        <div class="inline-flex items-center gap-2 bg-green-50 text-green-700 border border-green-200 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+          <span class="w-2 h-2 rounded-full bg-green-500"></span>已自动匹配并判定合格
+        </div>
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-3 text-sm leading-relaxed text-slate-800">
+          <div class="flex gap-2"><span class="text-blue-600 font-bold w-20 flex-shrink-0">材料</span><span>注塑材料：尼龙66（报告有效期内一年）</span></div>
+          <div class="flex gap-2"><span class="text-blue-600 font-bold w-20 flex-shrink-0">供应商</span><span>XX</span></div>
+          <div class="flex gap-2"><span class="text-blue-600 font-bold w-20 flex-shrink-0">适用产品</span><span>21100087端子座</span></div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-dashed border-slate-200 text-xs text-slate-500 flex justify-between flex-wrap gap-2">
+          <span>报告周期：季度（每季一次）</span>
+          <span>匹配依据：厂家 + 编码</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
