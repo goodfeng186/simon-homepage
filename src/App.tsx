@@ -179,12 +179,12 @@ export default function App() {
         <TeamResearchPage lang={lang} onBack={() => navigate('home')} />
       ) : (
         <main>
-          {/* 01 · HERO: 智能扫地机主视觉 + 「质量扫地僧」品牌与核心思想 */}
+          {/* 01 · HERO: 「质量扫地僧」禅意与制造主视觉 */}
           <section className="relative min-h-[78vh] flex items-end bg-slate-950 text-white overflow-hidden">
             <img
-              src="./photos/hero-sweeper.jpg"
-              alt="质量扫地僧 · 智能扫地机"
-              className="absolute inset-0 w-full h-full object-cover opacity-70"
+              src="./photos/hero-monk.jpg"
+              alt="质量扫地僧 · 渡己渡人渡产品"
+              className="absolute inset-0 w-full h-full object-cover opacity-80"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-[#060911] via-[#060911]/80 to-[#060911]/25" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#060911] via-transparent to-[#060911]/30" />
@@ -549,6 +549,15 @@ export default function App() {
                     ? '围绕 8D 实战、质量管理深度思考与质量信仰建立，把专业翻译成大白话，帮助更多制造一线质量人系统化改善。'
                     : 'Sharing practical 8D, deep quality thinking, and quality mindset to help frontline engineers improve.'}
                 </p>
+
+                <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 shadow-lg">
+                  <img
+                    src="./photos/saodiseng-poster.jpg"
+                    alt="质量扫地僧 · 渡己渡人渡产品"
+                    loading="lazy"
+                    className="w-full h-auto object-cover"
+                  />
+                </div>
 
                 <div className="divide-y divide-slate-200 dark:divide-white/10">
                   {CREATOR_PLATFORMS.map((p) => (
