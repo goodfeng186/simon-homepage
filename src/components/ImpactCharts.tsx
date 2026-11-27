@@ -101,7 +101,7 @@ export function ImpactCharts({ lang }: ImpactChartsProps) {
               <div
                 className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold ${
                   i === 4
-                    ? 'bg-cyan-500 text-slate-950'
+                    ? 'theme-accent-bg'
                     : 'bg-slate-200/80 dark:bg-white/10 text-slate-800 dark:text-slate-100'
                 }`}
               >
@@ -161,16 +161,19 @@ export function ImpactCharts({ lang }: ImpactChartsProps) {
 
                 {/* After Track */}
                 <div className="flex items-center gap-3">
-                  <span className="w-12 text-[11px] font-mono text-cyan-600 dark:text-cyan-400 shrink-0">
+                  <span className="w-12 text-[11px] font-mono theme-accent-text shrink-0">
                     {lang === 'zh' ? '改善后' : 'After'}
                   </span>
                   <div className="flex-1 h-3 rounded-full bg-slate-200/70 dark:bg-white/5 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
-                      style={{ width: `${row.afterPct}%` }}
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${row.afterPct}%`,
+                        background: 'linear-gradient(90deg, var(--accent), var(--accent-bright))',
+                      }}
                     />
                   </div>
-                  <span className="w-16 text-right text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400 shrink-0">
+                  <span className="w-16 text-right text-xs font-mono font-bold theme-accent-text shrink-0">
                     {row.afterVal}
                   </span>
                 </div>
@@ -216,8 +219,8 @@ export function ImpactCharts({ lang }: ImpactChartsProps) {
             })}
             <polygon
               points={radarPolygon}
-              fill="rgba(6, 182, 212, 0.22)"
-              stroke="#06b6d4"
+              fill="var(--accent-soft)"
+              stroke="var(--accent-bright)"
               strokeWidth="2.2"
             />
             {RADAR_AXES.map((axis, i) => {
@@ -225,7 +228,7 @@ export function ImpactCharts({ lang }: ImpactChartsProps) {
               const lbl = getPoint(i, 1.24);
               return (
                 <g key={i}>
-                  <circle cx={dot.x} cy={dot.y} r="4" fill="#22d3ee" />
+                  <circle cx={dot.x} cy={dot.y} r="4" fill="var(--accent-bright)" />
                   <text
                     x={lbl.x}
                     y={lbl.y}

@@ -9,9 +9,7 @@ import {
   Mail,
   MapPin,
   Maximize2,
-  Moon,
   Play,
-  Sun,
   Users,
   X,
 } from 'lucide-react';
@@ -39,9 +37,18 @@ import {
   VisualShowcaseItem,
 } from './data/profile';
 
+export type ThemeMode = 'black' | 'blue' | 'orange' | 'light';
+
+const THEMES: { id: ThemeMode; label: { zh: string; en: string }; swatch: string }[] = [
+  { id: 'black', label: { zh: '科技黑', en: 'Tech Black' }, swatch: '#06b6d4' },
+  { id: 'blue', label: { zh: '科技蓝', en: 'Tech Blue' }, swatch: '#3b82f6' },
+  { id: 'orange', label: { zh: '工业橙', en: 'Safety Orange' }, swatch: '#f97316' },
+  { id: 'light', label: { zh: '极简白', en: 'Light' }, swatch: '#e2e8f0' },
+];
+
 export default function App() {
   const [lang, setLang] = useState<Lang>('zh');
-  const [dark, setDark] = useState(true);
+  const [theme, setTheme] = useState<ThemeMode>('black');
   const [route, setRoute] = useState<'home' | 'team'>(() =>
     window.location.hash === '#/team' ? 'team' : 'home'
   );
@@ -51,9 +58,10 @@ export default function App() {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (dark) root.classList.add('dark');
-    else root.classList.remove('dark');
-  }, [dark]);
+    root.setAttribute('data-theme', theme);
+    if (theme === 'light') root.classList.remove('dark');
+    else root.classList.add('dark');
+  }, [theme]);
 
   useEffect(() => {
     const onHashChange = () => {
@@ -86,9 +94,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#060911] dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen transition-colors duration-300">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/80 dark:bg-[#060911]/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-white/5">
+      <header className="sticky top-0 z-40 bg-white/80 dark:bg-black/65 backdrop-blur-xl border-b border-slate-200/60 dark:border-white/5">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
           <button
             onClick={() => navigate('home')}
@@ -141,13 +149,26 @@ export default function App() {
               <Globe className="w-3.5 h-3.5" />
               {lang === 'zh' ? 'EN' : '中文'}
             </button>
-            <button
-              onClick={() => setDark((prev) => !prev)}
-              className="p-2 rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors cursor-pointer"
-              aria-label="Toggle theme"
-            >
-              {dark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
-            </button>
+            <div className="flex items-center gap-1 p-1 rounded-full border border-slate-200 dark:border-white/10 bg-slate-100/80 dark:bg-white/5">
+              {THEMES.map((th) => (
+                <button
+                  key={th.id}
+                  onClick={() => setTheme(th.id)}
+                  title={t(th.label)}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
+                    theme === th.id
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span
+                    className="h-2.5 w-2.5 rounded-full border border-black/20 dark:border-white/20"
+                    style={{ backgroundColor: th.swatch }}
+                  />
+                  <span className="hidden lg:inline">{t(th.label)}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </header>
@@ -156,14 +177,15 @@ export default function App() {
         <TeamResearchPage lang={lang} onBack={() => navigate('home')} />
       ) : (
         <main>
-          {/* 01 · HERO: 明确「质量扫地僧」品牌与核心思想 */}
-          <section className="relative min-h-[76vh] flex items-end bg-slate-950 text-white overflow-hidden">
+          {/* 01 · HERO: 智能扫地机主视觉 + 「质量扫地僧」品牌与核心思想 */}
+          <section className="relative min-h-[78vh] flex items-end bg-slate-950 text-white overflow-hidden">
             <img
-              src="./photos/whiteboard-thinking.jpg"
-              alt="System Thinking"
-              className="absolute inset-0 w-full h-full object-cover opacity-35"
+              src="./photos/hero-sweeper.jpg"
+              alt="质量扫地僧 · 智能扫地机"
+              className="absolute inset-0 w-full h-full object-cover opacity-70"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#060911] via-[#060911]/75 to-[#060911]/40" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#060911] via-[#060911]/80 to-[#060911]/25" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#060911] via-transparent to-[#060911]/30" />
 
             <div className="relative z-10 max-w-6xl mx-auto w-full px-5 sm:px-8 py-16 sm:py-24 space-y-10">
               <div className="max-w-4xl space-y-5">
@@ -191,7 +213,7 @@ export default function App() {
               <div className="flex flex-wrap items-center gap-4 pt-6 border-t border-white/10">
                 <a
                   href="#stage"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-sm font-semibold transition-all"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full theme-accent-bg text-sm font-semibold transition-all hover:opacity-90"
                 >
                   {lang === 'zh' ? '查看系统逻辑与作品' : 'Explore Works & Logic'}
                   <ArrowDown className="w-4 h-4" />
@@ -354,7 +376,7 @@ export default function App() {
                     onClick={() => setActiveStageId(item.id)}
                     className={`px-4 py-2 rounded-full text-xs font-medium transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-slate-900 text-white dark:bg-cyan-500 dark:text-slate-950 shadow-md'
+                        ? 'theme-accent-bg shadow-md'
                         : 'bg-slate-200/70 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10'
                     }`}
                   >
