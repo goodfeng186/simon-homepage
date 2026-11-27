@@ -34,13 +34,13 @@ export const CAREER_COMPACT = [
   {
     period: '2025 – 至今',
     role: { zh: '数字化转型负责人', en: 'Head of Digital Transformation' },
-    scope: { zh: '某大型算力与通信设备制造企业', en: 'Leading Computing & Telecom Manufacturer' },
+    scope: { zh: '大型算力与通信设备制造集团', en: 'Computing & Telecom Hardware Group' },
     impact: { zh: '3 基地 200 线体质量中台 · 闭环率 0%→75%', en: '3-site 200-line platform · Closure 0%→75%' },
   },
   {
     period: '2018 – 2025',
     role: { zh: '资深 PQE 工程师', en: 'Senior PQE' },
-    scope: { zh: '头部通信供应链制造企业', en: 'Tier-1 Telecom Supply Chain' },
+    scope: { zh: '头部通信供应链制造集团', en: 'Tier-1 Telecom Supply Chain' },
     impact: { zh: 'NPI 导入 · 供应链质量 · 制程异常闭环', en: 'NPI Launch · Supplier Quality · Loop Closure' },
   },
   {
@@ -144,9 +144,9 @@ export const LIVE_SYSTEMS = [
 ];
 
 export const CREATOR_PLATFORMS = [
-  { name: '抖音', stat: '8,894 粉', sub: '《质量管理深度思考》101.5 万播放' },
-  { name: '小红书', stat: '1,283 粉', sub: '2,810 赞藏 · 实战方法拆解' },
-  { name: '视频号', stat: '821 关注', sub: '65 个原创 · 3 分钟落地干货' },
+  { id: 'douyin' as const, name: '抖音 Douyin', stat: '8,894 粉', sub: '《质量管理深度思考》101.5 万播放' },
+  { id: 'xhs' as const, name: '小红书', stat: '1,283 粉', sub: '2,810 赞藏 · 实战方法拆解' },
+  { id: 'wechat' as const, name: '微信视频号', stat: '821 关注', sub: '65 个原创 · 3 分钟落地干货' },
 ];
 
 export const PHOTO_WALL = [
@@ -159,8 +159,20 @@ export const PHOTO_WALL = [
     caption: { zh: 'AI 架构师吴嘉亮技术分享现场', en: 'Technical Deep-Dive with AI Architect Paul Wu' },
   },
   {
+    src: './photos/paul-session-2.jpg',
+    caption: { zh: '智能体系统架构研讨', en: 'Multi-Agent Architecture Workshop' },
+  },
+  {
+    src: './photos/indoor-workshop.jpg',
+    caption: { zh: '产线数字化方案深度对焦', en: 'Shop-Floor Digitalization Alignment' },
+  },
+  {
     src: './photos/office-team.jpg',
     caption: { zh: '东莞 · 深圳一线调研研讨', en: 'Dongguan & Shenzhen Fieldwork' },
+  },
+  {
+    src: './photos/team-thumbsup.jpg',
+    caption: { zh: '阶段性里程碑团队合影', en: 'Milestone Team Photo' },
   },
   {
     src: './photos/team-dinner.jpg',

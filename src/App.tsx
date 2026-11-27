@@ -17,6 +17,15 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
+import {
+  AvicLogo,
+  DouyinIcon,
+  FoxconnLogo,
+  LuxshareLogo,
+  PhilipsLogo,
+  WeChatChannelsIcon,
+  XiaohongshuIcon,
+} from './components/BrandLogos';
 import { TeamResearchPage } from './components/TeamResearchPage';
 import {
   CAREER_COMPACT,
@@ -62,6 +71,12 @@ export default function App() {
   const t = (obj: { zh: string; en: string }) => obj[lang];
   const featuredVisuals = VISUAL_SHOWCASES.filter((v) => v.featured);
   const secondaryVisuals = VISUAL_SHOWCASES.filter((v) => !v.featured);
+
+  const renderPlatformIcon = (id: 'douyin' | 'xhs' | 'wechat') => {
+    if (id === 'douyin') return <DouyinIcon className="w-9 h-9 shrink-0" />;
+    if (id === 'xhs') return <XiaohongshuIcon className="w-9 h-9 shrink-0" />;
+    return <WeChatChannelsIcon className="w-9 h-9 shrink-0" />;
+  };
 
   return (
     <div className="min-h-screen bg-grid-pattern relative overflow-x-clip">
@@ -122,15 +137,15 @@ export default function App() {
       {route === 'team' ? (
         <TeamResearchPage lang={lang} onBack={() => navigate('home')} />
       ) : (
-        <main className="max-w-7xl mx-auto px-4 sm:px-8 py-10 sm:py-16 space-y-24 sm:space-y-28">
+        <main className="max-w-7xl mx-auto px-4 sm:px-8 py-10 sm:py-16 space-y-20 sm:space-y-24">
           {/* 1. HERO: 大格局、大视觉、少字直击重点 */}
           <section className="relative rounded-[2rem] overflow-hidden border border-slate-200/80 dark:border-slate-800/90 bg-slate-950 text-white shadow-2xl">
             <img
               src="./photos/whiteboard-thinking.jpg"
               alt="System Thinking"
-              className="absolute inset-0 w-full h-full object-cover opacity-25 scale-105"
+              className="absolute inset-0 w-full h-full object-cover opacity-30 scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/60" />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/55" />
 
             <div className="relative z-10 p-8 sm:p-14 lg:p-16 grid lg:grid-cols-12 gap-10 items-end">
               <div className="lg:col-span-8 space-y-6">
@@ -191,6 +206,21 @@ export default function App() {
                     <div className="text-xs text-slate-300 mt-1">{t(m.label)}</div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </section>
+
+          {/* 1.5 ENTERPRISE GROUP LOGOS STRIP */}
+          <section className="rounded-3xl px-6 py-5 border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/55 backdrop-blur-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="text-xs font-mono uppercase tracking-widest text-slate-500 dark:text-slate-400 shrink-0">
+                {lang === 'zh' ? '23 年产业历练与服务版图' : '23-YEAR INDUSTRY FOOTPRINT'}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-10 items-center text-slate-800 dark:text-slate-100">
+                <AvicLogo className="h-9 w-auto opacity-90 hover:opacity-100 transition-opacity" />
+                <LuxshareLogo className="h-9 w-auto opacity-90 hover:opacity-100 transition-opacity" />
+                <PhilipsLogo className="h-9 w-auto opacity-90 hover:opacity-100 transition-opacity" />
+                <FoxconnLogo className="h-9 w-auto opacity-90 hover:opacity-100 transition-opacity" />
               </div>
             </div>
           </section>
@@ -290,7 +320,7 @@ export default function App() {
             </div>
           </section>
 
-          {/* 3. LIVE SYSTEMS & CREATOR: 精简直达 */}
+          {/* 3. LIVE SYSTEMS & CREATOR WITH PLATFORM ICONS */}
           <section className="grid lg:grid-cols-12 gap-6 items-stretch">
             {/* Systems */}
             <div className="lg:col-span-7 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/65 space-y-5">
@@ -328,7 +358,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Creator Matrix */}
+            {/* Creator Matrix with Brand Icons */}
             <div className="lg:col-span-5 rounded-3xl p-6 sm:p-8 border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-white to-white dark:from-amber-500/10 dark:via-slate-900/80 dark:to-slate-900/80 flex flex-col justify-between space-y-5">
               <div>
                 <div className="text-xs font-mono text-amber-600 dark:text-amber-400">
@@ -342,12 +372,17 @@ export default function App() {
               <div className="space-y-3">
                 {CREATOR_PLATFORMS.map((p) => (
                   <div
-                    key={p.name}
-                    className="flex items-center justify-between p-3.5 rounded-2xl bg-white/80 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800"
+                    key={p.id}
+                    className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-white/85 dark:bg-slate-950/65 border border-slate-200/70 dark:border-slate-800"
                   >
-                    <div>
-                      <div className="text-sm font-semibold">{p.name}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">{p.sub}</div>
+                    <div className="flex items-center gap-3 min-w-0">
+                      {renderPlatformIcon(p.id)}
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold">{p.name}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                          {p.sub}
+                        </div>
+                      </div>
                     </div>
                     <div className="text-lg font-bold font-mono text-amber-500 shrink-0">
                       {p.stat}
@@ -358,15 +393,15 @@ export default function App() {
             </div>
           </section>
 
-          {/* 4. COMPACT DESENSITIZED TIMELINE + PHOTO WALL */}
+          {/* 4. BENTO PHOTO WALL + COMPACT TIMELINE */}
           <section className="space-y-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <div className="text-xs font-mono uppercase tracking-widest text-cyan-600 dark:text-cyan-400 mb-1">
-                  2003 – 2026 · TRACK RECORD
+                  FIELDWORK & TRACK RECORD
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold">
-                  {lang === 'zh' ? '履历精要与一线纪实' : 'Track Record & Fieldwork'}
+                  {lang === 'zh' ? '一线调研纪实与履历精要' : 'Fieldwork Gallery & Track Record'}
                 </h2>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -382,7 +417,31 @@ export default function App() {
               </div>
             </div>
 
-            {/* 4-column horizontal cards (minimal text) */}
+            {/* Bento Photo Wall (7 photos: 1 large hero photo + 6 grid photos) */}
+            <div className="grid md:grid-cols-4 gap-4">
+              {PHOTO_WALL.map((photo, idx) => (
+                <figure
+                  key={idx}
+                  className={`group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-900 ${
+                    idx === 0 ? 'md:col-span-2 md:row-span-2 aspect-[4/3] md:aspect-auto' : 'aspect-[4/3]'
+                  }`}
+                >
+                  <img
+                    src={photo.src}
+                    alt={t(photo.caption)}
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
+                  <figcaption className="absolute bottom-3 left-3 right-3 text-xs text-white font-medium flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>{t(photo.caption)}</span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+
+            {/* 4-column horizontal cards (desensitized minimal text) */}
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {CAREER_COMPACT.map((item, idx) => (
                 <div
@@ -398,28 +457,6 @@ export default function App() {
                     {t(item.impact)}
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Photo Wall */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {PHOTO_WALL.map((photo, idx) => (
-                <figure
-                  key={idx}
-                  className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 aspect-[4/3] bg-slate-900"
-                >
-                  <img
-                    src={photo.src}
-                    alt={t(photo.caption)}
-                    loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
-                  <figcaption className="absolute bottom-3 left-3 right-3 text-xs text-white font-medium flex items-center gap-1.5">
-                    <Camera className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span>{t(photo.caption)}</span>
-                  </figcaption>
-                </figure>
               ))}
             </div>
           </section>
