@@ -23,11 +23,13 @@ import {
   WeChatChannelsIcon,
   XiaohongshuIcon,
 } from './components/BrandLogos';
+import { ImpactCharts } from './components/ImpactCharts';
 import { TeamResearchPage } from './components/TeamResearchPage';
 import {
   CAREER_COMPACT,
   CREATOR_PLATFORMS,
   CREDENTIALS_SHORT,
+  KEY_CONTRIBUTIONS,
   LIVE_SYSTEMS,
   Lang,
   PROFILE,
@@ -249,6 +251,40 @@ export default function App() {
                   </p>
                 </div>
               ))}
+            </div>
+
+            {/* Quantified Impact Charts & 3 Core Contributions */}
+            <div className="pt-12 border-t border-slate-200 dark:border-white/10 space-y-14">
+              <div className="space-y-2">
+                <div className="text-xs font-mono uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400">
+                  QUANTIFIED IMPACT & CAPABILITIES
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                  {lang === 'zh' ? '核心贡献与量化成效' : 'Quantified Impact & Capabilities'}
+                </h2>
+              </div>
+
+              <ImpactCharts lang={lang} />
+
+              <div className="grid md:grid-cols-3 gap-8 pt-4">
+                {KEY_CONTRIBUTIONS.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="pt-5 border-t border-slate-200 dark:border-white/10 space-y-2.5"
+                  >
+                    <div className="text-2xl font-bold font-mono text-cyan-600 dark:text-cyan-400">
+                      {item.metric}
+                    </div>
+                    <div className="text-xs font-mono text-amber-600 dark:text-amber-400">
+                      {t(item.metricSub)}
+                    </div>
+                    <h3 className="text-base font-semibold pt-1">{t(item.title)}</h3>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                      {t(item.desc)}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
 

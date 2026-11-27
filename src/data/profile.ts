@@ -63,6 +63,36 @@ export const CREDENTIALS_SHORT = [
   { year: '2024', name: { zh: 'ISO / QC080000 / RBA 内审员', en: 'ISO / QC080000 / RBA Auditor' } },
 ];
 
+export const KEY_CONTRIBUTIONS = [
+  {
+    metric: '5% → 95%',
+    metricSub: { zh: '问题回复率 · 闭环率 0%→75%', en: 'Response Rate · Closure 0%→75%' },
+    title: { zh: '三地质量数据中台与零缺陷顶层设计', en: 'Multi-Site Quality Data Platform & Zero-Defect Architecture' },
+    desc: {
+      zh: '主导 55 页《全程零缺陷》白皮书与 61 项字段规范，搭建“录入→分析→验证→闭环→智能”五模块架构，覆盖 3 基地 24 车间 200 线体，月均处理 8,763 条记录，同类问题复发率下降 45%。',
+      en: 'Authored a 55-page Zero-Defect blueprint and 61-field data standard across 3 sites, 24 workshops, and 200 lines (8,763 records/mo), cutting repeat defects by 45%.',
+    },
+  },
+  {
+    metric: '200+ 份',
+    metricSub: { zh: '审核效率 ↑70% · 漏检率 ↓40%', en: 'Audit Speed +70% · Escapes -40%' },
+    title: { zh: 'AI 体系文件与 SIP 三层智能审计模型', en: '3-Layer AI SOP & SIP Audit Engine' },
+    desc: {
+      zh: '独立研发基于大模型的“文法层 → ISO 合规层（RACI）→ 防呆层”三层审计系统，人工审核工作量减少 80%，因文件模糊导致的质量问题减少 65%。',
+      en: 'Built an LLM-powered Grammar → ISO (RACI) → Poka-Yoke 3-layer audit system, reducing manual review effort by 80% and ambiguity-driven defects by 65%.',
+    },
+  },
+  {
+    metric: '75 → 90 分',
+    metricSub: { zh: '欧洲驻厂 1 年 · 中东异议 100% 解决', en: '1-Yr EU On-Site · 100% Middle East Resolution' },
+    title: { zh: '国际化供应链改善与 12 款新品量产交付', en: 'Global Supplier Turnaround & 12 NPI Launches' },
+    desc: {
+      zh: '曾驻欧洲工厂 1 年并赴德国、意大利及阿联酋对接客户，建立中-欧每日品质协同机制；累计护航 12 款通信总装新项目顺利量产，实现 QCP/SIP 无损传递。',
+      en: '1-year European factory assignment plus Germany/Italy/UAE customer alignment; safeguarded 12 telecom hardware NPI launches with zero-loss QCP/SIP transfer.',
+    },
+  },
+];
+
 export interface VisualShowcaseItem {
   id: string;
   url: string;
