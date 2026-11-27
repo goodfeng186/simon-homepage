@@ -10,6 +10,7 @@ import {
   MapPin,
   Maximize2,
   Moon,
+  Play,
   Sun,
   Users,
   X,
@@ -26,9 +27,10 @@ import {
 import { ImpactCharts } from './components/ImpactCharts';
 import { TeamResearchPage } from './components/TeamResearchPage';
 import {
-  CAREER_COMPACT,
+  CORE_PHILOSOPHY,
   CREATOR_PLATFORMS,
   CREDENTIALS_SHORT,
+  EVOLUTION_PATH,
   KEY_CONTRIBUTIONS,
   LIVE_SYSTEMS,
   Lang,
@@ -77,9 +79,14 @@ export default function App() {
     return <WeChatChannelsIcon className="w-8 h-8 shrink-0" />;
   };
 
+  const openDemoById = (id: string) => {
+    const found = VISUAL_SHOWCASES.find((v) => v.id === id);
+    if (found) setModalDemo(found);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#060911] dark:text-slate-100 transition-colors duration-300">
-      {/* Minimal Single-Row Header */}
+      {/* Header */}
       <header className="sticky top-0 z-40 bg-white/80 dark:bg-[#060911]/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-white/5">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
           <button
@@ -90,18 +97,24 @@ export default function App() {
               SX
             </span>
             <span className="text-sm sm:text-base">{t(PROFILE.name)}</span>
+            <span className="hidden sm:inline text-xs font-normal text-slate-400">
+              · {t(PROFILE.creatorBrand)}
+            </span>
           </button>
 
           {route === 'home' && (
-            <nav className="hidden md:flex items-center gap-8 text-xs font-medium tracking-wide text-slate-500 dark:text-slate-400">
-              <a href="#footprint" className="hover:text-slate-900 dark:hover:text-white transition-colors">
-                {lang === 'zh' ? '履历版图' : 'Footprint'}
+            <nav className="hidden md:flex items-center gap-7 text-xs font-medium tracking-wide text-slate-500 dark:text-slate-400">
+              <a href="#philosophy" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+                {lang === 'zh' ? '核心理念' : 'Philosophy'}
+              </a>
+              <a href="#impact" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+                {lang === 'zh' ? '量化成效' : 'Impact'}
               </a>
               <a href="#stage" className="hover:text-slate-900 dark:hover:text-white transition-colors">
-                {lang === 'zh' ? '交互舞台' : 'Showcase'}
+                {lang === 'zh' ? '作品逻辑' : 'Showcase'}
               </a>
               <a href="#ecosystem" className="hover:text-slate-900 dark:hover:text-white transition-colors">
-                {lang === 'zh' ? '系统与内容' : 'Systems'}
+                {lang === 'zh' ? '系统与扫地僧' : 'Systems'}
               </a>
             </nav>
           )}
@@ -142,80 +155,100 @@ export default function App() {
         <TeamResearchPage lang={lang} onBack={() => navigate('home')} />
       ) : (
         <main>
-          {/* 01 · FULL-BLEED EDITORIAL HERO (满版图像压字骨架) */}
+          {/* 01 · HERO: 明确「质量扫地僧」品牌与核心思想 */}
           <section className="relative min-h-[76vh] flex items-end bg-slate-950 text-white overflow-hidden">
             <img
               src="./photos/whiteboard-thinking.jpg"
               alt="System Thinking"
               className="absolute inset-0 w-full h-full object-cover opacity-35"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#060911] via-[#060911]/70 to-[#060911]/35" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#060911] via-[#060911]/75 to-[#060911]/40" />
 
             <div className="relative z-10 max-w-6xl mx-auto w-full px-5 sm:px-8 py-16 sm:py-24 space-y-10">
-              <div className="max-w-3xl space-y-5">
+              <div className="max-w-4xl space-y-5">
                 <p className="text-xs font-mono uppercase tracking-[0.2em] text-cyan-400">
                   {t(PROFILE.headline)} · {t(PROFILE.location)}
                 </p>
-                <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08]">
-                  {t(PROFILE.name)}
-                  <span className="block text-2xl sm:text-4xl font-normal text-slate-200 mt-4 leading-snug">
-                    “{t(PROFILE.slogan)}”
-                  </span>
-                </h1>
-                <p className="text-sm sm:text-base text-slate-300 max-w-xl leading-relaxed">
+
+                <div className="space-y-3">
+                  <h1 className="text-4xl sm:text-6xl font-bold tracking-tight leading-[1.1]">
+                    {t(PROFILE.name)}
+                    <span className="text-slate-400 font-normal text-2xl sm:text-4xl ml-3">
+                      / {t(PROFILE.creatorBrand)}
+                    </span>
+                  </h1>
+                  <p className="text-xl sm:text-3xl font-medium text-amber-400 leading-snug">
+                    「{t(PROFILE.creatorBrand)}」：“{t(PROFILE.slogan)}”
+                  </p>
+                </div>
+
+                <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
                   {t(PROFILE.subline)}
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-8 pt-6 border-t border-white/10">
-                <div className="flex flex-wrap items-center gap-4">
-                  <a
-                    href="#stage"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-sm font-semibold transition-all"
-                  >
-                    {lang === 'zh' ? '浏览交互作品' : 'Explore Works'}
-                    <ArrowDown className="w-4 h-4" />
-                  </a>
-                  <a
-                    href="https://www.aitqm.cn"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm font-medium backdrop-blur-md transition-all"
-                  >
-                    aitqm.cn
-                    <ArrowUpRight className="w-4 h-4 text-amber-400" />
-                  </a>
-                  <a
-                    href={`mailto:${PROFILE.email}`}
-                    className="inline-flex items-center gap-1.5 text-sm text-slate-300 hover:text-white transition-colors px-2"
-                  >
-                    <Mail className="w-4 h-4 text-cyan-400" />
-                    {PROFILE.email}
-                  </a>
-                </div>
-
-                {/* Inline Telemetry (No boxes, pure typography) */}
-                <div className="flex flex-wrap gap-8 sm:gap-10">
-                  {PROFILE.metrics.slice(0, 3).map((m, i) => (
-                    <div key={i}>
-                      <div className="text-2xl sm:text-3xl font-bold font-mono text-white">
-                        {m.value}
-                      </div>
-                      <div className="text-xs text-slate-400 mt-0.5">{t(m.label)}</div>
-                    </div>
-                  ))}
-                </div>
+              <div className="flex flex-wrap items-center gap-4 pt-6 border-t border-white/10">
+                <a
+                  href="#stage"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-sm font-semibold transition-all"
+                >
+                  {lang === 'zh' ? '查看系统逻辑与作品' : 'Explore Works & Logic'}
+                  <ArrowDown className="w-4 h-4" />
+                </a>
+                <a
+                  href="https://www.aitqm.cn"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm font-medium backdrop-blur-md transition-all"
+                >
+                  aitqm.cn {lang === 'zh' ? 'AI 工具箱' : 'AI Toolbox'}
+                  <ArrowUpRight className="w-4 h-4 text-amber-400" />
+                </a>
+                <a
+                  href={`mailto:${PROFILE.email}`}
+                  className="inline-flex items-center gap-1.5 text-sm text-slate-300 hover:text-white transition-colors px-2"
+                >
+                  <Mail className="w-4 h-4 text-cyan-400" />
+                  {PROFILE.email}
+                </a>
               </div>
             </div>
           </section>
 
-          {/* 02 · INDUSTRY FOOTPRINT & TRACK RECORD (空间留白分隔，零多余边框) */}
-          <section id="footprint" className="max-w-6xl mx-auto px-5 sm:px-8 py-20 sm:py-28 space-y-16">
-            {/* Group Logos Strip */}
-            <div className="space-y-6">
+          {/* 02 · CORE PHILOSOPHY + EVOLUTION PATH (思想理念 + 能力跃迁，不直接罗列公司名) */}
+          <section id="philosophy" className="max-w-6xl mx-auto px-5 sm:px-8 py-20 sm:py-28 space-y-20">
+            {/* Three Core Ideas */}
+            <div className="space-y-8">
+              <div>
+                <div className="text-xs font-mono uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400 mb-2">
+                  CORE PHILOSOPHY
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-bold tracking-tight">
+                  {lang === 'zh' ? '质量信仰 · 质量数字化 · 可进化平台' : 'Belief · Digitalization · Evolvable Platform'}
+                </h2>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-8">
+                {CORE_PHILOSOPHY.map((item) => (
+                  <div
+                    key={item.code}
+                    className="pt-5 border-t border-slate-200 dark:border-white/10 space-y-3"
+                  >
+                    <div className="text-xs font-mono text-amber-500">{item.code}</div>
+                    <h3 className="text-lg font-bold">{t(item.title)}</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                      {t(item.desc)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Industry Footprint Logos + 4-Stage Capability Evolution */}
+            <div className="space-y-10 pt-10 border-t border-slate-200 dark:border-white/10">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <span className="text-xs font-mono uppercase tracking-[0.2em] text-slate-400">
-                  {lang === 'zh' ? '23 年产业历练与服务版图' : '23-YEAR INDUSTRY FOOTPRINT'}
+                  {lang === 'zh' ? '23 年产业历练与能力跃迁路径' : '23-YEAR CAPABILITY EVOLUTION'}
                 </span>
                 <div className="flex flex-wrap gap-4 text-xs text-slate-500 dark:text-slate-400">
                   {CREDENTIALS_SHORT.map((c, idx) => (
@@ -226,52 +259,56 @@ export default function App() {
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 py-4 items-center text-slate-800 dark:text-slate-100">
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 py-2 items-center text-slate-800 dark:text-slate-100">
                 <AvicLogo className="h-9 w-auto opacity-85 hover:opacity-100 transition-opacity" />
                 <LuxshareLogo className="h-9 w-auto opacity-85 hover:opacity-100 transition-opacity" />
                 <PhilipsLogo className="h-9 w-auto opacity-85 hover:opacity-100 transition-opacity" />
                 <FoxconnLogo className="h-9 w-auto opacity-85 hover:opacity-100 transition-opacity" />
               </div>
-            </div>
 
-            {/* Clean 4-column editorial timeline (top hairline only, no nested boxes) */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 pt-4">
-              {CAREER_COMPACT.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="pt-5 border-t border-slate-200 dark:border-white/10 space-y-2"
-                >
-                  <div className="text-xs font-mono text-cyan-600 dark:text-cyan-400">
-                    {item.period}
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 pt-2">
+                {EVOLUTION_PATH.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="pt-5 border-t border-slate-200 dark:border-white/10 space-y-2"
+                  >
+                    <div className="text-xs font-mono text-cyan-600 dark:text-cyan-400">
+                      {item.stage}
+                    </div>
+                    <h3 className="text-base font-semibold">{t(item.role)}</h3>
+                    <div className="text-xs font-mono text-amber-600 dark:text-amber-400">
+                      {t(item.focus)}
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 pt-1 leading-relaxed">
+                      {t(item.insight)}
+                    </p>
                   </div>
-                  <h3 className="text-base font-semibold">{t(item.role)}</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{t(item.scope)}</p>
-                  <p className="text-xs text-slate-700 dark:text-slate-300 pt-1 leading-relaxed">
-                    {t(item.impact)}
-                  </p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+          </section>
 
-            {/* Quantified Impact Charts & 3 Core Contributions */}
-            <div className="pt-12 border-t border-slate-200 dark:border-white/10 space-y-14">
+          {/* 03 · QUANTIFIED IMPACT & CHARTS */}
+          <section
+            id="impact"
+            className="bg-slate-100/70 dark:bg-white/[0.02] border-y border-slate-200/70 dark:border-white/5 py-20 sm:py-28"
+          >
+            <div className="max-w-6xl mx-auto px-5 sm:px-8 space-y-14">
               <div className="space-y-2">
                 <div className="text-xs font-mono uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400">
-                  QUANTIFIED IMPACT & CAPABILITIES
+                  QUANTIFIED IMPACT
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                  {lang === 'zh' ? '核心贡献与量化成效' : 'Quantified Impact & Capabilities'}
+                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+                  {lang === 'zh' ? '核心贡献与改善前后量化对比' : 'Core Contributions & Quantified Impact'}
                 </h2>
               </div>
 
               <ImpactCharts lang={lang} />
 
-              <div className="grid md:grid-cols-3 gap-8 pt-4">
+              <div className="grid md:grid-cols-3 gap-8 pt-6 border-t border-slate-200 dark:border-white/10">
                 {KEY_CONTRIBUTIONS.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="pt-5 border-t border-slate-200 dark:border-white/10 space-y-2.5"
-                  >
+                  <div key={idx} className="space-y-2.5">
                     <div className="text-2xl font-bold font-mono text-cyan-600 dark:text-cyan-400">
                       {item.metric}
                     </div>
@@ -288,67 +325,62 @@ export default function App() {
             </div>
           </section>
 
-          {/* 03 · UNIFIED INTERACTIVE STAGE (单一巨幅舞台，替代 6 个零散小窗) */}
-          <section
-            id="stage"
-            className="bg-slate-100/70 dark:bg-white/[0.02] border-y border-slate-200/70 dark:border-white/5 py-20 sm:py-28"
-          >
-            <div className="max-w-6xl mx-auto px-5 sm:px-8 space-y-8">
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div>
-                  <div className="text-xs font-mono uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400 mb-2">
-                    INTERACTIVE STAGE
-                  </div>
-                  <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                    {lang === 'zh' ? '数字质量可视化作品舞台' : 'Interactive Visual Stage'}
-                  </h2>
+          {/* 04 · UNIFIED INTERACTIVE STAGE WITH FULL LOGIC EXPLANATION */}
+          <section id="stage" className="max-w-6xl mx-auto px-5 sm:px-8 py-20 sm:py-28 space-y-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div>
+                <div className="text-xs font-mono uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400 mb-2">
+                  ARCHITECTURE & INTERACTIVE STAGE
                 </div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {lang === 'zh'
-                    ? '切换下方标签，在主画布直接交互体验 3D 与 AI 原型'
-                    : 'Select a project below to interact directly on the main canvas'}
-                </p>
+                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+                  {lang === 'zh' ? '数字质量作品与设计逻辑' : 'Visual Works & Design Logic'}
+                </h2>
+              </div>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {lang === 'zh'
+                  ? '切换下方作品，查看其「包含内容、架构思想、适用场景与突破性」并直接交互'
+                  : 'Select a work to inspect its contents, architecture, use cases, and breakthrough'}
+              </p>
+            </div>
+
+            {/* Pill Selector */}
+            <div className="flex flex-wrap gap-2">
+              {VISUAL_SHOWCASES.map((item) => {
+                const isActive = item.id === activeStage.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveStageId(item.id)}
+                    className={`px-4 py-2 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-slate-900 text-white dark:bg-cyan-500 dark:text-slate-950 shadow-md'
+                        : 'bg-slate-200/70 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10'
+                    }`}
+                  >
+                    {t(item.title)}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Stage Canvas + 4-Dimension Logic Panel */}
+            <div className="rounded-3xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-white/10 shadow-2xl">
+              <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full bg-slate-950">
+                <iframe
+                  key={activeStage.id}
+                  src={activeStage.url}
+                  title={t(activeStage.title)}
+                  className="w-full h-full border-0"
+                />
               </div>
 
-              {/* Clean Pill Selector */}
-              <div className="flex flex-wrap gap-2">
-                {VISUAL_SHOWCASES.map((item) => {
-                  const isActive = item.id === activeStage.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveStageId(item.id)}
-                      className={`px-4 py-2 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-slate-900 text-white dark:bg-cyan-500 dark:text-slate-950 shadow-md'
-                          : 'bg-white/80 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-white/10'
-                      }`}
-                    >
-                      {t(item.title)}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Single Commanding 16:9 Stage */}
-              <div className="rounded-3xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-white/10 shadow-2xl">
-                <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full bg-slate-950">
-                  <iframe
-                    key={activeStage.id}
-                    src={activeStage.url}
-                    title={t(activeStage.title)}
-                    className="w-full h-full border-0"
-                  />
-                </div>
-                <div className="px-6 py-4 bg-white dark:bg-[#0b101b] flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 dark:border-white/10">
+              <div className="p-6 sm:p-8 bg-white dark:bg-[#0b101b] border-t border-slate-200 dark:border-white/10 space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
                     <span className="text-xs font-mono text-cyan-600 dark:text-cyan-400">
                       {t(activeStage.tag)}
                     </span>
-                    <div className="font-semibold text-base mt-0.5">{t(activeStage.title)}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      {t(activeStage.caption)}
-                    </div>
+                    <h3 className="text-xl font-bold mt-0.5">{t(activeStage.title)}</h3>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -356,7 +388,7 @@ export default function App() {
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-900 dark:bg-white/10 hover:bg-cyan-600 dark:hover:bg-cyan-500 text-white dark:hover:text-slate-950 text-xs font-medium transition-colors cursor-pointer"
                     >
                       <Maximize2 className="w-3.5 h-3.5" />
-                      {lang === 'zh' ? '全屏弹窗' : 'Fullscreen'}
+                      {lang === 'zh' ? '全屏交互' : 'Fullscreen'}
                     </button>
                     <a
                       href={activeStage.url}
@@ -369,78 +401,146 @@ export default function App() {
                     </a>
                   </div>
                 </div>
+
+                {/* 4-Dimension Logic Explanation */}
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-4 border-t border-slate-200/80 dark:border-white/10">
+                  <div className="space-y-1.5">
+                    <div className="text-[11px] font-mono text-slate-400">
+                      {lang === 'zh' ? '01 包含内容' : '01 CONTENTS'}
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                      {t(activeStage.whatInside)}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="text-[11px] font-mono text-cyan-600 dark:text-cyan-400">
+                      {lang === 'zh' ? '02 架构思想' : '02 ARCHITECTURE'}
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                      {t(activeStage.architecture)}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="text-[11px] font-mono text-slate-400">
+                      {lang === 'zh' ? '03 适用场景' : '03 SCENARIOS'}
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                      {t(activeStage.scenarios)}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="text-[11px] font-mono text-amber-600 dark:text-amber-400">
+                      {lang === 'zh' ? '04 突破性与展示逻辑' : '04 BREAKTHROUGH'}
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                      {t(activeStage.breakthrough)}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
 
-          {/* 04 · SYSTEMS & CREATOR MATRIX (空间并置，干净列表) */}
-          <section id="ecosystem" className="max-w-6xl mx-auto px-5 sm:px-8 py-20 sm:py-28">
-            <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-              {/* Left: Live Systems */}
+          {/* 05 · LIVE SYSTEMS &「质量扫地僧」(无粉丝数 + 突出社会贡献 + 系统预览) */}
+          <section
+            id="ecosystem"
+            className="bg-slate-100/70 dark:bg-white/[0.02] border-t border-slate-200/70 dark:border-white/5 py-20 sm:py-28"
+          >
+            <div className="max-w-6xl mx-auto px-5 sm:px-8 grid lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+              {/* Left: Live Systems with Social Contribution & Visual Preview */}
               <div className="lg:col-span-7 space-y-6">
                 <div>
                   <div className="text-xs font-mono uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400 mb-2">
-                    LIVE SYSTEMS
+                    FACTORY SYSTEMS & INDUSTRY CONTRIBUTION
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                    {lang === 'zh' ? '可直达的在线系统与工程' : 'Live Systems & Engineering'}
+                    {lang === 'zh' ? '可直达系统：工厂落地与社会贡献' : 'Live Systems: Factory & Community'}
                   </h2>
                 </div>
 
                 <div className="divide-y divide-slate-200 dark:divide-white/10">
                   {LIVE_SYSTEMS.map((sys) => (
-                    <a
-                      key={sys.id}
-                      href={sys.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="py-5 flex items-center justify-between gap-4 group"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2.5">
-                          <span className="text-base sm:text-lg font-semibold group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
-                            {t(sys.title)}
+                    <div key={sys.id} className="py-6 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="space-y-1">
+                          <span className="text-[11px] font-mono text-amber-600 dark:text-amber-400">
+                            {t(sys.badge)}
                           </span>
-                          <span className="text-[11px] font-mono text-slate-400">
-                            {typeof sys.tag === 'string' ? sys.tag : t(sys.tag)}
-                          </span>
+                          <h3 className="text-lg font-bold">{t(sys.title)}</h3>
                         </div>
-                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                          {t(sys.desc)}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openDemoById(sys.previewDemoId)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-200/80 dark:bg-white/10 hover:bg-cyan-500 hover:text-slate-950 text-xs font-medium transition-colors cursor-pointer"
+                          >
+                            <Play className="w-3 h-3" />
+                            {lang === 'zh' ? '系统画面预览' : 'Preview'}
+                          </button>
+                          <a
+                            href={sys.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-slate-900 dark:bg-cyan-500 text-white dark:text-slate-950 text-xs font-semibold hover:opacity-90 transition-opacity"
+                          >
+                            {t(sys.actionLabel)}
+                            <ArrowUpRight className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
                       </div>
-                      <ArrowUpRight className="w-5 h-5 text-slate-400 group-hover:text-cyan-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
-                    </a>
+                      <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                        {t(sys.desc)}
+                      </p>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              {/* Right: 「质量扫地僧」 */}
+              {/* Right:「质量扫地僧」内容矩阵 (去粉丝数，提供直达入口与链接位) */}
               <div className="lg:col-span-5 space-y-6">
                 <div>
                   <div className="text-xs font-mono uppercase tracking-[0.2em] text-amber-500 mb-2">
-                    CONTENT MATRIX
+                    QUALITY BELIEF & KNOWLEDGE SHARING
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
                     「质量扫地僧」
                   </h2>
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                    {lang === 'zh'
+                      ? '围绕 8D 实战、质量管理深度思考与质量信仰建立，把专业翻译成大白话，帮助更多制造一线质量人系统化改善。'
+                      : 'Sharing practical 8D, deep quality thinking, and quality mindset to help frontline engineers improve.'}
+                  </p>
                 </div>
 
                 <div className="divide-y divide-slate-200 dark:divide-white/10">
                   {CREATOR_PLATFORMS.map((p) => (
-                    <div key={p.id} className="py-4 flex items-center justify-between gap-4">
+                    <div key={p.id} className="py-5 flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3.5 min-w-0">
                         {renderPlatformIcon(p.id)}
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold">{p.name}</div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                            {p.sub}
+                        <div className="min-w-0 space-y-0.5">
+                          <div className="text-sm font-semibold">{t(p.name)}</div>
+                          <div className="text-xs text-slate-600 dark:text-slate-300">
+                            {t(p.focus)}
+                          </div>
+                          <div className="text-[11px] font-mono text-slate-400">
+                            {t(p.hint)}
                           </div>
                         </div>
                       </div>
-                      <div className="text-lg font-bold font-mono text-amber-500 shrink-0">
-                        {p.stat}
-                      </div>
+                      {p.url ? (
+                        <a
+                          href={p.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-300 dark:border-white/15 hover:border-cyan-500 text-xs font-medium shrink-0"
+                        >
+                          {lang === 'zh' ? '直达' : 'Visit'}
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </a>
+                      ) : (
+                        <span className="text-[11px] font-mono text-slate-400 shrink-0">
+                          {lang === 'zh' ? '待绑主页链接' : 'Link Pending'}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -448,7 +548,7 @@ export default function App() {
             </div>
           </section>
 
-          {/* 05 · QMS RESEARCH LAB PORTAL (底部独立入口) */}
+          {/* 06 · QMS RESEARCH LAB PORTAL */}
           <section className="bg-slate-950 text-white border-t border-white/10">
             <div className="max-w-6xl mx-auto px-5 sm:px-8 py-16 sm:py-20 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
               <div className="space-y-3 max-w-2xl">
@@ -463,8 +563,8 @@ export default function App() {
                 </h2>
                 <p className="text-sm text-slate-400">
                   {lang === 'zh'
-                    ? '独立研究空间：查看跨太平洋 7 人研发团队分工、QMS-OS 研究报告与 AI 范式论文。'
-                    : 'Dedicated portal for the 7-member team, QMS-OS reports, and AI paradigm papers.'}
+                    ? '独立研究空间：查看跨太平洋 7 人研发团队分工、QMS-OS 研究报告、AI 范式论文及一线调研纪实。'
+                    : 'Dedicated portal for the 7-member team, QMS-OS reports, AI paradigm papers, and fieldwork.'}
                 </p>
               </div>
               <button
