@@ -47,6 +47,7 @@ export default function App() {
   );
   const [activeStageId, setActiveStageId] = useState<string>(VISUAL_SHOWCASES[0].id);
   const [modalDemo, setModalDemo] = useState<VisualShowcaseItem | null>(null);
+  const [copiedWechat, setCopiedWechat] = useState(false);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -537,9 +538,22 @@ export default function App() {
                           <ArrowUpRight className="w-3.5 h-3.5" />
                         </a>
                       ) : (
-                        <span className="text-[11px] font-mono text-slate-400 shrink-0">
-                          {lang === 'zh' ? '待绑主页链接' : 'Link Pending'}
-                        </span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard?.writeText('质量扫地僧');
+                            setCopiedWechat(true);
+                            setTimeout(() => setCopiedWechat(false), 2000);
+                          }}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-300 dark:border-white/15 hover:border-amber-500 text-xs font-medium shrink-0 cursor-pointer"
+                        >
+                          {copiedWechat
+                            ? lang === 'zh'
+                              ? '已复制名称'
+                              : 'Copied'
+                            : lang === 'zh'
+                            ? '复制搜视频号'
+                            : 'Copy Name'}
+                        </button>
                       )}
                     </div>
                   ))}

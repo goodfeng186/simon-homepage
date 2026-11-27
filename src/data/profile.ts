@@ -318,22 +318,22 @@ export const CREATOR_PLATFORMS = [
     id: 'douyin' as const,
     name: { zh: '抖音 · 质量扫地僧', en: 'Douyin · Master Sweeper' },
     focus: { zh: '8D 实战 · 质量管理深度思考 · 质量信仰建立', en: '8D Playbooks · Deep Quality Thinking' },
-    url: '', // 待用户提供抖音主页链接
-    hint: { zh: '抖音搜索「质量扫地僧」或 ID: 91812220249', en: 'Search "质量扫地僧" (ID: 91812220249)' },
+    url: 'https://www.douyin.com/user/self/search/%E8%B4%A8%E9%87%8F%E6%89%AB%E5%9C%B0%E5%83%A7?aid=e733899d-d386-4678-90c1-97b85c659989&type=general',
+    hint: { zh: '抖音号: 91812220249', en: 'Douyin ID: 91812220249' },
   },
   {
     id: 'xhs' as const,
     name: { zh: '小红书 · 质量扫地僧', en: 'Xiaohongshu · Master Sweeper' },
     focus: { zh: '一线防呆方法论 · AI 质量工具拆解', en: 'Poka-Yoke Methods · AI Tool Breakdowns' },
-    url: '', // 待用户提供小红书主页链接
-    hint: { zh: '小红书搜索「质量扫地僧」或 ID: 49990416353', en: 'Search "质量扫地僧" (ID: 49990416353)' },
+    url: 'https://www.xiaohongshu.com/search_result?keyword=49990416353',
+    hint: { zh: '小红书号: 49990416353', en: 'RED ID: 49990416353' },
   },
   {
     id: 'wechat' as const,
     name: { zh: '微信视频号 · 质量扫地僧', en: 'WeChat Channels · Master Sweeper' },
     focus: { zh: '20 年质量修行：渡己，渡人，渡产品', en: '20 Years of Quality Craft & Mindset' },
-    url: '', // 待用户提供视频号主页/二维码链接
-    hint: { zh: '微信视频号搜索「质量扫地僧」', en: 'Search "质量扫地僧" on WeChat Channels' },
+    url: '',
+    hint: { zh: '微信视频号搜索「质量扫地僧」', en: 'Search "质量扫地僧" in WeChat' },
   },
 ];
 
