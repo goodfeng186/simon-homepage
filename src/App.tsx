@@ -30,7 +30,6 @@ import {
   CREDENTIALS_SHORT,
   LIVE_SYSTEMS,
   Lang,
-  PHOTO_WALL,
   PROFILE,
   VISUAL_SHOWCASES,
   VisualShowcaseItem,
@@ -101,9 +100,6 @@ export default function App() {
               </a>
               <a href="#ecosystem" className="hover:text-slate-900 dark:hover:text-white transition-colors">
                 {lang === 'zh' ? '系统与内容' : 'Systems'}
-              </a>
-              <a href="#gallery" className="hover:text-slate-900 dark:hover:text-white transition-colors">
-                {lang === 'zh' ? '现场纪实' : 'Gallery'}
               </a>
             </nav>
           )}
@@ -416,49 +412,7 @@ export default function App() {
             </div>
           </section>
 
-          {/* 05 · EDITORIAL PHOTO WALL (无厚重边框的杂志大图墙) */}
-          <section id="gallery" className="max-w-6xl mx-auto px-5 sm:px-8 pb-20 sm:pb-28 space-y-8">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <div className="text-xs font-mono uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400 mb-2">
-                  FIELDWORK & MOMENTS
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                  {lang === 'zh' ? '一线调研与技术研讨' : 'Fieldwork & Workshops'}
-                </h2>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-12 gap-4">
-              {PHOTO_WALL.map((photo, idx) => {
-                const spanClass =
-                  idx === 0
-                    ? 'md:col-span-6 md:row-span-2 aspect-[4/3] md:aspect-auto'
-                    : idx < 3
-                    ? 'md:col-span-3 aspect-[4/3]'
-                    : 'md:col-span-3 aspect-[4/3]';
-                return (
-                  <figure
-                    key={idx}
-                    className={`group relative overflow-hidden rounded-2xl bg-slate-900 ${spanClass}`}
-                  >
-                    <img
-                      src={photo.src}
-                      alt={t(photo.caption)}
-                      loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
-                    <figcaption className="absolute bottom-3 left-3.5 right-3.5 text-xs text-white/95 font-medium">
-                      {t(photo.caption)}
-                    </figcaption>
-                  </figure>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* 06 · QMS RESEARCH LAB PORTAL (底部独立入口) */}
+          {/* 05 · QMS RESEARCH LAB PORTAL (底部独立入口) */}
           <section className="bg-slate-950 text-white border-t border-white/10">
             <div className="max-w-6xl mx-auto px-5 sm:px-8 py-16 sm:py-20 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
               <div className="space-y-3 max-w-2xl">
