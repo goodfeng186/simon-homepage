@@ -90,16 +90,21 @@ export function ImpactCharts({ lang }: ImpactChartsProps) {
     <div className="space-y-12">
       {/* Five-Module Evolvable Loop Diagram */}
       <div className="space-y-3">
-        <div className="text-xs font-mono text-slate-400">
+        <div className="text-xs font-mono text-slate-400 leading-relaxed">
           {lang === 'zh'
             ? '可进化质量平台核心架构：五模块闭环（月均 8,763 条记录 · 同类复发率 ↓45%）'
             : 'EVOLVABLE PLATFORM ARCHITECTURE: 5-MODULE CLOSED LOOP'}
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3">
           {FIVE_LOOP.map((step, i) => (
-            <div key={i} className="flex items-center gap-2 sm:gap-3">
+            <div
+              key={i}
+              className={`flex items-center gap-2 sm:gap-3 ${
+                i === FIVE_LOOP.length - 1 ? 'col-span-2 sm:col-span-1' : ''
+              }`}
+            >
               <div
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold ${
+                className={`w-full sm:w-auto text-center px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold ${
                   i === 4
                     ? 'theme-accent-bg'
                     : 'bg-slate-200/80 dark:bg-white/10 text-slate-800 dark:text-slate-100'
@@ -108,7 +113,7 @@ export function ImpactCharts({ lang }: ImpactChartsProps) {
                 {t(step)}
               </div>
               {i < FIVE_LOOP.length - 1 && (
-                <ArrowRight className="w-4 h-4 text-slate-400 shrink-0" />
+                <ArrowRight className="hidden sm:block w-4 h-4 text-slate-400 shrink-0" />
               )}
             </div>
           ))}
@@ -116,10 +121,10 @@ export function ImpactCharts({ lang }: ImpactChartsProps) {
       </div>
 
       {/* Clear Side-by-Side Before vs After Bars + Radar */}
-      <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+      <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         {/* Left: Dual-Track Before vs After Comparison */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono text-slate-400">
             <span>{lang === 'zh' ? '改善前 vs 改善后清晰对比' : 'CLEAR BEFORE VS. AFTER COMPARISON'}</span>
             <div className="flex items-center gap-4">
               <span className="inline-flex items-center gap-1.5">
@@ -138,14 +143,14 @@ export function ImpactCharts({ lang }: ImpactChartsProps) {
               <div key={idx} className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-semibold">{t(row.label)}</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xs font-mono font-semibold">
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xs font-mono font-semibold shrink-0">
                     {row.badge}
                   </span>
                 </div>
 
                 {/* Before Track */}
-                <div className="flex items-center gap-3">
-                  <span className="w-12 text-[11px] font-mono text-slate-400 shrink-0">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <span className="w-11 sm:w-12 text-[11px] font-mono text-slate-400 shrink-0">
                     {lang === 'zh' ? '改善前' : 'Before'}
                   </span>
                   <div className="flex-1 h-3 rounded-full bg-slate-200/70 dark:bg-white/5 overflow-hidden">
@@ -154,14 +159,14 @@ export function ImpactCharts({ lang }: ImpactChartsProps) {
                       style={{ width: `${row.beforePct}%` }}
                     />
                   </div>
-                  <span className="w-16 text-right text-xs font-mono text-slate-500 dark:text-slate-400 shrink-0">
+                  <span className="w-14 sm:w-16 text-right text-xs font-mono text-slate-500 dark:text-slate-400 shrink-0">
                     {row.beforeVal}
                   </span>
                 </div>
 
                 {/* After Track */}
-                <div className="flex items-center gap-3">
-                  <span className="w-12 text-[11px] font-mono theme-accent-text shrink-0">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <span className="w-11 sm:w-12 text-[11px] font-mono theme-accent-text shrink-0">
                     {lang === 'zh' ? '改善后' : 'After'}
                   </span>
                   <div className="flex-1 h-3 rounded-full bg-slate-200/70 dark:bg-white/5 overflow-hidden">
@@ -173,7 +178,7 @@ export function ImpactCharts({ lang }: ImpactChartsProps) {
                       }}
                     />
                   </div>
-                  <span className="w-16 text-right text-xs font-mono font-bold theme-accent-text shrink-0">
+                  <span className="w-14 sm:w-16 text-right text-xs font-mono font-bold theme-accent-text shrink-0">
                     {row.afterVal}
                   </span>
                 </div>
@@ -183,11 +188,11 @@ export function ImpactCharts({ lang }: ImpactChartsProps) {
         </div>
 
         {/* Right: 6-Axis Capability Radar */}
-        <div className="lg:col-span-5 flex flex-col items-center">
+        <div className="lg:col-span-5 flex flex-col items-center pt-2 lg:pt-0">
           <div className="text-xs font-mono text-slate-400 mb-2">
             {lang === 'zh' ? '“四栖”复合能力矩阵' : '6-AXIS CAPABILITY RADAR'}
           </div>
-          <svg viewBox="0 0 320 300" className="w-full max-w-[320px] overflow-visible">
+          <svg viewBox="-16 -4 352 308" className="w-full max-w-[330px] overflow-visible">
             {[0.33, 0.66, 1].map((r, rIdx) => {
               const pts = RADAR_AXES.map((_, i) => {
                 const p = getPoint(i, r);

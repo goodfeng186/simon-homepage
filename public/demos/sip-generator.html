@@ -43,19 +43,19 @@
 <body class="bg-gray-50 min-h-screen flex flex-col text-gray-800">
 
     <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-20">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="bg-blue-600 p-2 rounded-lg text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+        <div class="max-w-7xl mx-auto px-3.5 sm:px-4 py-3 sm:py-4 flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div class="bg-blue-600 p-1.5 sm:p-2 rounded-lg text-white shrink-0">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                 </div>
-                <h1 class="text-xl font-bold text-gray-800">
+                <h1 class="text-base sm:text-xl font-bold text-gray-800 truncate">
                     SIP 智能生成器
-                    <span class="text-sm bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-1 font-normal border border-green-200">正式版 · DeepSeek</span>
+                    <span class="hidden sm:inline-block text-sm bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-1 font-normal border border-green-200">正式版 · DeepSeek</span>
                 </h1>
             </div>
-            <div class="flex items-center gap-3">
-                <div id="keyStatus" class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500 font-medium border border-gray-200">未配置 API Key</div>
-                <button id="settingsBtn" class="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors" title="设置">
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div id="keyStatus" class="text-[11px] sm:text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500 font-medium border border-gray-200">未配置 API Key</div>
+                <button id="settingsBtn" class="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors" title="设置">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     设置
                 </button>
@@ -63,7 +63,7 @@
         </div>
     </header>
 
-    <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full flex flex-col gap-6">
+    <main class="flex-grow max-w-7xl mx-auto px-3.5 sm:px-4 py-5 sm:py-8 w-full flex flex-col gap-5 sm:gap-6">
 
         <!-- 消息提示框 -->
         <div id="messageBox" class="hidden rounded-lg p-4 mb-4 text-sm" role="alert">
@@ -74,24 +74,24 @@
         </div>
 
         <!-- 步骤提示 -->
-        <div id="stepIndicator" class="flex items-center text-sm font-medium text-gray-500 mb-2">
-            <span class="text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">1. 上传 / 粘贴文件</span>
-            <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        <div id="stepIndicator" class="flex flex-wrap items-center gap-y-2 text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">
+            <span class="text-blue-600 bg-blue-50 px-2.5 sm:px-3 py-1 rounded-full border border-blue-200">1. 上传 / 粘贴文件</span>
+            <svg class="w-4 h-4 mx-1.5 sm:mx-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             <span id="step2">2. DeepSeek 智能提取</span>
-            <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            <svg class="w-4 h-4 mx-1.5 sm:mx-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
             <span id="step3">3. 导出记录表</span>
         </div>
 
-        <div id="dropZone" class="drop-zone border-2 border-dashed border-gray-300 rounded-2xl bg-white p-10 text-center shadow-sm transition-all">
+        <div id="dropZone" class="drop-zone border-2 border-dashed border-gray-300 rounded-2xl bg-white p-5 sm:p-10 text-center shadow-sm transition-all">
             <input type="file" id="fileInput" class="hidden" accept=".xlsx,.xls,.csv,.pdf,.txt">
             <div class="flex flex-col items-center justify-center">
-                <div class="bg-blue-50 p-4 rounded-full mb-4 text-blue-500">
-                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <div class="bg-blue-50 p-3 sm:p-4 rounded-full mb-3 sm:mb-4 text-blue-500">
+                    <svg class="w-10 h-10 sm:w-12 sm:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                 </div>
-                <h2 class="text-2xl font-semibold text-gray-800 mb-2">点击或拖拽检验指导书到此处</h2>
-                <p class="text-gray-500 mb-6">支持 <span class="font-mono bg-gray-100 px-1 rounded text-gray-600">.xlsx .xls .csv .pdf .txt</span></p>
+                <h2 class="text-lg sm:text-2xl font-semibold text-gray-800 mb-2">点击或拖拽检验指导书到此处</h2>
+                <p class="text-xs sm:text-base text-gray-500 mb-5 sm:mb-6">支持 <span class="font-mono bg-gray-100 px-1 rounded text-gray-600">.xlsx .xls .csv .pdf .txt</span></p>
 
-                <div class="flex gap-4">
+                <div class="flex flex-wrap justify-center gap-3 sm:gap-4 w-full sm:w-auto">
                     <button id="uploadBtn" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors shadow-sm cursor-pointer">
                         上传文件
                     </button>

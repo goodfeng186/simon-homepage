@@ -14,9 +14,9 @@ export function TeamResearchPage({ lang, onBack }: TeamResearchPageProps) {
     RESEARCH_REPORTS.find((r) => r.id === activeReportId) || RESEARCH_REPORTS[0];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-16">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12 space-y-10 sm:space-y-16">
       {/* Back & Hero */}
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <button
           onClick={onBack}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 hover:border-cyan-500/60 transition-colors cursor-pointer"
@@ -25,13 +25,13 @@ export function TeamResearchPage({ lang, onBack }: TeamResearchPageProps) {
           {lang === 'zh' ? '返回个人主页' : 'Back to Homepage'}
         </button>
 
-        <div className="rounded-3xl p-8 sm:p-12 border border-cyan-500/25 bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950 text-white relative overflow-hidden">
+        <div className="rounded-2xl sm:rounded-3xl p-5 sm:p-12 border border-cyan-500/25 bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950 text-white relative overflow-hidden">
           <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-cyan-500/20 blur-3xl pointer-events-none" />
           <div className="relative z-10 space-y-3 max-w-3xl">
-            <div className="text-xs font-mono uppercase tracking-widest text-cyan-400">
+            <div className="text-[11px] sm:text-xs font-mono uppercase tracking-widest text-cyan-400">
               QMS-OS Research Lab · Dongguan × Silicon Valley × Vancouver
             </div>
-            <h1 className="text-3xl sm:text-5xl font-bold tracking-tight">
+            <h1 className="text-2xl sm:text-5xl font-bold tracking-tight leading-tight">
               {lang === 'zh' ? 'QMS-OS 研究团队与报告中心' : 'QMS-OS Team & Research'}
             </h1>
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
@@ -44,15 +44,15 @@ export function TeamResearchPage({ lang, onBack }: TeamResearchPageProps) {
       </div>
 
       {/* Research Reports */}
-      <section className="space-y-6">
+      <section className="space-y-5 sm:space-y-6">
         <div className="flex items-center gap-2.5">
           <BookOpen className="w-5 h-5 text-cyan-500" />
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-xl sm:text-2xl font-bold">
             {lang === 'zh' ? '研究报告与论文展开' : 'Research Reports & Papers'}
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-3">
+        <div className="grid sm:grid-cols-3 gap-3">
           {RESEARCH_REPORTS.map((rep) => {
             const isActive = rep.id === activeReport.id;
             return (
@@ -75,12 +75,12 @@ export function TeamResearchPage({ lang, onBack }: TeamResearchPageProps) {
           })}
         </div>
 
-        <article className="rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/75 space-y-6">
+        <article className="rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/75 space-y-5 sm:space-y-6">
           <div className="space-y-1 border-b border-slate-200 dark:border-slate-800 pb-4">
             <div className="text-xs font-mono text-amber-500">
               {t(activeReport.tag)} · {activeReport.date}
             </div>
-            <h3 className="text-xl sm:text-2xl font-bold">{t(activeReport.title)}</h3>
+            <h3 className="text-lg sm:text-2xl font-bold">{t(activeReport.title)}</h3>
           </div>
 
           <blockquote className="flex items-start gap-3 rounded-2xl p-4 bg-amber-500/10 border border-amber-500/25 text-amber-800 dark:text-amber-200">
@@ -90,16 +90,16 @@ export function TeamResearchPage({ lang, onBack }: TeamResearchPageProps) {
             </p>
           </blockquote>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
             {activeReport.sections.map((sec, idx) => (
               <div
                 key={idx}
-                className="rounded-2xl p-5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 space-y-3"
+                className="rounded-2xl p-4 sm:p-5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 space-y-3"
               >
                 <h4 className="font-semibold text-base text-cyan-700 dark:text-cyan-300">
                   {t(sec.heading)}
                 </h4>
-                <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed list-disc list-inside">
+                <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed list-disc pl-4">
                   {sec.points.map((pt, pIdx) => (
                     <li key={pIdx}>{t(pt)}</li>
                   ))}
@@ -111,10 +111,10 @@ export function TeamResearchPage({ lang, onBack }: TeamResearchPageProps) {
       </section>
 
       {/* Team */}
-      <section className="space-y-6">
+      <section className="space-y-5 sm:space-y-6">
         <div className="flex items-center gap-2.5">
           <Users className="w-5 h-5 text-cyan-500" />
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-xl sm:text-2xl font-bold">
             {lang === 'zh' ? '核心研究团队' : 'Core Team'}
           </h2>
         </div>
