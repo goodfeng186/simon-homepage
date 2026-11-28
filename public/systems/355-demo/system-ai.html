@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="night">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>体系 AI · 文件智能问答</title>
+<link rel="stylesheet" href="assets/demo-system-ai.css">
+<script src="assets/demo-auth.js"></script>
+<script src="assets/demo-system-ai.js"></script>
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>体系 AI · 文件智能问答</h1>
+    <div class="sub">查询标准与文件 · 内置脱敏示例</div>
+  </div>
+  <span class="note">演示数据，不写入服务器</span>
+  <div class="spacer"></div>
+  <button type="button" id="themeBtn" class="btn">切换为日览</button>
+  <a class="btn" href="dashboard.html">返回首页</a>
+</header>
+<main class="wrap">
+  <section class="panel" aria-label="文件库">
+    <h2>左侧文件库</h2>
+    <input id="q" type="search" placeholder="输入关键字过滤示例文件" autocomplete="off">
+    <div id="fileList"></div>
+  </section>
+  <section class="panel detail" aria-label="文件详情">
+    <h2>文件详情</h2>
+    <div class="id" id="dId"></div>
+    <h3 id="dTitle"></h3>
+    <div class="kv" id="dMeta"></div>
+    <p id="dPoints"></p>
+    <h2>简易关系图</h2>
+    <svg id="graph" viewBox="0 0 640 240" role="img" aria-label="示例文件关系图"></svg>
+  </section>
+  <section class="panel" aria-label="问答区">
+    <h2>演示问答</h2>
+    <div class="presets" id="presets"></div>
+    <div id="thread"></div>
+    <form class="composer" id="askForm">
+      <input id="askInput" type="text" placeholder="输入问题，或点击上方预设" autocomplete="off">
+      <button type="submit" class="primary">提交</button>
+    </form>
+  </section>
+</main>
+<script>
+(function () {
+  if (!DemoAuth.requireDemoAuth()) return;
+
+  var api = window.DemoSystemAI;
+  var files = api.FILES.slice();
+  var selected = files[0].id;
+  var cats = ["体系程序", "作业规范", "8D 案例", "标准与总表"];
+
+  var fileList = document.getElementById("fileList");
+  var thread = document.getElementById("thread");
+  var presets = document.getElementById("presets");
+  var themeBtn = document.getElementById("themeBtn");
+  var askForm = document.getElementById("askForm");
+  var askInput = document.getElementById("askInput");
+  var searchBox = document.getElementById("q");
+  var graph = document.getElementById("graph");
+
+  function findFile(id) {
+    for (var i = 0; i < files.length; i++) if (files[i].id === id) return files[i];
+    return files[0];
+  }
+
+  function renderList() {
+    var kw = (searchBox.value || "").trim();
+    var html = "";
+    var hits = 0;
+    cats.forEach(function (cat) {
+      var items = files.filter(function (f) {
+        if (f.cat !== cat) return false;
+        if (!kw) return true;
+        return (f.id + f.title + f.points + f.cat).indexOf(kw) !== -1;
+      });
+      if (!items.length) return;
+      html += '<div class="cat">' + cat + "</div>";
+      items.forEach(function (f) {
+        hits += 1;
+        var cls = "file" + (f.id === selected ? " active" : "");
+        html += '<button type="button" class="' + cls + '" data-id="' + f.id + '"><strong>' +
+          f.title + "</strong><small>" + f.id + "</small></button>";
+      });
+    });
+    if (!hits) html = '<div class="empty">未找到符合关键字的示例文件，请更换关键字或清空检索。</div>';
+    fileList.innerHTML = html;
+  }
+
+  function renderDetail() {
+    var f = findFile(selected);
+    document.getElementById("dId").textContent = f.id;
+    document.getElementById("dTitle").textContent = f.title;
+    document.getElementById("dMeta").textContent = "分类：" + f.cat + "　归口部门：" + f.dept;
+    document.getElementById("dPoints").textContent = "条款要点：" + f.points;
+    renderGraph();
+  }
+
+  function renderGraph() {
+    var nodes = files;
+    var w = 640, h = 240, cx = w / 2, cy = h / 2, r = 88;
+    var parts = [];
+    parts.push('<rect x="1" y="1" width="638" height="238" rx="10" fill="none" stroke="none"></rect>');
+    nodes.forEach(function (f, i) {
+      var ang = (Math.PI * 2 * i) / nodes.length - Math.PI / 2;
+      var x = cx + Math.cos(ang) * r;
+      var y = cy + Math.sin(ang) * r;
+      parts.push('<line x1="' + cx + '" y1="' + cy + '" x2="' + x + '" y2="' + y + '" stroke="#8b98a8" stroke-width="1" opacity=".45"></line>');
+    });
+    parts.push('<circle cx="' + cx + '" cy="' + cy + '" r="18" fill="#3db8a8"></circle>');
+    parts.push('<text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle" font-size="9" fill="#07221e">体系</text>');
+    nodes.forEach(function (f, i) {
+      var ang = (Math.PI * 2 * i) / nodes.length - Math.PI / 2;
+      var x = cx + Math.cos(ang) * r;
+      var y = cy + Math.sin(ang) * r;
+      var cls = "n" + (f.id === selected ? " active" : "");
+      parts.push('<g class="' + cls + '" data-id="' + f.id + '">');
+      parts.push('<rect x="' + (x - 54) + '" y="' + (y - 16) + '" width="108" height="32" rx="8" fill="#1a212b" stroke="#2d3946"></rect>');
+      parts.push('<text x="' + x + '" y="' + (y - 2) + '" text-anchor="middle" font-size="8" fill="#f0c14b">' + f.id + "</text>");
+      parts.push('<text x="' + x + '" y="' + (y + 10) + '" text-anchor="middle" font-size="8" fill="#e8eef4">' + f.title + "</text>");
+      parts.push("</g>");
+    });
+    graph.innerHTML = parts.join("");
+  }
+
+  function addMsg(role, text) {
+    var div = document.createElement("div");
+    div.className = "msg " + role;
+    div.innerHTML = '<div class="who">' + (role === "q" ? "提问" : "演示答复") + "</div>" +
+      "<div></div>";
+    div.lastChild.textContent = text;
+    thread.appendChild(div);
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  function ask(text) {
+    var q = String(text || "").trim();
+    if (!q) return;
+    addMsg("q", q);
+    addMsg("a", api.answer(q));
+  }
+
+  function renderPresets() {
+    api.QA.slice(0, 4).forEach(function (item) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = item.q;
+      b.addEventListener("click", function () { ask(item.q); });
+      presets.appendChild(b);
+    });
+  }
+
+  function selectFile(id) {
+    selected = id;
+    renderList();
+    renderDetail();
+  }
+
+  fileList.addEventListener("click", function (ev) {
+    var btn = ev.target.closest("[data-id]");
+    if (btn) selectFile(btn.getAttribute("data-id"));
+  });
+  graph.addEventListener("click", function (ev) {
+    var node = ev.target.closest("[data-id]");
+    if (node) selectFile(node.getAttribute("data-id"));
+  });
+  searchBox.addEventListener("input", renderList);
+  askForm.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    ask(askInput.value);
+    askInput.value = "";
+  });
+  themeBtn.addEventListener("click", function () {
+    var root = document.documentElement;
+    var night = root.getAttribute("data-theme") !== "day";
+    root.setAttribute("data-theme", night ? "day" : "night");
+    themeBtn.textContent = night ? "切换为夜览" : "切换为日览";
+  });
+
+  renderPresets();
+  renderList();
+  renderDetail();
+  addMsg("q", "这页可以怎么用？");
+  addMsg("a", "点左侧文件或关系图查看条款要点，也可以点上方预设问题，或输入关键字匹配内置问答。演示包仅内置示例问答，请点上方预设问题。");
+})();
+</script>
+</body>
+</html>

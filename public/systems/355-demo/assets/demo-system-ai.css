@@ -1,0 +1,76 @@
+/* 体系 AI 演示页自有样式，不引用外部字体或脚本 */
+:root, [data-theme="night"] {
+  --bg: #12161c;
+  --bg-2: #1a212b;
+  --panel: #1e2630;
+  --line: #2d3946;
+  --text: #e8eef4;
+  --muted: #8b98a8;
+  --accent: #3db8a8;
+  --accent-2: #f0c14b;
+  --warn: #e07a6a;
+  --chip: #243038;
+}
+[data-theme="day"] {
+  --bg: #eef2f4;
+  --bg-2: #ffffff;
+  --panel: #ffffff;
+  --line: #d5dee6;
+  --text: #1c2730;
+  --muted: #5d6b78;
+  --accent: #0f7a6e;
+  --accent-2: #a67c12;
+  --warn: #b42318;
+  --chip: #e8eef1;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text);
+  font: 13px/1.55 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
+body { background-image: radial-gradient(circle at 12% 8%, rgba(61,184,168,.14), transparent 36%),
+  radial-gradient(circle at 88% 92%, rgba(240,193,75,.08), transparent 32%); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.top {
+  position: sticky; top: 0; z-index: 8;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 18px; border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-2) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+.top h1 { margin: 0; font-size: 16px; font-weight: 650; }
+.top .sub { color: var(--muted); font-size: 12px; }
+.top .spacer { flex: 1; }
+.note { font-size: 12px; color: var(--accent-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+.btn, button {
+  font: inherit; color: var(--text); background: var(--chip); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 10px; cursor: pointer;
+}
+.btn:hover, button:hover { border-color: var(--accent); }
+.btn.primary, button.primary { background: var(--accent); color: #07221e; border-color: transparent; font-weight: 650; }
+.wrap { display: grid; grid-template-columns: 280px minmax(0, 1fr) 340px; gap: 14px; padding: 14px 18px 24px; }
+@media (max-width: 1100px) { .wrap { grid-template-columns: 1fr; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; min-height: 0; }
+.panel h2 { margin: 0 0 10px; font-size: 13px; letter-spacing: .06em; color: var(--muted); font-weight: 650; }
+#q { width: 100%; font: inherit; color: var(--text); background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+#fileList { margin-top: 10px; max-height: calc(100vh - 200px); overflow: auto; }
+.cat { margin: 12px 0 6px; font-size: 12px; color: var(--accent); }
+.file { display: block; width: 100%; text-align: left; margin: 0 0 6px; padding: 8px 10px; }
+.file small { display: block; color: var(--muted); }
+.file.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
+.empty { color: var(--warn); font-size: 12px; padding: 10px 0; }
+.detail .id { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--accent-2); }
+.detail h3 { margin: 6px 0 8px; font-size: 18px; }
+.kv { color: var(--muted); margin-bottom: 8px; }
+#graph { width: 100%; height: 240px; border: 1px dashed var(--line); border-radius: 12px; background: var(--bg-2); margin-top: 12px; }
+#graph .n { cursor: pointer; }
+#graph .n:hover rect { stroke: var(--accent); }
+#graph .n.active rect { fill: color-mix(in srgb, var(--accent) 22%, var(--bg-2)); stroke: var(--accent); }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.presets button { font-size: 12px; }
+#thread { height: 320px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: var(--bg-2); }
+.msg { margin: 0 0 10px; padding: 8px 10px; border-radius: 10px; }
+.msg.q { background: var(--chip); }
+.msg.a { background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
+.msg .who { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.composer { display: flex; gap: 8px; margin-top: 10px; }
+.composer input { flex: 1; font: inherit; color: var(--text); background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }

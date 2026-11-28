@@ -313,8 +313,8 @@ export const LIVE_SYSTEMS = [
       { src: './photos/sys-355-3.jpg', label: { zh: 'IQC 智能体全景控制塔', en: 'IQC Agentic Control Tower' } },
     ],
     desc: {
-      zh: '可直接打开交互的 355 纯静态多页系统（涵盖登录门禁、总览看板、IQC 控制塔、SIP 工作台、检验执行与知识中心）。登录提示：公司编码填 DEMO，工号与密码填 demo（或任意非空字符）即可进入体验。',
-      en: 'Interactive multi-page 355 web system (Login, Dashboard, IQC Control Tower, SIP Workbench, Inspection & Knowledge Center). Demo login: Company DEMO, ID/Password demo.',
+      zh: '可直接打开交互的 355 纯静态多页系统（涵盖登录门禁、总览看板、体系 AI 智能问答、IQC 控制塔、SIP 工作台、检验执行与知识中心）。登录提示：公司编码填 DEMO，工号与密码填 demo（或任意非空字符）即可进入体验。',
+      en: 'Interactive multi-page 355 web system (Login, Dashboard, QMS AI Q&A, IQC Control Tower, SIP Workbench, Inspection & Knowledge Center). Demo login: Company DEMO, ID/Password demo.',
     },
     actionLabel: { zh: '直接打开 355 系统', en: 'Launch 355 System' },
   },
