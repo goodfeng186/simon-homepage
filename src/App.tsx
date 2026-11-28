@@ -501,9 +501,9 @@ export default function App() {
             id="ecosystem"
             className="scroll-mt-24 md:scroll-mt-20 bg-slate-100/70 dark:bg-white/[0.02] border-t border-slate-200/70 dark:border-white/5 py-14 sm:py-28"
           >
-            <div className="max-w-6xl mx-auto px-4 sm:px-8 grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
+            <div className="max-w-6xl mx-auto px-4 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
               {/* Left: Live Systems with Social Contribution & Visual Preview */}
-              <div className="lg:col-span-7 space-y-6">
+              <div className="lg:col-span-7 min-w-0 space-y-6">
                 <div>
                   <div className="text-xs font-mono uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400 mb-2">
                     FACTORY SYSTEMS & INDUSTRY CONTRIBUTION
@@ -595,7 +595,7 @@ export default function App() {
               </div>
 
               {/* Right:「质量扫地僧」内容矩阵 (去粉丝数，提供直达入口与链接位) */}
-              <div className="lg:col-span-5 space-y-6">
+              <div className="lg:col-span-5 min-w-0 space-y-6">
                 <div className="flex items-center gap-4">
                   <img
                     src="./photos/saodiseng-logo.jpg"

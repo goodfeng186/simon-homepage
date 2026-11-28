@@ -121,9 +121,9 @@ export function ImpactCharts({ lang }: ImpactChartsProps) {
       </div>
 
       {/* Clear Side-by-Side Before vs After Bars + Radar */}
-      <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         {/* Left: Dual-Track Before vs After Comparison */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className="lg:col-span-7 min-w-0 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono text-slate-400">
             <span>{lang === 'zh' ? '改善前 vs 改善后清晰对比' : 'CLEAR BEFORE VS. AFTER COMPARISON'}</span>
             <div className="flex items-center gap-4">
@@ -188,7 +188,7 @@ export function ImpactCharts({ lang }: ImpactChartsProps) {
         </div>
 
         {/* Right: 6-Axis Capability Radar */}
-        <div className="lg:col-span-5 flex flex-col items-center pt-2 lg:pt-0">
+        <div className="lg:col-span-5 min-w-0 flex flex-col items-center pt-2 lg:pt-0">
           <div className="text-xs font-mono text-slate-400 mb-2">
             {lang === 'zh' ? '“四栖”复合能力矩阵' : '6-AXIS CAPABILITY RADAR'}
           </div>
