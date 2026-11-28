@@ -271,6 +271,28 @@ export const VISUAL_SHOWCASES: VisualShowcaseItem[] = [
       en: 'Transforms audits from last-minute paperwork into a living, daily rule engine.',
     },
   },
+  {
+    id: 'qms-neural',
+    url: './systems/355-demo/neural-creator/index.html',
+    tag: { zh: '07 · 水母神经全景 · AI 文件评审', en: '07 · QMS Neural Panorama & AI Audit' },
+    title: { zh: '体系神经网络全景（水母与光 · AI 文件评审）', en: 'QMS Neural OS (Jellyfish & AI Doc Audit)' },
+    whatInside: {
+      zh: '包含开场「水母与光」神经中枢动画、体系程序/图谱/作业规范/8D 改善库等 150+ 份脱敏受控文件知识图谱、连接度分析、审厂证明卡与 AI 审厂助手。',
+      en: 'Opening glowing jellyfish & light neural hub, 150+ sanitized SOP knowledge graph nodes, connectivity trace, Audit Card export, and AI Audit Copilot.',
+    },
+    architecture: {
+      zh: '以“生物神经中枢 + 发光脉冲连线”建模质量体系文件间的引用、被引用与双向协同关系，完全纯静态本地演示运行。',
+      en: 'Models cross-references and bidirectional SOP links as glowing neural filaments around a central living hub in pure static mode.',
+    },
+    scenarios: {
+      zh: '适用于企业受控体系文件评审、二方/三方客户审厂迎检证明、质量体系知识图谱直观展示。',
+      en: 'Built for controlled document review, customer/ISO audit readiness checks, and visual QMS knowledge exploration.',
+    },
+    breakthrough: {
+      zh: '告别静态目录列表，用“水母与光”将枯燥的 ISO/QMS 程序文件转化为可点击追溯的动态神经网络与 AI 文件评审台。',
+      en: 'Turns static ISO document folders into an interactive glowing neural network with instant AI audit readiness insight.',
+    },
+  },
 ];
 
 export const LIVE_SYSTEMS = [
@@ -313,8 +335,8 @@ export const LIVE_SYSTEMS = [
       { src: './photos/sys-355-3.jpg', label: { zh: 'IQC 智能体全景控制塔', en: 'IQC Agentic Control Tower' } },
     ],
     desc: {
-      zh: '可直接打开交互的 355 纯静态多页系统（涵盖登录门禁、总览看板、体系 AI 智能问答、IQC 控制塔、SIP 工作台、检验执行与知识中心）。登录提示：公司编码填 DEMO，工号与密码填 demo（或任意非空字符）即可进入体验。',
-      en: 'Interactive multi-page 355 web system (Login, Dashboard, QMS AI Q&A, IQC Control Tower, SIP Workbench, Inspection & Knowledge Center). Demo login: Company DEMO, ID/Password demo.',
+      zh: '可直接打开交互的 355 纯静态多页系统（涵盖登录门禁、总览看板、水母神经全景/AI 文件评审、体系 AI 问答、IQC 控制塔、SIP 工作台、检验执行与知识中心）。登录提示：公司编码填 DEMO，工号与密码填 demo（或任意非空字符）即可进入体验。',
+      en: 'Interactive multi-page 355 web system (Login, Dashboard, QMS Neural Panorama/AI Doc Audit, QMS AI Q&A, IQC Control Tower, SIP Workbench, Inspection & Knowledge Center). Demo login: Company DEMO, ID/Password demo.',
     },
     actionLabel: { zh: '直接打开 355 系统', en: 'Launch 355 System' },
   },

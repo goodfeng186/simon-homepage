@@ -299,12 +299,12 @@
             </article>
             <article class="flow-card glass fade-up" style="animation-delay:0.16s;" data-key="doc">
                 <div class="glow"></div>
-                <div class="fname"><span class="ic">DOC</span>文件控制<span class="badge building">建设中</span></div>
+                <div class="fname"><span class="ic">DOC</span>文件控制<span class="badge ready">运行中</span></div>
                 <div class="fowner">流程主责 · [姓名]</div>
                 <div class="fstat"><div class="col"><div class="n font-tech ai">32</div><div class="t">AI 已处理</div></div><div class="col"><div class="n font-tech hm">8</div><div class="t">需人工参考</div></div></div>
                 <div class="prog-wrap"><div class="prog" style="width:89%;"></div></div>
                 <div class="fmeta"><span>已推进 <b>40/45</b> 节点</span><span>89%</span></div>
-                <div class="enter">进入 文件控制</div>
+                <div class="enter">进入 文件控制 · 水母神经全景</div>
             </article>
             <article class="flow-card glass fade-up disabled" style="animation-delay:0.22s;" data-key="npi">
                 <div class="glow"></div>
@@ -345,6 +345,7 @@
             <a class="quick-card glass fade-up" href="iqc-sip-workbench.html"><span class="qt">图纸 → SIP 工作台</span><br><span class="qd">按内置示例行演示生成与审批</span></a>
             <a class="quick-card glass fade-up" href="iqc-import-center.html"><span class="qt">来料与不良导入</span><br><span class="qd">演示登记，不写入服务器</span></a>
             <a class="quick-card glass fade-up" href="iqc-knowledge-center.html"><span class="qt">知识库</span><br><span class="qd">程序、SIP 与案例的演示条目</span></a>
+            <a class="quick-card glass fade-up" href="neural-creator/index.html"><span class="qt">体系神经全景 · 水母与光（AI 文件评审）</span><br><span class="qd">水母神经元全景 · AI 审厂陪跑与文件评审</span></a>
             <a class="quick-card glass fade-up" href="system-ai.html"><span class="qt">体系 AI</span><br><span class="qd">查询标准与文件 · 演示问答</span></a>
             <a class="quick-card glass fade-up" href="iqc-demo.html"><span class="qt">IQC 演示页</span><br><span class="qd">全流程演示环境</span></a>
             <a class="quick-card glass fade-up" href="iqc-admin-users.html"><span class="qt">账号管理</span><br><span class="qd">演示账号列表与本地操作</span></a>
@@ -399,9 +400,9 @@
             },
             {
                 key: 'doc', name: '文件控制', owner: '[姓名]',
-                ai: 32, human: 8, total: 45, status: 'building', clickable: true,
-                target: 'iqc-knowledge-center.html',
-                desc: '受控文件 · 知识库'
+                ai: 32, human: 8, total: 45, status: 'ready', clickable: true,
+                target: 'neural-creator/index.html',
+                desc: '受控文件 · 水母神经网络全景（AI 文件评审）'
             },
             {
                 key: 'npi', name: 'NPI', owner: '[姓名]',
@@ -428,6 +429,7 @@
             { name: 'IQC 智能体全景控制塔', desc: '各智能体运行状态 · 任务总览', target: TOWER_URL },
             { name: '图纸 → SIP 工作台', desc: '上传图纸自动生成检验指导书', target: SIP_URL },
             { name: '来料与不良导入', desc: '演示登记，不写入服务器', target: IMPORT_URL },
+            { name: '体系神经全景 · 水母与光（AI 文件评审）', desc: '水母神经元全景 · AI 审厂与文件评审演示', target: 'neural-creator/index.html' },
             { name: '体系 AI', desc: '查询标准与文件 · 演示问答', target: 'system-ai.html' },
             { name: 'IQC 演示页', desc: '全流程演示环境', target: DEMO_URL },
             { name: '知识库', desc: '程序、SIP 与案例的演示条目', target: KNOWLEDGE_URL },
@@ -501,7 +503,7 @@
             // 快捷入口（按当前用户角色过滤：账号管理仅管理员、操作记录经理及以上）
             var qg = document.getElementById('quickGrid');
             var qhtml = '';
-            var qIcons = [ICONS.check, ICONS.tower, ICONS.sip, ICONS.import, ICONS.badcase, ICONS.ai, ICONS.demo, ICONS.admin, ICONS.audit];
+            var qIcons = [ICONS.check, ICONS.tower, ICONS.sip, ICONS.import, ICONS.ai, ICONS.ai, ICONS.demo, ICONS.badcase, ICONS.admin, ICONS.audit];
             var curRole = (JSON.parse(localStorage.getItem('qms_user') || '{}')).role || '';
             QUICK_DATA.forEach(function (q, i) {
                 var delay = 'animation-delay:' + (0.15 + i * 0.06).toFixed(2) + 's;';
